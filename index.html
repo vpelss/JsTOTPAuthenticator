@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en" >
+
+<head>
+  <meta charset="UTF-8">
+  
+  
+  
+
+  <title>totp</title>
+
+    <link rel="canonical" href="https://codepen.io/vpelss/pen/EayojzL">
+  
+  
+  
+  
+
+  
+  
+  
+</head>
+
+<body>
+  <!-- https://datatracker.ietf.org/doc/html/rfc6238 -->
+
+<a href="https://datatracker.ietf.org/doc/html/rfc6238" target="_blank">TOTP: Time-Based One-Time Password Algorithm</a>
+<p></p>
+<a href="https://datatracker.ietf.org/doc/html/rfc2104" target="_blank">HMAC Hashed Message Authentication Code</a>
+<p></p>
+<a href="https://en.wikipedia.org/wiki/HMAC" target="_blank">HMAC pseudo Code</a>
+
+
+<div id="v1"></div>
+<div id="v2"></div>
+<div id="v3"></div>
+  
+    <script id="rendered-js" >
+const text = "a";
+
+async function digestMessage(message) {
+  const msgUint8 = new TextEncoder().encode(message); // encode as (utf-8) Uint8Array
+  const hashBuffer = await window.crypto.subtle.digest("SHA-1", msgUint8); // hash the message
+  return hashBuffer;
+}
+
+v2 = hashHex = new Uint8Array(v1);
+pw = v2.toBase64();
+document.getElementById("v1").innerHTML = v1;
+document.getElementById("v2").innerHTML = v2;
+document.getElementById("v3").innerHTML = pw;
+
+j = 9;
+
+//HOTP(sharedSecret,Counter) = Truncate(HMAC-SHA-1(sharedSecret,Counter))
+
+//Count = Math.floor( (Current Unix time - T0) / 30 );
+
+//the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
+
+//message will be Count based on unixtime
+
+async function hmac(keyString, messageInt, hash, blockSize) {
+  //internal variables
+  //key:        Bytes    // Array of bytes
+  //message:    Bytes    // Array of bytes to be hashed
+  //hash:       Function // The hash function to use (e.g. SHA-1)
+  //blockSize:  Integer  // The block size of the hash function (e.g. 64 bytes for SHA-1)
+
+  let TE = new TextEncoder();
+ let preKey = new TextEncoder().encode(keyString);
+
+  //const key = new TextEncoder().encode(keyString); // encode as (utf-8) Uint8Array
+
+  const message = TE.encode(messageInt.toString());
+
+  // Compute the block sized key
+
+  // Keys longer than blockSize are shortened by hashing them
+  //if (length(key) > blockSize) then
+  if (preKey.length > blockSize) {
+    //key = hash(key);
+    //will be 20 bytes long?
+    key = await digestMessage(TE.encode(keyString));
+  }
+
+  // Keys shorter than blockSize are padded to blockSize by padding with zeros on the right
+  if (preKey.length < blockSize) {
+    //let key = new Uint8Array(blockSize);
+    key = new Uint8Array(blockSize);
+   TE.encodeInto(keyString, key);
+  }
+
+  j = 9;
+  //o_key_pad ← block_sized_key xor [0x5c blockSize]   // Outer padded key
+  //i_key_pad ← block_sized_key xor [0x36 blockSize]   // Inner padded key
+  //return  hash(o_key_pad ∥ hash(i_key_pad ∥ message))
+}
+
+let myTime = Date.now() * 1000; //in seconds
+hmac("a", myTime, "sha1", 64);
+  </script>
+
+  
+</body>
+
+</html>
