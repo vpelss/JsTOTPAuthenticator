@@ -30,6 +30,9 @@
 <a href="https://datatracker.ietf.org/doc/html/rfc2104" target="_blank">HMAC Hashed Message Authentication Code</a>
 <p></p>
 <a href="https://en.wikipedia.org/wiki/HMAC" target="_blank">HMAC pseudo Code</a>
+<p></p>
+<a href="https://datatracker.ietf.org/doc/html/rfc4226#section-5.3" target="_blank">Generating an HOTP Value</a>
+
 
 <p></p>
 <div id="v1"></div>
@@ -61,36 +64,56 @@ j = 9;
 
 //message will be Count based on unixtime
 
-async function hmac(keyString, messageInt, hash, blockSize) {
+//rfc is atrocious. It assumes you know the inner workings of java crypto mac.
+//it does all the ipad and outp[ad stuff]
+async function hmac(keyString, stepsString16Bytes, returnDigits, hash) {
   //internal variables
   //key:        Bytes    // Array of bytes : the secret key
   //message:    Bytes    // Array of bytes to be hashed : the unixtime count
   //hash:       Function // The hash function to use (e.g. SHA-1)
   //blockSize:  Integer  // The block size of the hash function (e.g. 64 bytes for SHA-1)
 
-  let key, tempKey;
+  let blockSize = 64;
+  let k, msg, tempKey;
   const TE = new TextEncoder();
   const TD = new TextDecoder();
 
-  let keyLength = new TextEncoder().encode(keyString).length; //used to know the Uint8Array key length
-  let message = new Uint8Array(blockSize); //everything to blockSize
-  message.set(TE.encode(messageInt.toString())); //convert and copy in messageInt
+  msg = Uint8Array.fromHex(stepsString16Bytes);
+  k = Uint8Array.fromHex(keyString);
+
+  // GOOD TO HERE
+
+  //hmac_sha inline
 
   // create our Uint8Array key to the blockSize sized
   // Keys longer than blockSize are shortened by hashing them
-  if (keyLength > blockSize) {
-    key = new Uint8Array(blockSize); //set to block size
-    tempKey = await digestMessage(TE.encode(keyString));
-    //tempKey will be 20 bytes long : op of sha1
-    v2 = new Uint8Array(tempKey); //convert promise to Uint8Array
-    key.set(v2); //copy tempKey into blockSize key
+  if (k.length > blockSize) {
+    tempKey = new Uint8Array(blockSize); //set to block size
+    hash = await window.crypto.subtle.digest("SHA-1", k); // hash the message
+    tempKey.set(new Uint8Array(hash));
+    k = tempKey;
   }
   // Keys shorter than blockSize are padded to blockSize by padding with zeros on the right
-  if (keyLength < blockSize) {
-    key = new Uint8Array(blockSize);
-    TE.encodeInto(keyString, key);
+  if (k.length < blockSize) {
+    tempKey = new Uint8Array(blockSize); //set to block size
+    tempKey.set(k);
+    k = tempKey;
   }
+
+  tempKey = new Uint8Array(blockSize); //set to block size
+  hashed = await digestMessage(ikey); //hash(i_key_pad ∥ message)
+  tempKey.set(new Uint8Array(hashed)); //copy to blockSize version
+
+  //k first msg second
+  //byte[] hash = hmac_sha(crypto, k, msg);
+  hash = await window.crypto.subtle.digest("SHA-1", k); // hash the message
+  hash2 = await window.crypto.subtle.digest("SHA-1", msg); // hash the message
+
+  let message = new Uint8Array(blockSize); //everything to blockSize
+  message.set(TE.encode(messageInt.toString())); //convert and copy in messageInt
+
   //key should be blockSize long here
+
   let okey = new Uint8Array(key);
   okey[0] = okey[0] ^ 0x5;
   okey[1] = okey[2] ^ 0xc; //key xor 0x5c
@@ -109,12 +132,10 @@ async function hmac(keyString, messageInt, hash, blockSize) {
   tempKey.set(new Uint8Array(hashed)); //copy to blockSize version
 
   //o_key_pad ∥ hash(i_key_pad ∥ message)
-   okey.forEach(function (myByte, myIndex, myAarray) {
+  okey.forEach(function (myByte, myIndex, myAarray) {
     myAarray[myIndex] = myAarray[myIndex] | tempKey[myIndex];
   });
   hashed = await digestMessage(okey); // hash(o_key_pad ∥ hash(i_key_pad ∥ message))
-  
-  
 
   v3 = key.toBase64();
   //v3 = TD.decode(key);
@@ -126,9 +147,19 @@ async function hmac(keyString, messageInt, hash, blockSize) {
   j = 9;
 }
 
-let myTime = Date.now() * 1000; //in seconds
-let count = Math.floor(myTime / 30);
-hmac("a", count, "sha1", 64);
+let unixTime = Date.now() * 1000; //in seconds
+let steps = Math.floor(unixTime / 30).toString();
+//needs to be 16 bytes
+steps = 1;
+do {
+  steps = "0" + steps;
+} while (steps.length < 16);
+let seed = new TextEncoder().encode("12345678901234567890");
+seed = "3132333435363738393031323334353637383930";
+let returnDigits = 8;
+let crypto = "sha1";
+
+hmac(seed, steps, returnDigits, crypto);
   </script>
 
   
