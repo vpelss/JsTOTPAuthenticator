@@ -1,19 +1,6 @@
 # TOTP
 
-I tried to follow the RFCs. 
-
-https://datatracker.ietf.org/doc/html/rfc6238 RFC was not very useful. It assumes you know the inner workings of java crypto/mac.
-
-So it effectively leaves out all the important code if you need to write it in a different language.
-
-it looks that crypto/mac does all the ipad and opad stuff
-
-crypto="HmacSHA1";
-hmac = Mac.getInstance(crypto);
-             SecretKeySpec macKey =
-                 new SecretKeySpec(keyBytes, "RAW");
-             hmac.init(macKey);
-             return hmac.doFinal(text);
+I tried to follow the RFCs:
 
 TOTP: Time-Based One-Time Password Algorithm: https://datatracker.ietf.org/doc/html/rfc6238
 
