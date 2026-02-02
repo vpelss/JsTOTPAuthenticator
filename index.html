@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" >
 
@@ -38,60 +39,38 @@
 <input type="text" placeholder="secret" value="3132333435363738393031323334353637383930" id="seed" onchange="eachSecond();">
 
 <p></p>
+Step
 <div id="step"></div>
+Key
 <div id="key"></div>
+Code
 <div id="answer"></div>
+Countdown
 <div id="countdown"></div>
+
 <div id="error"></div>
   
     <script id="rendered-js" >
-const text = "a";
-
-async function digestMessage(messageString) {
-  const msgUint8 = new TextEncoder().encode(messageString); // encode as (utf-8) Uint8Array
-  const hashBuffer = await window.crypto.subtle.digest("SHA-1", msgUint8); // hash the message
-  return hashBuffer;
-}
-
-//https://evanhahn.com/the-best-way-to-concatenate-uint8arrays/
-function concatenateUint8arrays(uint8arrays) {
-  // Determine the length of the result.
-  const totalLength = uint8arrays.reduce(
-    (total, uint8array) => total + uint8array.byteLength,
-    0
-  );
-  // Allocate the result.
-  const result = new Uint8Array(totalLength);
-  // Copy each Uint8Array into the result.
-  let offset = 0;
-  uint8arrays.forEach((uint8array) => {
-    result.set(uint8array, offset);
-    offset += uint8array.byteLength;
-  });
-  return result;
-}
-
 //the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
 
-//rfc is atrocious. It assumes you know the inner workings of java crypto/mac. So it effectively leaves out all the important code if you need to write it in a different language.
-//crypto/mac does all the ipad and opad stuff
+// I tried to follow https://datatracker.ietf.org/doc/html/rfc6238
+//rfc is atrocious. It assumes you know the inner workings of java crypto/mac.
+//So it effectively leaves out all the important code if you need to write it in a different language.
+//it looks that crypto/mac does all the ipad and opad stuff
 // https://en.wikipedia.org/wiki/HMAC was much more useful
 async function hmac(
-  keyString,
-  stepString16Bytes,
+  keyHexString,
+  stepHexString16Bytes,
   returnDigits,
   hashFunctionString
 ) {
   try {
     let blockSize = 64;
     let k, msg, tempUint8Array, hashed;
-    // const TE = new TextEncoder();
-    //const TD = new TextDecoder();
 
-    //all our key strings should only have hex characters
-    msg = Uint8Array.fromHex(stepString16Bytes);
-    k = Uint8Array.fromHex(keyString);
-    //k = new Uint8Array(keyString);
+    //all our input key strings should only have hex characters
+    msg = Uint8Array.fromHex(stepHexString16Bytes);
+    k = Uint8Array.fromHex(keyHexString);
 
     //hmac_sha inline
     // create our Uint8Array key to the blockSize sized
@@ -121,7 +100,7 @@ async function hmac(
       myArray[myIndex] = myArray[myIndex] ^ 0x36;
     }); //key xor 0x36
 
-    // hash(o_key_pad + hash(i_key_pad + msg))
+    // now do hash(o_key_pad + hash(i_key_pad + msg))
 
     tempUint8Array = concatenateUint8arrays([ikey, msg]); // i_key_pad + msg
     hashed = await window.crypto.subtle.digest("SHA-1", tempUint8Array);
@@ -149,103 +128,21 @@ async function hmac(
 
     let result = otp.toString();
     while (result.length < returnDigits) {
+      // make sure it is returnDigits long. pad to the left
       result = "0" + result;
     }
 
-    document.getElementById("step").innerHTML = stepString16Bytes;
-    document.getElementById("key").innerHTML = keyString;
-    //document.getElementById("v2").innerHTML = stepString16Bytes;
+    document.getElementById("step").innerHTML = stepHexString16Bytes;
+    document.getElementById("key").innerHTML = keyHexString;
     document.getElementById("answer").innerHTML = result;
   } catch (error) {
     document.getElementById("error").innerHTML = error;
   }
 }
 
-function eachSecond() {
-  let unixTime = Date.now() / 1000; //in seconds
-  let stepNow = unixTime / 30;
-  let stepInt = Math.floor(stepNow);
-  let timeLeft = Math.floor( 30 - (30 * ( stepNow  - stepInt )) );
-  //step MUST be in string HEX
-   let step = stepInt.toString(16);
-  document.getElementById("countdown").innerHTML = timeLeft;
-  do {
-    step = "0" + step;
-  } while (step.length < 16);
-  // step needs to be 16 characters
-  let seedBase32 = document.getElementById("seed").value;
-  //base32Str to HexStr
-  // https://mojoauth.com/binary-encoding-decoding/base32-with-javascript-in-browser#encoding-data-to-base32
-  seed = decodeBase32toHex(seedBase32);
-  const TE = new TextEncoder();
-  const TD = new TextDecoder();
-
-  
-  let returnDigits = 6;
-  let crypto = "sha1";
-
-  try {
-    hmac(seed, step, returnDigits, crypto);
-  } catch (error) {
-    document.getElementById("error").innerHTML = error;
-  }
-}
-
-//step MUST be in string HEX
-//toString(16).toUpperCase()
-step = Math.floor(1111111109/30).toString(16).toUpperCase();
-do {
-  step = "0" + step;
-} while (step.length < 16);
-
-let seed;
-seed = document.getElementById("seed").value;
-let returnDigits = 8;
-let crypto = "sha1";
-
-hmac(seed, step, returnDigits, crypto);
-
-document.getElementById("seed").value = "MYTESTQ";
-
-let myInterval = setInterval(eachSecond, 1000);
-
-const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-const HEX_ALPHABET = "0123456789ABCDEF";
-
-function encodeBase32(data) {
-  let binaryString = "";
-  for (let i = 0; i < data.length; i++) {
-    binaryString += data.charCodeAt(i).toString(2).padStart(8, "0");
-  }
-  let padding = binaryString.length % 5;
-  if (padding !== 0)
-    binaryString = binaryString.padEnd(binaryString.length + 5 - padding, "0");
-  let encoded = "";
-  for (let i = 0; i < binaryString.length; i += 5) {
-    encoded += BASE32_ALPHABET[parseInt(binaryString.slice(i, i + 5), 2)];
-  }
-  while (encoded.length % 8 !== 0) encoded += "=";
-  return encoded;
-}
-
-function decodeBase32(data) {
-  data = data.replace(/=/g, "");
-  let binaryString = "";
-  for (let i = 0; i < data.length; i++) {
-    binaryString += BASE32_ALPHABET.indexOf(data[i])
-      .toString(2)
-      .padStart(5, "0");
-  }
-  let padding = binaryString.length % 8;
-  if (padding !== 0) binaryString = binaryString.slice(0, -padding);
-  let decoded = "";
-  for (let i = 0; i < binaryString.length; i += 8) {
-    decoded += String.fromCharCode(parseInt(binaryString.slice(i, i + 8), 2));
-  }
-  return decoded;
-}
-
 function decodeBase32toHex(data) {
+  const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  const HEX_ALPHABET = "0123456789ABCDEF";
   data = data.replace(/=/g, "");
   let binaryString = "";
   for (let i = 0; i < data.length; i++) {
@@ -266,33 +163,74 @@ function decodeBase32toHex(data) {
   return decoded;
 }
 
-/*
-function base32_decode(encoded_data){
-    // Define the Base32 alphabet
-    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
- 
-    // Convert the encoded data to binary
-    //binary_data = ''.join([format(alphabet.index(char), '05b') for char in encoded_data]);    
-  binary_data = encoded_data.forEach(
-  function(myItem,myIndex,myArray){
-    
-  }
+//https://evanhahn.com/the-best-way-to-concatenate-uint8arrays/
+function concatenateUint8arrays(uint8arrays) {
+  // Determine the length of the result.
+  const totalLength = uint8arrays.reduce(
+    (total, uint8array) => total + uint8array.byteLength,
+    0
   );
-    ''.join([format(alphabet.index(char), '05b') for char in encoded_data]);
- 
-    // Pad the binary data with zeros if necessary
-    while len(binary_data) % 8 != 0:
-        binary_data += '0'
- 
-    // Split the binary data into 8-bit chunks
-    chunks = [binary_data[i:i+8] for i in range(0, len(binary_data), 8)]
- 
-    // Convert each 8-bit chunk to its corresponding ASCII character
-    decoded_data = ''.join([chr(int(chunk, 2)) for chunk in chunks])
- 
-    return decoded_data
+  // Allocate the result.
+  const result = new Uint8Array(totalLength);
+  // Copy each Uint8Array into the result.
+  let offset = 0;
+  uint8arrays.forEach((uint8array) => {
+    result.set(uint8array, offset);
+    offset += uint8array.byteLength;
+  });
+  return result;
 }
-*/
+
+function eachSecond() {
+  let unixTime = Date.now() / 1000; //in seconds
+  let stepNow = unixTime / 30;
+  let stepInt = Math.floor(stepNow);
+  let timeLeft = Math.floor(30 - 30 * (stepNow - stepInt));
+  //step MUST be in string HEX
+  let step = stepInt.toString(16);
+  document.getElementById("countdown").innerHTML = timeLeft;
+  do {
+    step = "0" + step;
+  } while (step.length < 16);
+  // step needs to be 16 characters
+  let seedBase32 = document.getElementById("seed").value;
+  //base32Str to HexStr
+  // https://mojoauth.com/binary-encoding-decoding/base32-with-javascript-in-browser#encoding-data-to-base32
+  seed = decodeBase32toHex(seedBase32);
+  const TE = new TextEncoder();
+  const TD = new TextDecoder();
+
+  let returnDigits = 6;
+  let crypto = "sha1";
+
+  try {
+    hmac(seed, step, returnDigits, crypto);
+  } catch (error) {
+    document.getElementById("error").innerHTML = error;
+  }
+}
+
+// MAIN //
+
+//first test
+//step MUST be in string HEX
+//toString(16).toUpperCase()
+step = Math.floor(1111111109 / 30)
+  .toString(16)
+  .toUpperCase();
+do {
+  step = "0" + step;
+} while (step.length < 16);
+
+let seed;
+seed = document.getElementById("seed").value;
+let returnDigits = 8;
+let crypto = "sha1";
+
+hmac(seed, step, returnDigits, crypto);
+
+document.getElementById("seed").value = "MYTESTQ";
+let myInterval = setInterval(eachSecond, 1000);
   </script>
 
   
