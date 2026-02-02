@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" >
 
@@ -22,26 +21,15 @@
 </head>
 
 <body>
-  <!-- https://datatracker.ietf.org/doc/html/rfc6238 -->
-
-<a href="https://en.wikipedia.org/wiki/Time-based_one-time_password" target="_blank">https://en.wikipedia.org/wiki/Time-based_one-time_password</a>
-<p></p>
-<a href="https://datatracker.ietf.org/doc/html/rfc6238" target="_blank">TOTP: Time-Based One-Time Password Algorithm</a>
-<p></p>
-<a href="https://datatracker.ietf.org/doc/html/rfc2104" target="_blank">HMAC Hashed Message Authentication Code</a>
-<p></p>
-<a href="https://en.wikipedia.org/wiki/HMAC" target="_blank">HMAC pseudo Code</a>
-<p></p>
-<a href="https://datatracker.ietf.org/doc/html/rfc4226#section-5.3" target="_blank">Generating an HOTP Value</a>
+  <a href="https://github.com/vpelss/JsTOTPAuthenticator" target="_blank">https://github.com/vpelss/JsTOTPAuthenticator</a>
 
 <p></p>
-
 <input type="text" placeholder="secret" value="3132333435363738393031323334353637383930" id="seed" onchange="eachSecond();">
 
 <p></p>
-Step
+Step Hexed
 <div id="step"></div>
-Key
+Key Hexed
 <div id="key"></div>
 Code
 <div id="answer"></div>
@@ -51,13 +39,9 @@ Countdown
 <div id="error"></div>
   
     <script id="rendered-js" >
-//the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
+// the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
 
-// I tried to follow https://datatracker.ietf.org/doc/html/rfc6238
-//rfc is atrocious. It assumes you know the inner workings of java crypto/mac.
-//So it effectively leaves out all the important code if you need to write it in a different language.
-//it looks that crypto/mac does all the ipad and opad stuff
-// https://en.wikipedia.org/wiki/HMAC was much more useful
+// for references see: https://github.com/vpelss/JsTOTPAuthenticator
 async function hmac(
   keyHexString,
   stepHexString16Bytes,
@@ -68,10 +52,11 @@ async function hmac(
     let blockSize = 64;
     let k, msg, tempUint8Array, hashed;
 
-    //all our input key strings should only have hex characters
+    //all our input key strings should only have hex characters [0 .. F]
     msg = Uint8Array.fromHex(stepHexString16Bytes);
     k = Uint8Array.fromHex(keyHexString);
 
+    //https://datatracker.ietf.org/doc/html/rfc2104
     //hmac_sha inline
     // create our Uint8Array key to the blockSize sized
     // Keys longer than blockSize are shortened by hashing them
@@ -140,6 +125,7 @@ async function hmac(
   }
 }
 
+ // https://medium.com/@at.kishor.k/demystifying-base32-an-in-depth-guide-to-this-encoding-standard-697b9426fc25
 function decodeBase32toHex(data) {
   const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
   const HEX_ALPHABET = "0123456789ABCDEF";
@@ -163,7 +149,7 @@ function decodeBase32toHex(data) {
   return decoded;
 }
 
-//https://evanhahn.com/the-best-way-to-concatenate-uint8arrays/
+// https://evanhahn.com/the-best-way-to-concatenate-uint8arrays/
 function concatenateUint8arrays(uint8arrays) {
   // Determine the length of the result.
   const totalLength = uint8arrays.reduce(
@@ -194,9 +180,7 @@ function eachSecond() {
   } while (step.length < 16);
   // step needs to be 16 characters
   let seedBase32 = document.getElementById("seed").value;
-  //base32Str to HexStr
-  // https://mojoauth.com/binary-encoding-decoding/base32-with-javascript-in-browser#encoding-data-to-base32
-  seed = decodeBase32toHex(seedBase32);
+   seed = decodeBase32toHex(seedBase32.toUpperCase());   //base32Str to HexStr
   const TE = new TextEncoder();
   const TD = new TextDecoder();
 
