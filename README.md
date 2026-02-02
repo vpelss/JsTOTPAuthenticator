@@ -1,4 +1,4 @@
-# TOTP
+# JsTOTPAuthenticator
 
 I tried to follow the RFCs:
 
