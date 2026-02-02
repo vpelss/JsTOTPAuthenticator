@@ -16,8 +16,12 @@ HMAC: https://en.wikipedia.org/wiki/HMAC
 
 Notes:
 
-- Your authentication secrets are in Base32 RFC 4648
+- Your authentication secrets are in Base32 RFC 4648 and will need to be converted to a Hexidecimal string. I modified https://mojoauth.com/binary-encoding-decoding/base32-with-javascript-in-browser#encoding-data-to-base32 to do this
 
   - https://en.wikipedia.org/wiki/Base32
 
   - https://datatracker.ietf.org/doc/html/rfc4648#section-6
+ 
+- I am using window.crypto.subtle.digest for my SHA1 code as most older browsers will likely be dead or dying
+
+- For Uint8Array concatination I used https://evanhahn.com/the-best-way-to-concatenate-uint8arrays/
