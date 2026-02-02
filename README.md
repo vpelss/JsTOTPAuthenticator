@@ -18,6 +18,6 @@ Notes:
 
 - Your authentication secrets are in Base32 RFC 4648
 
-- https://en.wikipedia.org/wiki/Base32
+- - https://en.wikipedia.org/wiki/Base32
 
-- https://datatracker.ietf.org/doc/html/rfc4648#section-6
+- - https://datatracker.ietf.org/doc/html/rfc4648#section-6
