@@ -35,12 +35,13 @@
 
 <p></p>
 
-<input type="text" placeholder="secret" value="3132333435363738393031323334353637383930" id="seed">
+<input type="text" placeholder="secret" value="MYTESTQ" id="seed" onchange="eachSecond();">
 
 <p></p>
 <div id="step"></div>
 <div id="key"></div>
 <div id="answer"></div>
+<div id="error"></div>
   
     <script id="rendered-js" >
 const text = "a";
@@ -80,80 +81,83 @@ async function hmac(
   returnDigits,
   hashFunctionString
 ) {
-  let blockSize = 64;
-  let k, msg, tempUint8Array, hashed;
-  // const TE = new TextEncoder();
-  //const TD = new TextDecoder();
+  try {
+    let blockSize = 64;
+    let k, msg, tempUint8Array, hashed;
+    // const TE = new TextEncoder();
+    //const TD = new TextDecoder();
 
-  //all our key strings should only have hex characters
-  msg = Uint8Array.fromHex(stepString16Bytes);
-  k = Uint8Array.fromHex(keyString);
+    //all our key strings should only have hex characters
+    msg = Uint8Array.fromHex(stepString16Bytes);
+    k = Uint8Array.fromHex(keyString);
+    //k = new Uint8Array(keyString);
 
-  //hmac_sha inline
-  // create our Uint8Array key to the blockSize sized
-  // Keys longer than blockSize are shortened by hashing them
-  if (k.length > blockSize) {
-    tempUint8Array = new Uint8Array(blockSize); //set to block size
-    hashed = await window.crypto.subtle.digest("SHA-1", k); // hash the message
-    tempUint8Array.set(new Uint8Array(hashed));
-    k = tempUint8Array;
+    //hmac_sha inline
+    // create our Uint8Array key to the blockSize sized
+    // Keys longer than blockSize are shortened by hashing them
+    if (k.length > blockSize) {
+      tempUint8Array = new Uint8Array(blockSize); //set to block size
+      hashed = await window.crypto.subtle.digest("SHA-1", k); // hash the message
+      tempUint8Array.set(new Uint8Array(hashed));
+      k = tempUint8Array;
+    }
+    // Keys shorter than blockSize are padded to blockSize by padding with zeros on the right
+    if (k.length < blockSize) {
+      tempUint8Array = new Uint8Array(blockSize); //set to block size
+      tempUint8Array.set(k);
+      k = tempUint8Array;
+    }
+    // k should now be blockSize
+
+    //o_key_pad ← block_sized_key xor [0x5c blockSize]   // Outer padded key
+    //i_key_pad ← block_sized_key xor [0x36 blockSize]   // Inner padded key
+    let okey = new Uint8Array(k);
+    okey.forEach(function (myByte, myIndex, myArray) {
+      myArray[myIndex] = myArray[myIndex] ^ 0x5c;
+    }); //key xor 0x5c
+    let ikey = new Uint8Array(k);
+    ikey.forEach(function (myByte, myIndex, myArray) {
+      myArray[myIndex] = myArray[myIndex] ^ 0x36;
+    }); //key xor 0x36
+
+    // hash(o_key_pad + hash(i_key_pad + msg))
+
+    tempUint8Array = concatenateUint8arrays([ikey, msg]); // i_key_pad + msg
+    hashed = await window.crypto.subtle.digest("SHA-1", tempUint8Array);
+    tempUint8Array = new Uint8Array(hashed); // hash(i_key_pad + msg)
+
+    tempUint8Array = concatenateUint8arrays([okey, tempUint8Array]); //o_key_pad ∥ hash(i_key_pad + msg)
+    hashed = await window.crypto.subtle.digest("SHA-1", tempUint8Array);
+    hashed = new Uint8Array(hashed); // hash(o_key_pad ∥ hash(i_key_pad ∥ message))
+
+    //https://datatracker.ietf.org/doc/html/rfc4226#section-5.3
+    let offset = hashed[hashed.length - 1] & 0xf; //last 4 bits of hashed
+
+    //take 4 bytes at offset (minus the first bit) and use bits to create a decimal #
+    let myBinary =
+      ((hashed[offset] & 0x7f) << 24) | // not signed
+      (hashed[offset + 1] << 16) |
+      (hashed[offset + 2] << 8) |
+      hashed[offset + 3];
+
+    // int otp = binary % DIGITS_POWER[codeDigits];
+    //take deciamal output and reduce to returnDigits decimal characters
+    // opt is the remander: so the decimal remander of myBinary / dp is .xxxx so a dp of 1000 will give us 4 digits
+    let dp = 10 ** returnDigits;
+    let otp = myBinary % dp;
+
+    let result = otp.toString();
+    while (result.length < returnDigits) {
+      result = "0" + result;
+    }
+
+    document.getElementById("step").innerHTML = stepString16Bytes;
+    document.getElementById("key").innerHTML = keyString;
+    //document.getElementById("v2").innerHTML = stepString16Bytes;
+    document.getElementById("answer").innerHTML = result;
+  } catch (error) {
+    document.getElementById("error").innerHTML = error;
   }
-  // Keys shorter than blockSize are padded to blockSize by padding with zeros on the right
-  if (k.length < blockSize) {
-    tempUint8Array = new Uint8Array(blockSize); //set to block size
-    tempUint8Array.set(k);
-    k = tempUint8Array;
-  }
-  // k should now be blockSize
-
-  //o_key_pad ← block_sized_key xor [0x5c blockSize]   // Outer padded key
-  //i_key_pad ← block_sized_key xor [0x36 blockSize]   // Inner padded key
-  let okey = new Uint8Array(k);
-  okey.forEach(function (myByte, myIndex, myArray) {
-    myArray[myIndex] = myArray[myIndex] ^ 0x5c;
-  }); //key xor 0x5c
-  let ikey = new Uint8Array(k);
-  ikey.forEach(function (myByte, myIndex, myArray) {
-    myArray[myIndex] = myArray[myIndex] ^ 0x36;
-  }); //key xor 0x36
-
-  // hash(o_key_pad + hash(i_key_pad + msg))
-
-  tempUint8Array = concatenateUint8arrays([ikey, msg]); // i_key_pad + msg
-  hashed = await window.crypto.subtle.digest("SHA-1", tempUint8Array);
-  tempUint8Array = new Uint8Array(hashed); // hash(i_key_pad + msg)
-
-  tempUint8Array = concatenateUint8arrays([okey, tempUint8Array]); //o_key_pad ∥ hash(i_key_pad + msg)
-  hashed = await window.crypto.subtle.digest("SHA-1", tempUint8Array);
-  hashed = new Uint8Array(hashed); // hash(o_key_pad ∥ hash(i_key_pad ∥ message))
-
-  //https://datatracker.ietf.org/doc/html/rfc4226#section-5.3
-  let offset = hashed[hashed.length - 1] & 0xf; //last 4 bits of hashed
-
-  //take 4 bytes at offset (minus the first bit) and use bits to create a decimal #
-  let myBinary =
-    ((hashed[offset] & 0x7f) << 24) | // not signed
-    (hashed[offset + 1] << 16) |
-    (hashed[offset + 2] << 8) |
-    hashed[offset + 3];
-
-  // int otp = binary % DIGITS_POWER[codeDigits];
-  //take deciamal output and reduce to returnDigits decimal characters
-  // opt is the remander: so the decimal remander of myBinary / dp is .xxxx so a dp of 1000 will give us 4 digits
-  let dp = 10 ** returnDigits;
-  let otp = myBinary % dp;
-
-  let result = otp.toString();
-  while (result.length < returnDigits) {
-    result = "0" + result;
-  }
-
-  document.getElementById("step").innerHTML = stepString16Bytes;
-  document.getElementById("key").innerHTML = keyString;
-  //document.getElementById("v2").innerHTML = stepString16Bytes;
-  document.getElementById("answer").innerHTML = result;
-
-  j = 9;
 }
 
 step = 1;
@@ -165,23 +169,122 @@ seed = document.getElementById("seed").value;
 let returnDigits = 8;
 let crypto = "sha1";
 
-hmac(seed, step, returnDigits, crypto);
+//hmac(seed, step, returnDigits, crypto);
 
 function eachSecond() {
   let unixTime = Date.now() / 1000; //in seconds
-let stepInt = Math.floor(unixTime / 30);
+  let stepInt = Math.floor(unixTime / 30);
   let step = Math.floor(unixTime / 30).toString();
   do {
     step = "0" + step;
   } while (step.length < 16);
-// step needs to be 16 characters
-  let seed = document.getElementById("seed").value;
+  // step needs to be 16 characters
+  let seedBase32 = document.getElementById("seed").value;
+  //base32 to uint8Array
+  const TE = new TextEncoder();
+  const TD = new TextDecoder();
+
+  // https://mojoauth.com/binary-encoding-decoding/base32-with-javascript-in-browser#encoding-data-to-base32
+  seed = decodeBase32toHex(seedBase32);
+  //seed = seedBase32;
+
+  //seed = uint8Array.toBase64();
   let returnDigits = 6;
   let crypto = "sha1";
-  hmac(seed, step, returnDigits, crypto);
+
+  try {
+    hmac(seed, step, returnDigits, crypto);
+  } catch (error) {
+    document.getElementById("error").innerHTML = error;
+  }
 }
 
 let myInterval = setInterval(eachSecond, 1000);
+
+const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+const HEX_ALPHABET = "0123456789ABCDEF";
+
+function encodeBase32(data) {
+  let binaryString = "";
+  for (let i = 0; i < data.length; i++) {
+    binaryString += data.charCodeAt(i).toString(2).padStart(8, "0");
+  }
+  let padding = binaryString.length % 5;
+  if (padding !== 0)
+    binaryString = binaryString.padEnd(binaryString.length + 5 - padding, "0");
+  let encoded = "";
+  for (let i = 0; i < binaryString.length; i += 5) {
+    encoded += BASE32_ALPHABET[parseInt(binaryString.slice(i, i + 5), 2)];
+  }
+  while (encoded.length % 8 !== 0) encoded += "=";
+  return encoded;
+}
+
+function decodeBase32(data) {
+  data = data.replace(/=/g, "");
+  let binaryString = "";
+  for (let i = 0; i < data.length; i++) {
+    binaryString += BASE32_ALPHABET.indexOf(data[i])
+      .toString(2)
+      .padStart(5, "0");
+  }
+  let padding = binaryString.length % 8;
+  if (padding !== 0) binaryString = binaryString.slice(0, -padding);
+  let decoded = "";
+  for (let i = 0; i < binaryString.length; i += 8) {
+    decoded += String.fromCharCode(parseInt(binaryString.slice(i, i + 8), 2));
+  }
+  return decoded;
+}
+
+function decodeBase32toHex(data) {
+  data = data.replace(/=/g, "");
+  let binaryString = "";
+  for (let i = 0; i < data.length; i++) {
+    binaryString += BASE32_ALPHABET.indexOf(data[i])
+      .toString(2)
+      .padStart(5, "0");
+  }
+  let padding = binaryString.length % 8;
+  if (padding !== 0) binaryString = binaryString.slice(0, -padding);
+  let decoded = "";
+  let decoded1 = "";
+  for (let i = 0; i < binaryString.length; i += 4) {
+    ii = parseInt(binaryString.slice(i, i + 4), 2);
+    iii = HEX_ALPHABET[ii];
+    decoded += HEX_ALPHABET[parseInt(binaryString.slice(i, i + 4), 2)];
+    //decoded += parseInt(binaryString.slice(i, i + 4), 2).toString(16).toUpperCase();
+  }
+  return decoded;
+}
+
+/*
+function base32_decode(encoded_data){
+    // Define the Base32 alphabet
+    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+ 
+    // Convert the encoded data to binary
+    //binary_data = ''.join([format(alphabet.index(char), '05b') for char in encoded_data]);    
+  binary_data = encoded_data.forEach(
+  function(myItem,myIndex,myArray){
+    
+  }
+  );
+    ''.join([format(alphabet.index(char), '05b') for char in encoded_data]);
+ 
+    // Pad the binary data with zeros if necessary
+    while len(binary_data) % 8 != 0:
+        binary_data += '0'
+ 
+    // Split the binary data into 8-bit chunks
+    chunks = [binary_data[i:i+8] for i in range(0, len(binary_data), 8)]
+ 
+    // Convert each 8-bit chunk to its corresponding ASCII character
+    decoded_data = ''.join([chr(int(chunk, 2)) for chunk in chunks])
+ 
+    return decoded_data
+}
+*/
   </script>
 
   
