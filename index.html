@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" >
 
@@ -21,30 +22,120 @@
 </head>
 
 <body>
-  <a href="https://github.com/vpelss/JsTOTPAuthenticator" target="_blank">https://github.com/vpelss/JsTOTPAuthenticator</a>
+  <div_header style="display:flex;">
+  <center style="width:100%">
+    <span id="menu_icon">
+      <a onclick="openMenu()" class="button">&#x2261;</a>
+    </span>
+    <span id="x_icon" hidden>
+      <a onclick="closeMenu()" class="button">X</a>
+    </span>
+    &nbsp;&nbsp;&nbsp;
+    <span>
+      JsTOTPAuthenticator
+    </span>
+    <hr>
+  </center>
+</div_header>
 
-<label for="seed">Secret</label><input type="text" value="3132333435363738393031323334353637383930" id="seed" name="seed" placeholder="Secret in Base32" onchange="eachSecond();">
+<br>&nbsp;
 
-<div>
-  <span>Step Hexed: </span>
-  <span id="step"></span>
-</div>
-<div>
-  <span>Key Hexed: </span>
-  <span id="key"></span>
-</div>
-<div>
-  <span>Code:</span>
-  <span id="answer"></span>
-</div>
-<div>
-  <span>Countdown: </span>
-  <span id="countdown"></span>
-</div>
-<div id="error"></div>
+<div_main_page id="main_page_component">
+
+  <label for="seed">Secret</label><input type="text" value="3132333435363738393031323334353637383930" id="seed" name="seed" placeholder="Secret in Base32" onchange="eachSecond();">
+
+  <div>
+    <span>Step Hexed: </span>
+    <span id="step"></span>
+  </div>
+  <div>
+    <span>Key Hexed: </span>
+    <span id="key"></span>
+  </div>
+  <div>
+    <span>Code:</span>
+    <span id="answer"></span>
+  </div>
+  <div>
+    <span>Countdown: </span>
+    <span id="countdown"></span>
+  </div>
+  <div id="error"></div>
+
+  </div>
+
+</div_main_page>
+
+  <div_menu_page id="menu_page_component" hidden>
+
+    <form>
+      <center>
+        <div>
+          <input type="button" value="Get Alias List" onclick="GetAliasList();">
+        </div>
+
+        <div>
+          <input type="button" value="Save Alias List" onclick="if(confirm('This will change your list. Are you sure?')){SaveAliasList();}">
+        </div>
+
+        <div>
+          <input type="button" value="Export Alias List to Clipboard" onclick="if(confirm('This will export all Alias, settings, and comments to clipboard. Are you sure?')){ ExportAll(); }">
+        </div>
+
+        <div>
+          <textarea id="JSONSave" rows="3" cols="50" placeholder="Import/Export/Backup Alias List. Save the text generated in a safe location." title="You can import/export your current Alias list (which is saved in the local cookie). This is helful to move it to another computer or use it as a backup." class="u-full-width">
+</textarea>
+        </div>
+      </center>
+    </form>
+
+    <center>
+      <div>
+        <a href="#" id="install" class="button">Install as PWA</a>
+      </div>
+
+      <div>
+        Links below will open in your default browser.
+      </div>
+
+      <div>
+        <a href="https://vpelss.github.io/Forever_Passwords//README.md" class="button u-full-width" target="_blank">Help/Read Me</a>
+      </div>
+
+      <div>
+        <a href="https://github.com/vpelss/JsTOTPAuthenticator" target="_blank" class="button u-full-width">Github</a>
+      </div>
+
+      <div>
+        <a href="https://github.com/vpelss/JsTOTPAuthenticator/blob/main/LICENSE" target="_blank" class="button">Licence</a>
+      </div>
+
+      <div>
+        <a href="https://www.emogic.com/cgi/fp/backup.php" target="blank" class="button u-full-width">Doesn't work?</a>
+      </div>
+
+    </center>
+
+  </div_menu_page>
   
     <script id="rendered-js" >
 // the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
+
+// https://github.com/Sammy-T/avdu/blob/master/vault/decrypt.go
+
+function openMenu() {
+  document.getElementById("main_page_component").style.display = "none";
+  document.getElementById("menu_page_component").style.display = "block";
+  document.getElementById("menu_icon").style.display = "none";
+  document.getElementById("x_icon").style.display = "inline";
+}
+
+function closeMenu() {
+  document.getElementById("main_page_component").style.display = "block";
+  document.getElementById("menu_page_component").style.display = "none";
+  document.getElementById("menu_icon").style.display = "inline";
+  document.getElementById("x_icon").style.display = "none";
+}
 
 // for references see: https://github.com/vpelss/JsTOTPAuthenticator
 async function hmac(
@@ -61,16 +152,15 @@ async function hmac(
     msg = Uint8Array.fromHex(stepHexString16Bytes);
     k = Uint8Array.fromHex(keyHexString);
 
-    //https://datatracker.ietf.org/doc/html/rfc2104
-    //hmac_sha inline
+    //hmac_sha https://en.wikipedia.org/wiki/HMAC
+
     // create our Uint8Array key to the blockSize sized
-    // Keys longer than blockSize are shortened by hashing them
     if (k.length > blockSize) {
       tempUint8Array = new Uint8Array(blockSize); //set to block size
       hashed = await window.crypto.subtle.digest("SHA-1", k); // hash the message
       tempUint8Array.set(new Uint8Array(hashed));
       k = tempUint8Array;
-    }
+    } // Keys longer than blockSize are shortened by hashing them
     // Keys shorter than blockSize are padded to blockSize by padding with zeros on the right
     if (k.length < blockSize) {
       tempUint8Array = new Uint8Array(blockSize); //set to block size
@@ -79,8 +169,7 @@ async function hmac(
     }
     // k should now be blockSize
 
-    //o_key_pad ← block_sized_key xor [0x5c blockSize]   // Outer padded key
-    //i_key_pad ← block_sized_key xor [0x36 blockSize]   // Inner padded key
+    // create ipad and opad https://datatracker.ietf.org/doc/html/rfc2104#section-2
     let okey = new Uint8Array(k);
     okey.forEach(function (myByte, myIndex, myArray) {
       myArray[myIndex] = myArray[myIndex] ^ 0x5c;
@@ -90,15 +179,15 @@ async function hmac(
       myArray[myIndex] = myArray[myIndex] ^ 0x36;
     }); //key xor 0x36
 
-    // now do hash(o_key_pad + hash(i_key_pad + msg))
+    // now do hash(o_key_pad concatenate hash(i_key_pad concatenate msg))
 
     tempUint8Array = concatenateUint8arrays([ikey, msg]); // i_key_pad + msg
     hashed = await window.crypto.subtle.digest("SHA-1", tempUint8Array);
-    tempUint8Array = new Uint8Array(hashed); // hash(i_key_pad + msg)
+    tempUint8Array = new Uint8Array(hashed); // hash(i_key_pad concatenate msg)
 
     tempUint8Array = concatenateUint8arrays([okey, tempUint8Array]); //o_key_pad ∥ hash(i_key_pad + msg)
     hashed = await window.crypto.subtle.digest("SHA-1", tempUint8Array);
-    hashed = new Uint8Array(hashed); // hash(o_key_pad ∥ hash(i_key_pad ∥ message))
+    hashed = new Uint8Array(hashed); // hash(o_key_pad concatenate hash(i_key_pad concatenate msg))
 
     //https://datatracker.ietf.org/doc/html/rfc4226#section-5.3
     let offset = hashed[hashed.length - 1] & 0xf; //last 4 bits of hashed
@@ -110,9 +199,8 @@ async function hmac(
       (hashed[offset + 2] << 8) |
       hashed[offset + 3];
 
-    // int otp = binary % DIGITS_POWER[codeDigits];
-    //take deciamal output and reduce to returnDigits decimal characters
-    // opt is the remander: so the decimal remander of myBinary / dp is .xxxx so a dp of 1000 will give us 4 digits
+    //take deciamal output of myBinary and reduce to returnDigits decimal characters
+    // opt is the same as taking dp/myBinary taking the decimal and multiplying with dp
     let dp = 10 ** returnDigits;
     let otp = myBinary % dp;
 
@@ -130,11 +218,11 @@ async function hmac(
   }
 }
 
- // https://medium.com/@at.kishor.k/demystifying-base32-an-in-depth-guide-to-this-encoding-standard-697b9426fc25
+// https://medium.com/@at.kishor.k/demystifying-base32-an-in-depth-guide-to-this-encoding-standard-697b9426fc25
 function decodeBase32toHex(data) {
   const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
   const HEX_ALPHABET = "0123456789ABCDEF";
-  data = data.replace(/=/g, "");
+  data = data.replace(/=/g, ""); //remove padding
   let binaryString = "";
   for (let i = 0; i < data.length; i++) {
     binaryString += BASE32_ALPHABET.indexOf(data[i])
@@ -185,7 +273,7 @@ function eachSecond() {
   } while (step.length < 16);
   // step needs to be 16 characters
   let seedBase32 = document.getElementById("seed").value;
-   seed = decodeBase32toHex(seedBase32.toUpperCase());   //base32Str to HexStr
+  seed = decodeBase32toHex(seedBase32.toUpperCase()); //base32Str to HexStr
   const TE = new TextEncoder();
   const TD = new TextDecoder();
 
