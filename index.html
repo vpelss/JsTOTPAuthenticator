@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" >
 
@@ -8,10 +7,12 @@
   
   
 
-  <title>totp</title>
+  <title>JsTOTPAuthenticator</title>
 
     <link rel="canonical" href="https://codepen.io/vpelss/pen/EayojzL">
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="manifest" href="./manifest.json"> 
   
   <link rel='stylesheet' href='https://cdn.simplecss.org/simple.css'>
   
@@ -38,7 +39,7 @@
   </center>
 </div_header>
 
-<br>&nbsp;
+<br>&nbsp; 
 
 <div_main_page id="main_page_component">
 
@@ -123,6 +124,9 @@
 
 // https://github.com/Sammy-T/avdu/blob/master/vault/decrypt.go
 
+let localStorageName = "JsTOTPAuthenticator";
+let GlobalAssociativeArray = {};
+
 function openMenu() {
   document.getElementById("main_page_component").style.display = "none";
   document.getElementById("menu_page_component").style.display = "block";
@@ -135,6 +139,75 @@ function closeMenu() {
   document.getElementById("menu_page_component").style.display = "none";
   document.getElementById("menu_icon").style.display = "inline";
   document.getElementById("x_icon").style.display = "none";
+}
+
+function GetAliasList() {
+  LocalStorageToVar();
+  document.getElementById("JSONSave").value = JSON.stringify(
+    GlobalAssociativeArray,
+    null,
+    "\t"
+  );
+}
+
+function VarToLocalStorage() {
+  let AliasListString = JSON.stringify(GlobalAssociativeArray);
+  if (supports_html5_storage()) {
+    localStorage[localStorageName] = AliasListString;
+    //setCookie("AliasList", "", yesterday, "", "", ""); //erase cookie as we want to use local storage now.
+  } else {
+    //save to cookie
+    setCookie("AliasList", AliasListString, localStorageName, "", "", "");
+  }
+}
+
+function LocalStorageToVar() {
+  if (supports_html5_storage()) {
+    if (typeof localStorage[localStorageName] === "undefined") {
+      return;
+    } //nothing to restore
+    GlobalAssociativeArray = JSON.parse(localStorage[localStorageName]);
+  } else {
+    let data = getCookie("AliasList") || "{}";
+    GlobalAssociativeArray = JSON.parse(data);
+  }
+}
+
+function SaveAliasList() {
+  if (document.getElementById("JSONSave").value == "") {
+    GlobalAssociativeArray = {};
+  } else {
+    GlobalAssociativeArray = JSON.parse(
+      document.getElementById("JSONSave").value
+    );
+  }
+  VarToLocalStorage();
+  //BuildAliasSelect();
+}
+
+function supports_html5_storage() {
+  try {
+    return "localStorage" in window && window.localStorage !== null;
+    //return false;
+  } catch (e) {
+    return false;
+  }
+}
+
+function ExportAll() {
+  LocalStorageToVar();
+  copytoclipboard2(JSON.stringify(GlobalAssociativeArray));
+  alert("All your Alias, settings, and comments are on the clipboard!");
+}
+
+function copytoclipboard2(text) {
+  let textarea = document.createElement("TEXTAREA");
+  document.body.appendChild(textarea);
+  textarea.innerHTML = text;
+  textarea.value = text;
+  textarea.select();
+  document.execCommand("copy", false, null);
+  textarea.remove();
 }
 
 // for references see: https://github.com/vpelss/JsTOTPAuthenticator
