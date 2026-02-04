@@ -39,23 +39,23 @@
   </center>
 </div_header>
 
-<br>&nbsp; 
+<br>&nbsp;
 
 <div_main_page id="main_page_component">
 
-  <label for="seed">Secret</label><input type="text" value="3132333435363738393031323334353637383930" id="seed" name="seed" placeholder="Secret in Base32" onchange="eachSecond();">
+  <label for="seed">Seed</label><input type="text" value="3132333435363738393031323334353637383930" id="seed" name="seed" placeholder="Seed in Base32" oninput="eachSecondwrapper();">
 
   <div>
     <span>Step Hexed: </span>
     <span id="step"></span>
   </div>
   <div>
-    <span>Key Hexed: </span>
+    <span>Seed Hexed: </span>
     <span id="key"></span>
   </div>
   <div>
-    <span>Code:</span>
-    <span id="answer"></span>
+    <span>TOTP:</span>
+    <span id="totp"></span>
   </div>
   <div>
     <span>Countdown: </span>
@@ -67,57 +67,57 @@
 
 </div_main_page>
 
-  <div_menu_page id="menu_page_component" hidden>
+<div_menu_page id="menu_page_component" hidden>
 
-    <form>
-      <center>
-        <div>
-          <input type="button" value="Get Alias List" onclick="GetAliasList();">
-        </div>
-
-        <div>
-          <input type="button" value="Save Alias List" onclick="if(confirm('This will change your list. Are you sure?')){SaveAliasList();}">
-        </div>
-
-        <div>
-          <input type="button" value="Export Alias List to Clipboard" onclick="if(confirm('This will export all Alias, settings, and comments to clipboard. Are you sure?')){ ExportAll(); }">
-        </div>
-
-        <div>
-          <textarea id="JSONSave" rows="3" cols="50" placeholder="Import/Export/Backup Alias List. Save the text generated in a safe location." title="You can import/export your current Alias list (which is saved in the local cookie). This is helful to move it to another computer or use it as a backup." class="u-full-width">
-</textarea>
-        </div>
-      </center>
-    </form>
-
+  <form>
     <center>
       <div>
-        <a href="#" id="install" class="button">Install as PWA</a>
+        <input type="button" value="Get Alias List" onclick="GetAliasList();">
       </div>
 
       <div>
-        Links below will open in your default browser.
+        <input type="button" value="Save Alias List" onclick="if(confirm('This will change your list. Are you sure?')){SaveAliasList();}">
       </div>
 
       <div>
-        <a href="https://vpelss.github.io/Forever_Passwords//README.md" class="button u-full-width" target="_blank">Help/Read Me</a>
+        <input type="button" value="Export Alias List to Clipboard" onclick="if(confirm('This will export all Alias, settings, and comments to clipboard. Are you sure?')){ ExportAll(); }">
       </div>
 
       <div>
-        <a href="https://github.com/vpelss/JsTOTPAuthenticator" target="_blank" class="button u-full-width">Github</a>
+        <textarea id="JSONSave" rows="3" cols="50" placeholder="Import/Export/Backup Alias List. Save the text generated in a safe location." title="You can import/export your current Alias list (which is saved in the local cookie). This is helful to move it to another computer or use it as a backup." class="u-full-width">
+</textarea>
       </div>
-
-      <div>
-        <a href="https://github.com/vpelss/JsTOTPAuthenticator/blob/main/LICENSE" target="_blank" class="button">Licence</a>
-      </div>
-
-      <div>
-        <a href="https://www.emogic.com/cgi/fp/backup.php" target="blank" class="button u-full-width">Doesn't work?</a>
-      </div>
-
     </center>
+  </form>
 
-  </div_menu_page>
+  <center>
+    <div>
+      <a href="#" id="install" class="button">Install as PWA</a>
+    </div>
+
+    <div>
+      Links below will open in your default browser.
+    </div>
+
+    <div>
+      <a href="https://vpelss.github.io/Forever_Passwords//README.md" class="button u-full-width" target="_blank">Help/Read Me</a>
+    </div>
+
+    <div>
+      <a href="https://github.com/vpelss/JsTOTPAuthenticator" target="_blank" class="button u-full-width">Github</a>
+    </div>
+
+    <div>
+      <a href="https://github.com/vpelss/JsTOTPAuthenticator/blob/main/LICENSE" target="_blank" class="button">Licence</a>
+    </div>
+
+    <div>
+      <a href="https://www.emogic.com/cgi/fp/backup.php" target="blank" class="button u-full-width">Doesn't work?</a>
+    </div>
+
+  </center>
+
+</div_menu_page>
   
     <script id="rendered-js" >
 // the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
@@ -217,13 +217,14 @@ async function hmac(
   returnDigits,
   hashFunctionString
 ) {
+  let totp;
   try {
     let blockSize = 64;
     let k, msg, tempUint8Array, hashed;
 
     //all our input key strings should only have hex characters [0 .. F]
     msg = Uint8Array.fromHex(stepHexString16Bytes);
-    k = Uint8Array.fromHex(keyHexString);
+    k = Uint8Array.fromHex(keyHexString); //only accepts hex string lengths of even values and convertys to bytes. byte = 2 x hex
 
     //hmac_sha https://en.wikipedia.org/wiki/HMAC
 
@@ -277,17 +278,19 @@ async function hmac(
     let dp = 10 ** returnDigits;
     let otp = myBinary % dp;
 
-    let result = otp.toString();
-    while (result.length < returnDigits) {
+    totp = otp.toString();
+    while (totp.length < returnDigits) {
       // make sure it is returnDigits long. pad to the left
-      result = "0" + result;
+      totp = "0" + totp;
     }
-
-    document.getElementById("step").innerHTML = stepHexString16Bytes;
-    document.getElementById("key").innerHTML = keyHexString;
-    document.getElementById("answer").innerHTML = result;
+    document.getElementById("error").innerHTML = ""; //clear error on success
   } catch (error) {
     document.getElementById("error").innerHTML = error;
+  }
+  finally{
+    document.getElementById("step").innerHTML = stepHexString16Bytes;
+    document.getElementById("key").innerHTML = keyHexString;
+    document.getElementById("totp").innerHTML = totp;    
   }
 }
 
@@ -302,14 +305,16 @@ function decodeBase32toHex(data) {
       .toString(2)
       .padStart(5, "0");
   }
-  let padding = binaryString.length % 8;
-  if (padding !== 0) binaryString = binaryString.slice(0, -padding);
+  //CHANGE to 4 for hex character output
+  //let padding = binaryString.length % 8;
+   let padding = binaryString.length % 4;
+  if (padding !== 0) {
+    binaryString = binaryString.slice(0, -padding);
+  }
   let decoded = "";
-  let decoded1 = "";
   for (let i = 0; i < binaryString.length; i += 4) {
-    ii = parseInt(binaryString.slice(i, i + 4), 2);
-    iii = HEX_ALPHABET[ii];
-    decoded += HEX_ALPHABET[parseInt(binaryString.slice(i, i + 4), 2)];
+    let decimalEquivilant = parseInt(binaryString.slice(i, i + 4), 2);
+    decoded += HEX_ALPHABET[decimalEquivilant];
     //decoded += parseInt(binaryString.slice(i, i + 4), 2).toString(16).toUpperCase();
   }
   return decoded;
@@ -333,6 +338,10 @@ function concatenateUint8arrays(uint8arrays) {
   return result;
 }
 
+function eachSecondwrapper(){
+  eachSecond();
+}
+
 function eachSecond() {
   let unixTime = Date.now() / 1000; //in seconds
   let stepNow = unixTime / 30;
@@ -346,6 +355,8 @@ function eachSecond() {
   } while (step.length < 16);
   // step needs to be 16 characters
   let seedBase32 = document.getElementById("seed").value;
+  //since base32 each character is 5 bits, we need 8 base32 characters to encode 5 byte characters
+  //so padding if base32 is not a multiple of 40 bits
   seed = decodeBase32toHex(seedBase32.toUpperCase()); //base32Str to HexStr
   const TE = new TextEncoder();
   const TD = new TextDecoder();
