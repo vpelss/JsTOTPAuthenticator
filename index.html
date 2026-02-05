@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" >
 
@@ -23,7 +24,7 @@
 </head>
 
 <body>
-  <div_header style="display:flex;">
+  totp<div_header style="display:flex;">
   <center style="width:100%">
     <span id="menu_icon">
       <a onclick="openMenu()" class="button">&#x2261;</a>
@@ -118,7 +119,7 @@
   </center>
 
 </div_menu_page>
-  
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js'></script>
     <script id="rendered-js" >
 // the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
 
@@ -126,6 +127,9 @@
 
 let localStorageName = "JsTOTPAuthenticator";
 let GlobalAssociativeArray = {};
+
+const TE = new TextEncoder();
+let TD = new TextDecoder();
 
 function openMenu() {
   document.getElementById("main_page_component").style.display = "none";
@@ -286,11 +290,10 @@ async function hmac(
     document.getElementById("error").innerHTML = ""; //clear error on success
   } catch (error) {
     document.getElementById("error").innerHTML = error;
-  }
-  finally{
+  } finally {
     document.getElementById("step").innerHTML = stepHexString16Bytes;
     document.getElementById("key").innerHTML = keyHexString;
-    document.getElementById("totp").innerHTML = totp;    
+    document.getElementById("totp").innerHTML = totp;
   }
 }
 
@@ -307,7 +310,7 @@ function decodeBase32toHex(data) {
   }
   //CHANGE to 4 for hex character output
   //let padding = binaryString.length % 8;
-   let padding = binaryString.length % 4;
+  let padding = binaryString.length % 4;
   if (padding !== 0) {
     binaryString = binaryString.slice(0, -padding);
   }
@@ -338,11 +341,73 @@ function concatenateUint8arrays(uint8arrays) {
   return result;
 }
 
-function eachSecondwrapper(){
+function eachSecondwrapper() {
   eachSecond();
 }
 
-function eachSecond() {
+function HexStringtoString(hexString) {
+  let myUint8Array = Uint8Array.fromHex(hexString);
+  let myString = TD.decode(myUint8Array);
+  return myString;
+}
+
+function stringToBytes(val) {
+    const result = [];
+    for (let i = 0; i < val.length; i++) {
+        result.push(val.charCodeAt(i));
+    }
+    return result;
+}
+
+async function eachSecond() {
+  //unencrypt
+  // https://github.com/beemdevelopment/Aegis/blob/master/app/src/main/java/com/beemdevelopment/aegis/crypto/bc/SCrypt.java
+  //https://github.com/tonyg/js-scrypt
+  //https://github.com/ricmoo/scrypt-js?utm_source=cdnjs&utm_medium=cdnjs_link&utm_campaign=cdnjs_library#readme
+  //https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js
+  
+  if (typeof GlobalAssociativeArray != "undefined") {
+    let salt, n, r, p, nonce, tag;
+ 
+    test = HexStringtoString("48656c6c6f20476f7068657221");
+    salt = HexStringtoString(GlobalAssociativeArray.header.slots[0].salt);
+    salt = stringToBytes(GlobalAssociativeArray.header.slots[0].salt);
+    n = GlobalAssociativeArray.header.slots[0].n;
+    r = GlobalAssociativeArray.header.slots[0].r;
+    p = GlobalAssociativeArray.header.slots[0].p;
+    nonce = HexStringtoString(GlobalAssociativeArray.header.params.nonce);
+    tag = HexStringtoString(GlobalAssociativeArray.header.params.tag);
+nonce = stringToBytes(GlobalAssociativeArray.header.params.nonce);
+    tag = stringToBytes(GlobalAssociativeArray.header.params.tag);
+
+    password = "aaa";
+    dkLen = 32; //????
+    
+    /* public static final byte CRYPTO_AEAD_KEY_SIZE = 32;
+    public static final byte CRYPTO_AEAD_TAG_SIZE = 16;
+    public static final byte CRYPTO_AEAD_NONCE_SIZE = 12;
+
+    public static final int CRYPTO_SCRYPT_N = 1 << 15;
+    public static final int CRYPTO_SCRYPT_r = 8;
+    public static final int CRYPTO_SCRYPT_p = 1; */
+    
+    pw = TE.encode(password);
+    pw2 =  new Uint8Array(pw);
+    pw3 = stringToBytes(password);
+    //g =  await scrypt.scrypt( pw2 , salt , n , r , p  , dkLen);
+    g =  scrypt.syncScrypt( pw2 , salt , n , r , p  , dkLen);
+    gg= TD.decode(g);
+    // scrypt . syncScrypt ( password , salt , N , r , p , dkLen ) => Uint8Array
+    
+    
+    // Create a key using the slot values and provided password
+
+    // Attempt to decrypt the master key
+    //masterKey, err = aesgcm.Open(nil, nonce, keyData, nil)
+
+    h = 9;
+  }
+
   let unixTime = Date.now() / 1000; //in seconds
   let stepNow = unixTime / 30;
   let stepInt = Math.floor(stepNow);
@@ -358,8 +423,6 @@ function eachSecond() {
   //since base32 each character is 5 bits, we need 8 base32 characters to encode 5 byte characters
   //so padding if base32 is not a multiple of 40 bits
   seed = decodeBase32toHex(seedBase32.toUpperCase()); //base32Str to HexStr
-  const TE = new TextEncoder();
-  const TD = new TextDecoder();
 
   let returnDigits = 6;
   let crypto = "sha1";
@@ -392,6 +455,8 @@ hmac(seed, step, returnDigits, crypto);
 
 document.getElementById("seed").value = "MYTESTQ";
 let myInterval = setInterval(eachSecond, 1000);
+
+LocalStorageToVar();
   </script>
 
   
