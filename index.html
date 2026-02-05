@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" >
 
@@ -352,11 +351,11 @@ function HexStringtoString(hexString) {
 }
 
 function stringToBytes(val) {
-    const result = [];
-    for (let i = 0; i < val.length; i++) {
-        result.push(val.charCodeAt(i));
-    }
-    return result;
+  const result = [];
+  for (let i = 0; i < val.length; i++) {
+    result.push(val.charCodeAt(i));
+  }
+  return result;
 }
 
 async function eachSecond() {
@@ -365,24 +364,7 @@ async function eachSecond() {
   //https://github.com/tonyg/js-scrypt
   //https://github.com/ricmoo/scrypt-js?utm_source=cdnjs&utm_medium=cdnjs_link&utm_campaign=cdnjs_library#readme
   //https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js
-  
-  if (typeof GlobalAssociativeArray != "undefined") {
-    let salt, n, r, p, nonce, tag;
- 
-    test = HexStringtoString("48656c6c6f20476f7068657221");
-    salt = HexStringtoString(GlobalAssociativeArray.header.slots[0].salt);
-    salt = stringToBytes(GlobalAssociativeArray.header.slots[0].salt);
-    n = GlobalAssociativeArray.header.slots[0].n;
-    r = GlobalAssociativeArray.header.slots[0].r;
-    p = GlobalAssociativeArray.header.slots[0].p;
-    nonce = HexStringtoString(GlobalAssociativeArray.header.params.nonce);
-    tag = HexStringtoString(GlobalAssociativeArray.header.params.tag);
-nonce = stringToBytes(GlobalAssociativeArray.header.params.nonce);
-    tag = stringToBytes(GlobalAssociativeArray.header.params.tag);
 
-    password = "aaa";
-    dkLen = 32; //????
-    
     /* public static final byte CRYPTO_AEAD_KEY_SIZE = 32;
     public static final byte CRYPTO_AEAD_TAG_SIZE = 16;
     public static final byte CRYPTO_AEAD_NONCE_SIZE = 12;
@@ -390,16 +372,34 @@ nonce = stringToBytes(GlobalAssociativeArray.header.params.nonce);
     public static final int CRYPTO_SCRYPT_N = 1 << 15;
     public static final int CRYPTO_SCRYPT_r = 8;
     public static final int CRYPTO_SCRYPT_p = 1; */
+
+  if (typeof GlobalAssociativeArray != "undefined") {
+    let salt, n, r, p, nonce, tag;
+
+    test = HexStringtoString("48656c6c6f20476f7068657221");
+    //salt = HexStringtoString(GlobalAssociativeArray.header.slots[0].salt);
+    //nonce = HexStringtoString(GlobalAssociativeArray.header.params.nonce);
+//    tag = HexStringtoString(GlobalAssociativeArray.header.params.tag);    
+    salt = stringToBytes(GlobalAssociativeArray.header.slots[0].salt);
+    n = GlobalAssociativeArray.header.slots[0].n;
+    r = GlobalAssociativeArray.header.slots[0].r;
+    p = GlobalAssociativeArray.header.slots[0].p;
+    nonce = GlobalAssociativeArray.header.params.nonce;
+    nonce = nonce.normalize('NFKC');
+    nonce = stringToBytes(nonce);
+    tag = stringToBytes(GlobalAssociativeArray.header.params.tag);
+    dkLen = 32; //????
+    password = "aaa";
+    password = password.normalize('NFKC');
     
-    pw = TE.encode(password);
-    pw2 =  new Uint8Array(pw);
-    pw3 = stringToBytes(password);
+    //pw2 = TE.encode(password);
+    //pw = new Uint8Array(pw2);
+    pw = stringToBytes(password);
     //g =  await scrypt.scrypt( pw2 , salt , n , r , p  , dkLen);
-    g =  scrypt.syncScrypt( pw2 , salt , n , r , p  , dkLen);
-    gg= TD.decode(g);
+    scryptOutput = scrypt.syncScrypt(pw, salt, n, r, p, dkLen);
+    gg = TD.decode(scryptOutput);
     // scrypt . syncScrypt ( password , salt , N , r , p , dkLen ) => Uint8Array
-    
-    
+
     // Create a key using the slot values and provided password
 
     // Attempt to decrypt the master key
