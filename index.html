@@ -16,6 +16,19 @@
   
   <link rel='stylesheet' href='https://cdn.simplecss.org/simple.css'>
   
+<style>
+#theBar {
+  _border: solid;
+  _border-width: 1pt;
+  height: 1pt;
+  background-color: red;
+}
+
+.border {
+  border: solid;
+  border-width: 1pt;
+}
+</style>
 
   
   
@@ -23,7 +36,7 @@
 </head>
 
 <body>
-  totp<div_header style="display:flex;">
+  <div_header style="display:flex;">
   <center style="width:100%">
     <span id="menu_icon">
       <a onclick="openMenu()" class="button">&#x2261;</a>
@@ -43,7 +56,7 @@
 
 <div_main_page id="main_page_component">
 
-  <label for="seed">Seed</label><input type="text" value="3132333435363738393031323334353637383930" id="seed" name="seed" placeholder="Seed in Base32" oninput="eachSecondwrapper();">
+  <label for="seed">Seed</label><input type="text" id="seed" name="seed" placeholder="Seed in Base32" oninput="eachSecond();">
 
   <div>
     <span>Step Hexed: </span>
@@ -56,6 +69,9 @@
   <div>
     <span>TOTP:</span>
     <span id="totp"></span>
+  </div>
+  <div class="border">
+    <div id="theBar"></div>
   </div>
   <div>
     <span>Countdown: </span>
@@ -126,7 +142,7 @@
 
 let localStorageName = "JsTOTPAuthenticator";
 let GlobalAssociativeArray = {};
-let allowedBase32Lengths = {"7":"7","16":"16","24":"24","32":"32"};
+let allowedBase32Lengths = { 7: "7", 16: "16", 24: "24", 32: "32" };
 
 const TE = new TextEncoder();
 let TD = new TextDecoder();
@@ -292,28 +308,31 @@ async function hmac(
     document.getElementById("key").innerHTML = keyHexString;
     document.getElementById("totp").innerHTML = totp;
   } catch (error) {
-    document.getElementById("error").innerHTML = document.getElementById("error").innerHTML + error;
-    document.getElementById("totp").innerHTML = ""; 
-  } 
+    document.getElementById("error").innerHTML =
+      document.getElementById("error").innerHTML + error;
+    document.getElementById("totp").innerHTML = "";
+  }
 }
 
+//not required
 function encodeBase32(data) {
   const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-    let binaryString = "";
-    for (let i = 0; i < data.length; i++) {
-        binaryString += data.charCodeAt(i).toString(2).padStart(8, '0');
-    }
-    let padding = binaryString.length % 5;
-    if (padding !== 0) binaryString = binaryString.padEnd(binaryString.length + 5 - padding, '0');
-    let encoded = "";
-    for (let i = 0; i < binaryString.length; i += 5) {
-        encoded += BASE32_ALPHABET[parseInt(binaryString.slice(i, i + 5), 2)];
-    }
-    while (encoded.length % 8 !== 0) encoded += '=';
-    return encoded;
+  let binaryString = "";
+  for (let i = 0; i < data.length; i++) {
+    binaryString += data.charCodeAt(i).toString(2).padStart(8, "0");
+  }
+  let padding = binaryString.length % 5;
+  if (padding !== 0)
+    binaryString = binaryString.padEnd(binaryString.length + 5 - padding, "0");
+  let encoded = "";
+  for (let i = 0; i < binaryString.length; i += 5) {
+    encoded += BASE32_ALPHABET[parseInt(binaryString.slice(i, i + 5), 2)];
+  }
+  while (encoded.length % 8 !== 0) encoded += "=";
+  return encoded;
 }
 
-// https://medium.com/@at.kishor.k/demystifying-base32-an-in-depth-guide-to-this-encoding-standard-697b9426fc25
+// modified https://medium.com/@at.kishor.k/demystifying-base32-an-in-depth-guide-to-this-encoding-standard-697b9426fc25
 function decodeBase32toHex(data) {
   const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
   const HEX_ALPHABET = "0123456789ABCDEF";
@@ -357,10 +376,6 @@ function concatenateUint8arrays(uint8arrays) {
   return result;
 }
 
-function eachSecondwrapper() {
-  eachSecond();
-}
-
 function HexStringtoString(hexString) {
   let myUint8Array = Uint8Array.fromHex(hexString);
   let myString = TD.decode(myUint8Array);
@@ -382,6 +397,10 @@ async function eachSecond() {
   let timeLeft = Math.floor(30 - 30 * (stepNow - stepInt));
   //step MUST be in string HEX
   let step = stepInt.toString(16);
+  //show countdown 
+  var elem = document.getElementById("theBar");
+  let barWidth = Math.floor(100*timeLeft/30)
+  elem.style.width =  barWidth + '%';
   document.getElementById("countdown").innerHTML = timeLeft;
   do {
     step = "0" + step;
@@ -389,35 +408,18 @@ async function eachSecond() {
   // step needs to be 16 characters
   let seedBase32 = document.getElementById("seed").value;
   
-  try{
-  if(allowedBase32Lengths[seedBase32.length] != seedBase32.length){
-    let  myLength , values="";
-    for(myLength in allowedBase32Lengths) {
-      values = values + myLength + " ";
-    }
-    throw("Seed lengths must be " + values);
-  }
-}
-catch(error){ 
-  document.getElementById("error").innerHTML = error + "<br>";
-  document.getElementById("totp").innerHTML = ""; 
-  return;
-}
-  
   //since base32 each character is 5 bits, we need 8 base32 characters to encode 5 byte characters
   //so padding IS REQUIRED if base32 is not a multiple of 40 bits
-  seed = decodeBase32toHex(seedBase32.toUpperCase()); //base32Str to HexStr
-  //let jj = encodeBase32(seed);
-
-  //characters Aegis Authy Mine
-  // cc yes yes yes
-  // 3xC no yes no
-  // 4xC yes(modified) yes no
-  // 5xC yes yes yes
-  // 6xC no yes no
-  // 7xC yes(modified) yes yes
-  
   // google 16, 24, 32 base32 char only. so 80, 120, 160 bits : 10, 15, 20 bytes
+  try {
+  if(seedBase32.length % 8 != 0) // test modulo 8
+      throw "Seed lengths must be a multiple of 8 base32 characters";
+  } catch (error) {
+    document.getElementById("error").innerHTML = error + "<br>";
+    document.getElementById("totp").innerHTML = "";
+    return;
+  }
+  seed = decodeBase32toHex(seedBase32.toUpperCase()); //base32Str to HexStr
  
   let returnDigits = 6;
   let crypto = "sha1";
@@ -425,84 +427,66 @@ catch(error){
   try {
     hmac(seed, step, returnDigits, crypto);
   } catch (error) {
-    document.getElementById("error").innerHTML = document.getElementById("error").innerHTML + error;
-    document.getElementById("totp").innerHTML = ""; 
+    document.getElementById("error").innerHTML =
+      document.getElementById("error").innerHTML + error;
+    document.getElementById("totp").innerHTML = "";
   }
 }
 
 // MAIN //
 
-//first test
-//step MUST be in string HEX
-//toString(16).toUpperCase()
-step = Math.floor(1111111109 / 30)
-  .toString(16)
-  .toUpperCase();
-do {
-  step = "0" + step;
-} while (step.length < 16);
-
-let seed;
-seed = document.getElementById("seed").value;
-let returnDigits = 8;
-let crypto = "sha1";
-
-hmac(seed, step, returnDigits, crypto);
-
-document.getElementById("seed").value = "MYTESTQ";
-
+//test value
+document.getElementById("seed").value = "CCCCCCCC";
+//start counter
 let myInterval = setInterval(eachSecond, 1000);
-
+//load database 
 LocalStorageToVar();
-
 //unencrypt
-  // https://github.com/beemdevelopment/Aegis/blob/master/app/src/main/java/com/beemdevelopment/aegis/crypto/bc/SCrypt.java
-  //https://github.com/tonyg/js-scrypt
-  //https://github.com/ricmoo/scrypt-js?utm_source=cdnjs&utm_medium=cdnjs_link&utm_campaign=cdnjs_library#readme
-  //https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js
-
-    /* public static final byte CRYPTO_AEAD_KEY_SIZE = 32;
+// https://github.com/beemdevelopment/Aegis/blob/master/app/src/main/java/com/beemdevelopment/aegis/crypto/bc/SCrypt.java
+//https://github.com/tonyg/js-scrypt
+//https://github.com/ricmoo/scrypt-js?utm_source=cdnjs&utm_medium=cdnjs_link&utm_campaign=cdnjs_library#readme
+//https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js
+/* public static final byte CRYPTO_AEAD_KEY_SIZE = 32;
     public static final byte CRYPTO_AEAD_TAG_SIZE = 16;
     public static final byte CRYPTO_AEAD_NONCE_SIZE = 12;
 
     public static final int CRYPTO_SCRYPT_N = 1 << 15;
     public static final int CRYPTO_SCRYPT_r = 8;
     public static final int CRYPTO_SCRYPT_p = 1; */
+if (typeof GlobalAssociativeArray != "undefined") {
+  let salt, n, r, p, nonce, tag;
 
-  if (typeof GlobalAssociativeArray != "undefined") {
-    let salt, n, r, p, nonce, tag;
+  test = HexStringtoString("48656c6c6f20476f7068657221");
+  //salt = HexStringtoString(GlobalAssociativeArray.header.slots[0].salt);
+  //nonce = HexStringtoString(GlobalAssociativeArray.header.params.nonce);
+  //    tag = HexStringtoString(GlobalAssociativeArray.header.params.tag);
+  salt = stringToBytes(GlobalAssociativeArray.header.slots[0].salt);
+  n = GlobalAssociativeArray.header.slots[0].n;
+  r = GlobalAssociativeArray.header.slots[0].r;
+  p = GlobalAssociativeArray.header.slots[0].p;
+  nonce = GlobalAssociativeArray.header.params.nonce;
+  nonce = nonce.normalize("NFKC");
+  nonce = stringToBytes(nonce);
+  tag = stringToBytes(GlobalAssociativeArray.header.params.tag);
+  dkLen = 32; //????
+  password = "aaa";
+  password = password.normalize("NFKC");
 
-    test = HexStringtoString("48656c6c6f20476f7068657221");
-    //salt = HexStringtoString(GlobalAssociativeArray.header.slots[0].salt);
-    //nonce = HexStringtoString(GlobalAssociativeArray.header.params.nonce);
-//    tag = HexStringtoString(GlobalAssociativeArray.header.params.tag);    
-    salt = stringToBytes(GlobalAssociativeArray.header.slots[0].salt);
-    n = GlobalAssociativeArray.header.slots[0].n;
-    r = GlobalAssociativeArray.header.slots[0].r;
-    p = GlobalAssociativeArray.header.slots[0].p;
-    nonce = GlobalAssociativeArray.header.params.nonce;
-    nonce = nonce.normalize('NFKC');
-    nonce = stringToBytes(nonce);
-    tag = stringToBytes(GlobalAssociativeArray.header.params.tag);
-    dkLen = 32; //????
-    password = "aaa";
-    password = password.normalize('NFKC');
-    
-    //pw2 = TE.encode(password);
-    //pw = new Uint8Array(pw2);
-    pw = stringToBytes(password);
-    //g =  await scrypt.scrypt( pw2 , salt , n , r , p  , dkLen);
-    scryptOutput = scrypt.syncScrypt(pw, salt, n, r, p, dkLen);
-    gg = TD.decode(scryptOutput);
-    // scrypt . syncScrypt ( password , salt , N , r , p , dkLen ) => Uint8Array
+  //pw2 = TE.encode(password);
+  //pw = new Uint8Array(pw2);
+  pw = stringToBytes(password);
+  //g =  await scrypt.scrypt( pw2 , salt , n , r , p  , dkLen);
+  scryptOutput = scrypt.syncScrypt(pw, salt, n, r, p, dkLen);
+  gg = TD.decode(scryptOutput);
+  // scrypt . syncScrypt ( password , salt , N , r , p , dkLen ) => Uint8Array
 
-    // Create a key using the slot values and provided password
+  // Create a key using the slot values and provided password
 
-    // Attempt to decrypt the master key
-    //masterKey, err = aesgcm.Open(nil, nonce, keyData, nil)
+  // Attempt to decrypt the master key
+  //masterKey, err = aesgcm.Open(nil, nonce, keyData, nil)
 
-    h = 9;
-  }
+  h = 9;
+}
   </script>
 
   
