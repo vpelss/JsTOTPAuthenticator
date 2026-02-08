@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" >
 
@@ -77,10 +78,13 @@
     <span>Countdown: </span>
     <span id="countdown"></span>
   </div>
+  <div>
   <div id="error"></div>
-
   </div>
-
+  <div>
+  <div id="db"></div>
+  </div>
+  
 </div_main_page>
 
 <div_menu_page id="menu_page_component" hidden>
@@ -138,11 +142,10 @@
     <script id="rendered-js" >
 // the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
 
-// https://github.com/Sammy-T/avdu/blob/master/vault/decrypt.go
-
 let localStorageName = "JsTOTPAuthenticator";
 let GlobalAssociativeArray = {};
-let allowedBase32Lengths = { 7: "7", 16: "16", 24: "24", 32: "32" };
+//let allowedBase32Lengths = { 7: "7", 16: "16", 24: "24", 32: "32" };
+let plaintext;
 
 const TE = new TextEncoder();
 let TD = new TextDecoder();
@@ -382,7 +385,7 @@ function HexStringtoString(hexString) {
   return myString;
 }
 
-function stringToBytes(val) {
+function stringToBytesArray(val) {
   const result = [];
   for (let i = 0; i < val.length; i++) {
     result.push(val.charCodeAt(i));
@@ -397,30 +400,31 @@ async function eachSecond() {
   let timeLeft = Math.floor(30 - 30 * (stepNow - stepInt));
   //step MUST be in string HEX
   let step = stepInt.toString(16);
-  //show countdown 
+  //show countdown
   var elem = document.getElementById("theBar");
-  let barWidth = Math.floor(100*timeLeft/30)
-  elem.style.width =  barWidth + '%';
+  let barWidth = Math.floor((100 * timeLeft) / 30);
+  elem.style.width = barWidth + "%";
   document.getElementById("countdown").innerHTML = timeLeft;
   do {
     step = "0" + step;
   } while (step.length < 16);
   // step needs to be 16 characters
   let seedBase32 = document.getElementById("seed").value;
-  
+
   //since base32 each character is 5 bits, we need 8 base32 characters to encode 5 byte characters
   //so padding IS REQUIRED if base32 is not a multiple of 40 bits
   // google 16, 24, 32 base32 char only. so 80, 120, 160 bits : 10, 15, 20 bytes
   try {
-  if(seedBase32.length % 8 != 0) // test modulo 8
-      throw "Seed lengths must be a multiple of 8 base32 characters";
+    if (seedBase32.length % 8 != 0)
+      // test modulo 8
+      throw "The seed length must be a multiple of 8 characters and be composed of base32 characters [ABCDEFGHIJKLMNOPQRSTUVWXYZ234567]";
   } catch (error) {
     document.getElementById("error").innerHTML = error + "<br>";
     document.getElementById("totp").innerHTML = "";
     return;
   }
   seed = decodeBase32toHex(seedBase32.toUpperCase()); //base32Str to HexStr
- 
+
   let returnDigits = 6;
   let crypto = "sha1";
 
@@ -431,6 +435,8 @@ async function eachSecond() {
       document.getElementById("error").innerHTML + error;
     document.getElementById("totp").innerHTML = "";
   }
+  
+  document.getElementById("db").innerHTML = plaintext;
 }
 
 // MAIN //
@@ -439,51 +445,160 @@ async function eachSecond() {
 document.getElementById("seed").value = "CCCCCCCC";
 //start counter
 let myInterval = setInterval(eachSecond, 1000);
-//load database 
+//load database
 LocalStorageToVar();
-//unencrypt
+
+//unencrypt AES CGM
+
+// https://stackoverflow.com/questions/68031025/decrypt-aes-in-javascript
+// https://dev.to/shubhamkhan/beginners-guide-to-aes-encryption-and-decryption-in-javascript-using-cryptojs-592
+//https://en.wikipedia.org/wiki/Initialization_vector
+//https://www.reddit.com/r/learnjavascript/comments/1254hjd/cryptography_given_i_have_a_key_how_can_i_use/
+
 // https://github.com/beemdevelopment/Aegis/blob/master/app/src/main/java/com/beemdevelopment/aegis/crypto/bc/SCrypt.java
 //https://github.com/tonyg/js-scrypt
 //https://github.com/ricmoo/scrypt-js?utm_source=cdnjs&utm_medium=cdnjs_link&utm_campaign=cdnjs_library#readme
 //https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js
-/* public static final byte CRYPTO_AEAD_KEY_SIZE = 32;
-    public static final byte CRYPTO_AEAD_TAG_SIZE = 16;
-    public static final byte CRYPTO_AEAD_NONCE_SIZE = 12;
 
-    public static final int CRYPTO_SCRYPT_N = 1 << 15;
-    public static final int CRYPTO_SCRYPT_r = 8;
-    public static final int CRYPTO_SCRYPT_p = 1; */
+// https://github.com/Sammy-T/avdu/blob/master/vault/decrypt.go
+// FindMasterKey uses the password to decrypt the master key
+// from the vault and returns the master key's bytes.
+// func (vaultData *VaultEncrypted) FindMasterKey(pwd string)
+
+// key size is 32 bytes or 64 nibbles
+// tag size is 16 bytes 32 nibbles
+// nonce size is 12 bytes or 24 nibbles
+// n = 1 << 15 = 32768
+// r = 8
+// p = 1
+
 if (typeof GlobalAssociativeArray != "undefined") {
-  let salt, n, r, p, nonce, tag;
+  let salt, n, r, p, nonce, tag, db, dbByteArray;
 
-  test = HexStringtoString("48656c6c6f20476f7068657221");
-  //salt = HexStringtoString(GlobalAssociativeArray.header.slots[0].salt);
-  //nonce = HexStringtoString(GlobalAssociativeArray.header.params.nonce);
-  //    tag = HexStringtoString(GlobalAssociativeArray.header.params.tag);
-  salt = stringToBytes(GlobalAssociativeArray.header.slots[0].salt);
-  n = GlobalAssociativeArray.header.slots[0].n;
-  r = GlobalAssociativeArray.header.slots[0].r;
-  p = GlobalAssociativeArray.header.slots[0].p;
-  nonce = GlobalAssociativeArray.header.params.nonce;
-  nonce = nonce.normalize("NFKC");
-  nonce = stringToBytes(nonce);
-  tag = stringToBytes(GlobalAssociativeArray.header.params.tag);
   dkLen = 32; //????
   password = "aaa";
   password = password.normalize("NFKC");
 
-  //pw2 = TE.encode(password);
-  //pw = new Uint8Array(pw2);
-  pw = stringToBytes(password);
-  //g =  await scrypt.scrypt( pw2 , salt , n , r , p  , dkLen);
-  scryptOutput = scrypt.syncScrypt(pw, salt, n, r, p, dkLen);
-  gg = TD.decode(scryptOutput);
-  // scrypt . syncScrypt ( password , salt , N , r , p , dkLen ) => Uint8Array
+  // salt, err := hex.DecodeString(slot.Salt)
+  //salt = HexStringtoString(GlobalAssociativeArray.header.slots[0].salt);
+  salt = stringToBytesArray(GlobalAssociativeArray.header.slots[0].salt);
+  n = GlobalAssociativeArray.header.slots[0].n;
+  r = GlobalAssociativeArray.header.slots[0].r;
+  p = GlobalAssociativeArray.header.slots[0].p;
 
+  db = GlobalAssociativeArray.db;
+  dbByteArray = new Uint8Array(db);
+  
   // Create a key using the slot values and provided password
+  // key, err = scrypt.Key([]byte(pwd), salt, slot.N, slot.R, slot.P, 32)
+  // scrypt . syncScrypt ( password , salt , N , r , p , dkLen ) => Uint8Array
+  pw = stringToBytesArray(password);
+  //scryptOutput =  await scrypt.scrypt( pw2 , salt , n , r , p  , dkLen);
+  key = scrypt.syncScrypt(pw, salt, n, r, p, dkLen);
+  //gg = TD.decode(key);
+
+  // block, err := aes.NewCipher(key)
+
+  // 	aesgcm, err := cipher.NewGCM(block)
+
+  // nonce, err := hex.DecodeString(slot.KeyParams.Nonce)
+  //nonce = HexStringtoString(GlobalAssociativeArray.header.params.nonce);
+  nonce = GlobalAssociativeArray.header.params.nonce;
+  nonce = nonce.normalize("NFKC");
+  //nonce = stringToBytesArray(nonce);
+  let nonceByteArray = new Uint8Array(nonce);
+  
+  // tag, err := hex.DecodeString(slot.KeyParams.Tag)
+  //    tag = HexStringtoString(GlobalAssociativeArray.header.params.tag);
+  tag = stringToBytesArray(GlobalAssociativeArray.header.params.tag);
+
+    window.crypto.subtle.generateKey(
+    {
+        name: "AES-GCM",
+        length: 256,
+    },
+    true,
+    ["encrypt", "decrypt"]
+  );
+  
+  let myKey = window.crypto.subtle.generateKey(
+    {
+        name: "AES-GCM",
+        length: 256,
+    },
+    true,
+    ["encrypt", "decrypt"]
+  ).then(function(myKey){
+     decrypt( nonce , myKey , dbByteArray);
+  }
+        );
+  
+    async function decrypt( iv , key , ciphertext){
+  let decrypted = await window.crypto.subtle.decrypt(
+      {
+        name: "AES-GCM",
+        iv
+      },
+      key,
+      ciphertext
+    );
+   
+      plaintext = decrypted;
+    return decrypted;
+  }
+  // iv is nonce?
+  //plaintext = decrypt( nonce , myKey , db);
+    
+  //	slotKey, err := hex.DecodeString(slot.Key)
+
+  // var keyData []byte = append(slotKey, tag...)
+
+  // Attempt to decrypt the master key
+  //	masterKey, err = aesgcm.Open(nil, nonce, keyData, nil)
+  // return masterKey
 
   // Attempt to decrypt the master key
   //masterKey, err = aesgcm.Open(nil, nonce, keyData, nil)
+
+  // DecryptContents uses the master key to decrypt the vault's contents
+  // and returns the content's bytes.
+  //func (vaultData *VaultEncrypted) DecryptContents(masterKey []byte) ([]byte, error)
+  //var db string = vaultData.Db
+  //var params Params = vaultData.Header.Params
+  //block, err := aes.NewCipher(masterKey)
+
+  // aesgcm, err := cipher.NewGCM(block)
+
+  //nonce, err := hex.DecodeString(params.Nonce)
+
+  //	tag, err := hex.DecodeString(params.Tag)
+
+  // dbData, err := base64.StdEncoding.DecodeString(db)
+
+  //var database []byte = append(dbData, tag...)
+
+  //content, err := aesgcm.Open(nil, nonce, database, nil)
+
+  //return content, nil
+
+  // DecryptVault decrypts the vault's contents
+  // and returns a plaintext version of the vault.
+  //func (vaultData *VaultEncrypted) DecryptVault(masterKey []byte) (*Vault, error)
+  //content, err := vaultData.DecryptContents(masterKey)
+
+  // var db Db
+
+  // err = json.Unmarshal(content, &db)
+
+  /*
+  	var vaultDataPlain Vault = Vault{
+		Version: vaultData.Version,
+		Header:  vaultData.Header,
+		Db:      db,
+	}
+  */
+
+  // return &vaultDataPlain, nil
 
   h = 9;
 }
