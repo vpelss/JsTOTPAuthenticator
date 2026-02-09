@@ -251,6 +251,8 @@ async function hmac(
     msg = Uint8Array.fromHex(stepHexString16Bytes);
     k = Uint8Array.fromHex(keyHexString); //only accepts hex string lengths of even values and convertys to bytes. byte = 2 x hex
 
+    /*
+    //HMAC: instructive
     //hmac_sha https://en.wikipedia.org/wiki/HMAC
 
     // create our Uint8Array key to the blockSize sized
@@ -287,7 +289,14 @@ async function hmac(
     tempUint8Array = concatenateUint8arrays([okey, tempUint8Array]); //o_key_pad ∥ hash(i_key_pad + msg)
     hashed = await window.crypto.subtle.digest("SHA-1", tempUint8Array);
     hashed = new Uint8Array(hashed); // hash(o_key_pad concatenate hash(i_key_pad concatenate msg))
-
+   */
+    
+    //HMAC: simpler, but not instructive 
+    //let hashed2 = await window.crypto.subtle.sign("HMAC",key,encoded);
+    let cryptoKey =  await window.crypto.subtle.importKey("raw", k, {name: "HMAC",hash: {name: "SHA-1"}} , 1, ["sign", "verify"]);
+    hashed = await window.crypto.subtle.sign("HMAC",cryptoKey,msg);
+    hashed = new Uint8Array(hashed);
+    
     //https://datatracker.ietf.org/doc/html/rfc4226#section-5.3
     let offset = hashed[hashed.length - 1] & 0xf; //last 4 bits of hashed
 
@@ -514,15 +523,12 @@ if (typeof GlobalAssociativeArray != "undefined") {
   // Attempt to decrypt the master key
   //go masterKey, err = aesgcm.Open(nil, nonce, keyData, nil)
 
-  let masterKey = window.crypto.subtle
-    .generateKey(
-      {
-        name: "AES-GCM",
-        length: 256
-      },
-      true,
-      ["encrypt", "decrypt"]
-    )
+  //maybe importKey
+  //or deriveKey
+  let masterKey = window.crypto.subtle.importKey("raw", keyData, { name: "AES-GCM" } , 1 , ["encrypt", "decrypt"])
+  //let masterKey = window.crypto.subtle.unwrapKey("raw", keyData, { name: "AES-GCM" } , 1 , ["encrypt", "decrypt"])
+  
+    /*.generateKey(   {    name: "AES-GCM",        length: 256      },      true,      ["encrypt", "decrypt"])*/
     .then(function (myKey) {
       decrypt(nonceByteArray, myKey, keyData);
     });
