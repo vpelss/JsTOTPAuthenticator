@@ -86,6 +86,9 @@
     <div>
   <div id="masterKey"></div>
   </div>
+      <div>
+  <div id="unencrypted"></div>
+  </div>
   
   
 </div_main_page>
@@ -518,7 +521,7 @@ if (typeof GlobalAssociativeArray != "undefined") {
   let r = GlobalAssociativeArray.header.slots[0].r;
   let p = GlobalAssociativeArray.header.slots[0].p;
   let dkLen = 32; //????
-  let password = "Sickow13";
+  let password = "VincePelss";
   password = password.normalize("NFKC");
   let pw = TE.encode(password);
   let openKey;
@@ -529,20 +532,13 @@ if (typeof GlobalAssociativeArray != "undefined") {
   let keyScrypt = scrypt.syncScrypt(pw, salt, n, r, p, dkLen);
   //scryptOutput =  await scrypt.scrypt( pw2 , salt , n , r , p  , dkLen);
 
-  // go	block, err := aes.NewCipher(key)
-  // NewCipher creates and returns a new cipher.Block. The key argument must be the AES key, either 16, 24, or 32 bytes to select AES-128, AES-192, or AES-256.
-
-  // go aesgcm, err := cipher.NewGCM(block)
-
   //go nonce, err := hex.DecodeString(slot.KeyParams.Nonce)
   let nonceString = GlobalAssociativeArray.header.slots[0].key_params.nonce;
-  //let nonceString = GlobalAssociativeArray.header.params.nonce;
   nonceString = nonceString.normalize("NFKC");
   let nonce = Uint8Array.fromHex(nonceString);
 
   // go	tag, err := hex.DecodeString(slot.KeyParams.Tag)
   let tagString = GlobalAssociativeArray.header.slots[0].key_params.tag;
-  //let tagString = GlobalAssociativeArray.header.params.tag;
   let tag = Uint8Array.fromHex(tagString);
 
   //go slotKey, err := hex.DecodeString(slot.Key)
@@ -551,21 +547,46 @@ if (typeof GlobalAssociativeArray != "undefined") {
 
   // go var keyData []byte = append(slotKey, tag...)
   let keyDataString = slotKeyString + tagString;
-  let keyData = Uint8Array.fromHex(keyDataString);
-  //let keyData = concatenateUint8arrays([slotKey, tag]);
+  //let keyData = Uint8Array.fromHex(keyDataString);
+  let keyData = concatenateUint8arrays([slotKey, tag]);
 
   async function decryptDB() {
     // Attempt to decrypt the master key
+    // go	block, err := aes.NewCipher(key)
+    // go aesgcm, err := cipher.NewGCM(block)
     //go masterKey, err = aesgcm.Open(nil, nonce, keyData, nil)
-    let convertedKey = await window.crypto.subtle.importKey(
+    let masterKey = await window.crypto.subtle.importKey(
       "raw",
       keyScrypt,
       { name: "AES-GCM" },
       1,
       ["encrypt", "decrypt"]
     );
-    let dc = await decrypt(nonce, convertedKey, keyData);
+    let dc = await decrypt(nonce, masterKey, keyData);
     let t = 8;
+
+    //go nonce, err := hex.DecodeString(params.Nonce)
+    nonceString = GlobalAssociativeArray.header.params.nonce;
+    nonceString = nonceString.normalize("NFKC");
+    nonce = Uint8Array.fromHex(nonceString);
+
+    //go tag, err := hex.DecodeString(params.Tag)
+    tagString = GlobalAssociativeArray.header.params.tag;
+    tag = Uint8Array.fromHex(tagString);
+
+    //go dbData, err := base64.StdEncoding.DecodeString(db)
+    let db = GlobalAssociativeArray.db;
+    let dbData = Uint8Array.fromBase64(db);
+
+    //go var database []byte = append(dbData, tag...)
+    let database = concatenateUint8arrays([dbData, tag]);
+
+       //go block, err := aes.NewCipher(masterKey)
+    //go aesgcm, err := cipher.NewGCM(block)
+    //content, err := aesgcm.Open(nil, nonce, database, nil)
+    let content = await decrypt(nonce, masterKey, database);
+    let unencrypted = TD.decode(content);
+    let y = 9;
   }
 
   decryptDB();
@@ -587,9 +608,6 @@ if (typeof GlobalAssociativeArray != "undefined") {
     }
     return decrypted;
   }
-
-  //let db = GlobalAssociativeArray.db;
-  //dbByteArray = Uint8Array.fromBase64(db, { lastChunkHandling: "strict" });
 
   let h = 9;
 }
