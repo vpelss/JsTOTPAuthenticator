@@ -290,13 +290,19 @@ async function hmac(
     hashed = await window.crypto.subtle.digest("SHA-1", tempUint8Array);
     hashed = new Uint8Array(hashed); // hash(o_key_pad concatenate hash(i_key_pad concatenate msg))
    */
-    
-    //HMAC: simpler, but not instructive 
+
+    //HMAC: simpler, but not instructive
     //let hashed2 = await window.crypto.subtle.sign("HMAC",key,encoded);
-    let cryptoKey =  await window.crypto.subtle.importKey("raw", k, {name: "HMAC",hash: {name: "SHA-1"}} , 1, ["sign", "verify"]);
-    hashed = await window.crypto.subtle.sign("HMAC",cryptoKey,msg);
+    let cryptoKey = await window.crypto.subtle.importKey(
+      "raw",
+      k,
+      { name: "HMAC", hash: { name: "SHA-1" } },
+      1,
+      ["sign", "verify"]
+    );
+    hashed = await window.crypto.subtle.sign("HMAC", cryptoKey, msg);
     hashed = new Uint8Array(hashed);
-    
+
     //https://datatracker.ietf.org/doc/html/rfc4226#section-5.3
     let offset = hashed[hashed.length - 1] & 0xf; //last 4 bits of hashed
 
@@ -390,18 +396,44 @@ function concatenateUint8arrays(uint8arrays) {
   return result;
 }
 
-function HexStringtoString(hexString) {
+//DELETED
+function _HexStringtoString(hexString) {
   let myUint8Array = Uint8Array.fromHex(hexString);
   let myString = TD.decode(myUint8Array);
   return myString;
 }
 
+//DELETE
 function _stringToBytesArray(val) {
   const result = [];
   for (let i = 0; i < val.length; i++) {
     result.push(val.charCodeAt(i));
   }
+  result = new Uint8Array(result);
   return result;
+}
+
+//DELETE
+// Convert a hex string to Uint8Array
+function _hexToByteArray(hex) {
+  let bytes = [];
+  for (let c = 0; c < hex.length; c += 2)
+    bytes.push(parseInt(hex.substr(c, 2), 16));
+  //modified to return Uint8Array
+  bytes = new Uint8Array(bytes);
+  return bytes;
+}
+
+//DELETE
+// Convert a byte array to a hex string
+function bytesToHex(bytes) {
+  let hex = [];
+  for (let i = 0; i < bytes.length; i++) {
+    let current = bytes[i] < 0 ? bytes[i] + 256 : bytes[i];
+    hex.push((current >>> 4).toString(16));
+    hex.push((current & 0xf).toString(16));
+  }
+  return hex.join("");
 }
 
 async function eachSecond() {
@@ -478,7 +510,6 @@ if (typeof GlobalAssociativeArray != "undefined") {
 
   // go salt, err := hex.DecodeString(slot.Salt)
   let saltString = GlobalAssociativeArray.header.slots[0].salt;
-  //let salt2 = stringToBytesArray(saltString);
   let salt = Uint8Array.fromHex(saltString);
 
   // Create a key using the slot values and provided password
@@ -487,13 +518,15 @@ if (typeof GlobalAssociativeArray != "undefined") {
   let r = GlobalAssociativeArray.header.slots[0].r;
   let p = GlobalAssociativeArray.header.slots[0].p;
   let dkLen = 32; //????
-  let password = "aaa";
+  let password = "Sickow13";
   password = password.normalize("NFKC");
   let pw = TE.encode(password);
-
+let openKey ;
+  
   //from https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js
   //https://github.com/ricmoo/scrypt-js?utm_source=cdnjs&utm_medium=cdnjs_link&utm_campaign=cdnjs_library#readme
-  let key = scrypt.syncScrypt(pw, salt, n, r, p, dkLen);
+  //password based key derivation
+  let keyScrypt = scrypt.syncScrypt(pw, salt, n, r, p, dkLen);
   //scryptOutput =  await scrypt.scrypt( pw2 , salt , n , r , p  , dkLen);
 
   // go	block, err := aes.NewCipher(key)
@@ -503,54 +536,57 @@ if (typeof GlobalAssociativeArray != "undefined") {
 
   //go nonce, err := hex.DecodeString(slot.KeyParams.Nonce)
   let nonceString = GlobalAssociativeArray.header.slots[0].key_params.nonce;
+  //let nonceString = GlobalAssociativeArray.header.params.nonce;
   nonceString = nonceString.normalize("NFKC");
-  let nonceByteArray = Uint8Array.fromHex(nonceString);
+  let nonce = Uint8Array.fromHex(nonceString);
 
   // go	tag, err := hex.DecodeString(slot.KeyParams.Tag)
   let tagString = GlobalAssociativeArray.header.slots[0].key_params.tag;
-  //let tag = stringToBytesArray(tagString);
+  //let tagString = GlobalAssociativeArray.header.params.tag;
   let tag = Uint8Array.fromHex(tagString);
-
+ 
   //go slotKey, err := hex.DecodeString(slot.Key)
-  let slotkeyString = GlobalAssociativeArray.header.slots[0].key;
-  let slotKey = Uint8Array.fromHex(slotkeyString);
-
+  let slotKeyString = GlobalAssociativeArray.header.slots[0].key;
+  let slotKey = Uint8Array.fromHex(slotKeyString);
+  
   // go var keyData []byte = append(slotKey, tag...)
-  let keyDataString = slotkeyString + tagString;
-  let keyData = concatenateUint8arrays([slotKey, tag]);
-  //let keyData = Uint8Array.fromHex(keyDataString);
+  let keyDataString = slotKeyString + tagString;
+  let keyData = Uint8Array.fromHex(keyDataString);
+  //let keyData = concatenateUint8arrays([slotKey, tag]);
 
   // Attempt to decrypt the master key
   //go masterKey, err = aesgcm.Open(nil, nonce, keyData, nil)
-
-  //maybe importKey
-  //or deriveKey
-  let masterKey = window.crypto.subtle.importKey("raw", keyData, { name: "AES-GCM" } , 1 , ["encrypt", "decrypt"])
-  //let masterKey = window.crypto.subtle.unwrapKey("raw", keyData, { name: "AES-GCM" } , 1 , ["encrypt", "decrypt"])
-  
-    /*.generateKey(   {    name: "AES-GCM",        length: 256      },      true,      ["encrypt", "decrypt"])*/
-    .then(function (myKey) {
-      decrypt(nonceByteArray, myKey, keyData);
+async function decryptKey(){
+ 
+ await window.crypto.subtle
+    .importKey("raw", keyScrypt, { name: "AES-GCM" }, 1, ["encrypt", "decrypt"])
+    .then(function (convertedKey) {
+      //iv 12 bytes nonce, myKey 32 byte , keyData is ???
+      let dc = decrypt(nonce, convertedKey, keyData);
+      let t = 8;
     });
+  
+}
+  
+  decryptKey();
 
   async function decrypt(iv, key, ciphertext) {
     let decrypted;
     try {
-      decrypted = await window.crypto.subtle
-        .decrypt(
-          {
-            name: "AES-GCM",
-            iv
-          },
-          key,
-          ciphertext
-        );
-        
+      decrypted = await window.crypto.subtle.decrypt(
+        {
+          name: "AES-GCM",
+          iv
+        },
+        key,
+        ciphertext
+      );
     } catch (error) {
       document.getElementById("error").innerHTML =
         document.getElementById("error").innerHTML + error + DOMException.code;
     }
-    plaintext = decrypted;
+    let plaintext = decrypted;
+    openKey = TD.decode(decrypted);
     return decrypted;
   }
 
