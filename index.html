@@ -521,8 +521,8 @@ if (typeof GlobalAssociativeArray != "undefined") {
   let password = "Sickow13";
   password = password.normalize("NFKC");
   let pw = TE.encode(password);
-let openKey ;
-  
+  let openKey;
+
   //from https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js
   //https://github.com/ricmoo/scrypt-js?utm_source=cdnjs&utm_medium=cdnjs_link&utm_campaign=cdnjs_library#readme
   //password based key derivation
@@ -544,31 +544,31 @@ let openKey ;
   let tagString = GlobalAssociativeArray.header.slots[0].key_params.tag;
   //let tagString = GlobalAssociativeArray.header.params.tag;
   let tag = Uint8Array.fromHex(tagString);
- 
+
   //go slotKey, err := hex.DecodeString(slot.Key)
   let slotKeyString = GlobalAssociativeArray.header.slots[0].key;
   let slotKey = Uint8Array.fromHex(slotKeyString);
-  
+
   // go var keyData []byte = append(slotKey, tag...)
   let keyDataString = slotKeyString + tagString;
   let keyData = Uint8Array.fromHex(keyDataString);
   //let keyData = concatenateUint8arrays([slotKey, tag]);
 
-  // Attempt to decrypt the master key
-  //go masterKey, err = aesgcm.Open(nil, nonce, keyData, nil)
-async function decryptKey(){
- 
- await window.crypto.subtle
-    .importKey("raw", keyScrypt, { name: "AES-GCM" }, 1, ["encrypt", "decrypt"])
-    .then(function (convertedKey) {
-      //iv 12 bytes nonce, myKey 32 byte , keyData is ???
-      let dc = decrypt(nonce, convertedKey, keyData);
-      let t = 8;
-    });
-  
-}
-  
-  decryptKey();
+  async function decryptDB() {
+    // Attempt to decrypt the master key
+    //go masterKey, err = aesgcm.Open(nil, nonce, keyData, nil)
+    let convertedKey = await window.crypto.subtle.importKey(
+      "raw",
+      keyScrypt,
+      { name: "AES-GCM" },
+      1,
+      ["encrypt", "decrypt"]
+    );
+    let dc = await decrypt(nonce, convertedKey, keyData);
+    let t = 8;
+  }
+
+  decryptDB();
 
   async function decrypt(iv, key, ciphertext) {
     let decrypted;
@@ -585,8 +585,6 @@ async function decryptKey(){
       document.getElementById("error").innerHTML =
         document.getElementById("error").innerHTML + error + DOMException.code;
     }
-    let plaintext = decrypted;
-    openKey = TD.decode(decrypted);
     return decrypted;
   }
 
