@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" >
 
@@ -36,7 +37,9 @@
 </head>
 
 <body>
-  <div_header style="display:flex;">
+  <div>Intent is to be able to import encrypted Aegis Authenticator database update it on desktop, encrtypt and send back, etc... TOTP and decryption currently working.</div>
+
+<div_header style="display:flex;">
   <center style="width:100%">
     <span id="menu_icon">
       <a onclick="openMenu()" class="button">&#x2261;</a>
@@ -295,7 +298,6 @@ async function hmac(
    */
 
     //HMAC: simpler, but not instructive
-    //let hashed2 = await window.crypto.subtle.sign("HMAC",key,encoded);
     let cryptoKey = await window.crypto.subtle.importKey(
       "raw",
       k,
@@ -496,16 +498,6 @@ LocalStorageToVar();
 
 //unencrypt AES CGM
 
-// https://stackoverflow.com/questions/68031025/decrypt-aes-in-javascript
-// https://dev.to/shubhamkhan/beginners-guide-to-aes-encryption-and-decryption-in-javascript-using-cryptojs-592
-//https://en.wikipedia.org/wiki/Initialization_vector
-//https://www.reddit.com/r/learnjavascript/comments/1254hjd/cryptography_given_i_have_a_key_how_can_i_use/
-
-// https://github.com/beemdevelopment/Aegis/blob/master/app/src/main/java/com/beemdevelopment/aegis/crypto/bc/SCrypt.java
-//https://github.com/tonyg/js-scrypt
-//https://github.com/ricmoo/scrypt-js?utm_source=cdnjs&utm_medium=cdnjs_link&utm_campaign=cdnjs_library#readme
-//https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js
-
 if (typeof GlobalAssociativeArray != "undefined") {
   // based on https://github.com/Sammy-T/avdu/blob/master/vault/decrypt.go
   // FindMasterKey uses the password to decrypt the master key
@@ -526,9 +518,9 @@ if (typeof GlobalAssociativeArray != "undefined") {
   let pw = TE.encode(password);
   let openKey;
 
+  //password based key derivation
   //from https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js
   //https://github.com/ricmoo/scrypt-js?utm_source=cdnjs&utm_medium=cdnjs_link&utm_campaign=cdnjs_library#readme
-  //password based key derivation
   let keyScrypt = scrypt.syncScrypt(pw, salt, n, r, p, dkLen);
   //scryptOutput =  await scrypt.scrypt( pw2 , salt , n , r , p  , dkLen);
 
@@ -555,15 +547,14 @@ if (typeof GlobalAssociativeArray != "undefined") {
     // go	block, err := aes.NewCipher(key)
     // go aesgcm, err := cipher.NewGCM(block)
     //go masterKey, err = aesgcm.Open(nil, nonce, keyData, nil)
-    let masterKey = await window.crypto.subtle.importKey(
+    let keyScryptFormated = await window.crypto.subtle.importKey(
       "raw",
       keyScrypt,
       { name: "AES-GCM" },
       1,
       ["encrypt", "decrypt"]
     );
-    let dc = await decrypt(nonce, masterKey, keyData);
-    let t = 8;
+    let masterKey = await decrypt(nonce, keyScryptFormated, keyData);
 
     //go nonce, err := hex.DecodeString(params.Nonce)
     nonceString = GlobalAssociativeArray.header.params.nonce;
@@ -581,12 +572,19 @@ if (typeof GlobalAssociativeArray != "undefined") {
     //go var database []byte = append(dbData, tag...)
     let database = concatenateUint8arrays([dbData, tag]);
 
-       //go block, err := aes.NewCipher(masterKey)
+    //go block, err := aes.NewCipher(masterKey)
     //go aesgcm, err := cipher.NewGCM(block)
     //content, err := aesgcm.Open(nil, nonce, database, nil)
-    let content = await decrypt(nonce, masterKey, database);
+    let keyMasterKey = await window.crypto.subtle.importKey(
+      "raw",
+      masterKey,
+      { name: "AES-GCM" },
+      1,
+      ["encrypt", "decrypt"]
+    );
+    let content = await decrypt(nonce, keyMasterKey, database);
     let unencrypted = TD.decode(content);
-    let y = 9;
+    document.getElementById("unencrypted").innerHTML = unencrypted;
   }
 
   decryptDB();
@@ -595,10 +593,7 @@ if (typeof GlobalAssociativeArray != "undefined") {
     let decrypted;
     try {
       decrypted = await window.crypto.subtle.decrypt(
-        {
-          name: "AES-GCM",
-          iv
-        },
+        { name: "AES-GCM", iv },
         key,
         ciphertext
       );
@@ -608,9 +603,24 @@ if (typeof GlobalAssociativeArray != "undefined") {
     }
     return decrypted;
   }
-
-  let h = 9;
 }
+
+// entries is an array of
+let me = {
+  type: "totp",
+  uuid: "8ebf3a2c-687b-4c88-9fe1-3a8a6ca3d59e",
+  name: "8xc",
+  issuer: "",
+  note: "",
+  favorite: false,
+  icon: null,
+  info: {
+    secret: "CCCCCCCC",
+    algo: "SHA1",
+    digits: 6,
+    period: 30
+  }
+};
   </script>
 
   
