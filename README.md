@@ -1,10 +1,14 @@
 # JsTOTPAuthenticator
 
+So I realize there are already a bus load off web based TOTP Authenticators. But none that can import the json database used by Aegis. That is why I created this, There is a desktop app AVDA, but I wanted an OS agnostic version.
+
 Run at: 
 
 - https://vpelss.github.io/JsTOTPAuthenticator/ 
 
 - https://codepen.io/vpelss/pen/EayojzL
+
+# TOTP part
 
 I tried to follow the RFCs:
 
@@ -32,4 +36,7 @@ Notes:
 
 - For Uint8Array concatination I used https://evanhahn.com/the-best-way-to-concatenate-uint8arrays/
 
-- after writing all my code based on rfc6238 I found out (during my unencryption pase) that modern broweses have window.crypto.subtle.sign("HMAC", cryptoKey, msg) , so now many lines of hand written code can be replaced in 3 lines. Ha on me!
+- after writing all my code based on rfc6238 I found out (during my unencryption pase) that modern broweses have window.crypto.subtle.sign("HMAC", cryptoKey, msg) , so now many lines of hand written code can be replaced in 3 lines. Ha on me! Well at least I learned a few things.
+
+# Unencrypting and Encrypting the Aegis json database
+
