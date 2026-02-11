@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" >
 
@@ -150,13 +149,19 @@
   <script src='https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js'></script>
     <script id="rendered-js" >
 // the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
+
+// no global db??
+
+//always encrypt. However the passwork might just be no text...
+
 "use strict";
 let localStorageName = "JsTOTPAuthenticator";
 let GlobalAssociativeArray = {};
 let plaintext;
+let entries = [];
 
 const TE = new TextEncoder();
-let TD = new TextDecoder();
+const TD = new TextDecoder();
 
 function openMenu() {
   document.getElementById("main_page_component").style.display = "none";
@@ -340,7 +345,7 @@ async function hmac(
 }
 
 //not required
-function encodeBase32(data) {
+function _encodeBase32(data) {
   const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
   let binaryString = "";
   for (let i = 0; i < data.length; i++) {
@@ -401,46 +406,6 @@ function concatenateUint8arrays(uint8arrays) {
   return result;
 }
 
-//DELETED
-function _HexStringtoString(hexString) {
-  let myUint8Array = Uint8Array.fromHex(hexString);
-  let myString = TD.decode(myUint8Array);
-  return myString;
-}
-
-//DELETE
-function _stringToBytesArray(val) {
-  const result = [];
-  for (let i = 0; i < val.length; i++) {
-    result.push(val.charCodeAt(i));
-  }
-  result = new Uint8Array(result);
-  return result;
-}
-
-//DELETE
-// Convert a hex string to Uint8Array
-function _hexToByteArray(hex) {
-  let bytes = [];
-  for (let c = 0; c < hex.length; c += 2)
-    bytes.push(parseInt(hex.substr(c, 2), 16));
-  //modified to return Uint8Array
-  bytes = new Uint8Array(bytes);
-  return bytes;
-}
-
-//DELETE
-// Convert a byte array to a hex string
-function bytesToHex(bytes) {
-  let hex = [];
-  for (let i = 0; i < bytes.length; i++) {
-    let current = bytes[i] < 0 ? bytes[i] + 256 : bytes[i];
-    hex.push((current >>> 4).toString(16));
-    hex.push((current & 0xf).toString(16));
-  }
-  return hex.join("");
-}
-
 async function eachSecond() {
   let unixTime = Date.now() / 1000; //in seconds
   let stepNow = unixTime / 30;
@@ -489,16 +454,29 @@ async function eachSecond() {
 
 // MAIN //
 
-//test value
-document.getElementById("seed").value = "CCCCCCCC";
-//start counter
-let myInterval = setInterval(eachSecond, 1000);
 //load database
 LocalStorageToVar();
 
-//unencrypt AES CGM
+//if GlobalAssociativeArray, then
+// entries = unencryptDB()
+// myInterval = setInterval(eachSecond, 1000);
 
+//unencrypt Aegis JSON DB : AES CGM
+async function isGlobalAssociativeArray(){
 if (typeof GlobalAssociativeArray != "undefined") {
+  let entriesJSON = await unencryptDB("VincePelss");
+  entries = JSON.parse(entriesJSON);
+} else {
+  // no stored json create a db
+}
+}
+isGlobalAssociativeArray();
+
+async function unencryptDB(password) {
+  password = "VincePelss";
+  password = password.normalize("NFKC");
+  let pw = TE.encode(password);
+
   // based on https://github.com/Sammy-T/avdu/blob/master/vault/decrypt.go
   // FindMasterKey uses the password to decrypt the master key
   // from the vault and returns the master key's bytes.
@@ -512,17 +490,13 @@ if (typeof GlobalAssociativeArray != "undefined") {
   let n = GlobalAssociativeArray.header.slots[0].n;
   let r = GlobalAssociativeArray.header.slots[0].r;
   let p = GlobalAssociativeArray.header.slots[0].p;
-  let dkLen = 32; //????
-  let password = "VincePelss";
-  password = password.normalize("NFKC");
-  let pw = TE.encode(password);
-  let openKey;
+  let dkLen = 32;
 
-  //password based key derivation
+  // scrypt is password based key derivation
   //from https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js
   //https://github.com/ricmoo/scrypt-js?utm_source=cdnjs&utm_medium=cdnjs_link&utm_campaign=cdnjs_library#readme
-  let keyScrypt = scrypt.syncScrypt(pw, salt, n, r, p, dkLen);
-  //scryptOutput =  await scrypt.scrypt( pw2 , salt , n , r , p  , dkLen);
+  //let keyScrypt = scrypt.syncScrypt(pw, salt, n, r, p, dkLen); //syncronous
+  let keyScrypt = await scrypt.scrypt(pw, salt, n, r, p, dkLen); //asyncronous
 
   //go nonce, err := hex.DecodeString(slot.KeyParams.Nonce)
   let nonceString = GlobalAssociativeArray.header.slots[0].key_params.nonce;
@@ -533,77 +507,83 @@ if (typeof GlobalAssociativeArray != "undefined") {
   let tagString = GlobalAssociativeArray.header.slots[0].key_params.tag;
   let tag = Uint8Array.fromHex(tagString);
 
-  //go slotKey, err := hex.DecodeString(slot.Key)
+  // go slotKey, err := hex.DecodeString(slot.Key)
   let slotKeyString = GlobalAssociativeArray.header.slots[0].key;
   let slotKey = Uint8Array.fromHex(slotKeyString);
 
   // go var keyData []byte = append(slotKey, tag...)
-  let keyDataString = slotKeyString + tagString;
-  //let keyData = Uint8Array.fromHex(keyDataString);
   let keyData = concatenateUint8arrays([slotKey, tag]);
 
-  async function decryptDB() {
-    // Attempt to decrypt the master key
-    // go	block, err := aes.NewCipher(key)
-    // go aesgcm, err := cipher.NewGCM(block)
-    //go masterKey, err = aesgcm.Open(nil, nonce, keyData, nil)
-    let keyScryptFormated = await window.crypto.subtle.importKey(
-      "raw",
-      keyScrypt,
-      { name: "AES-GCM" },
-      1,
-      ["encrypt", "decrypt"]
-    );
-    let masterKey = await decrypt(nonce, keyScryptFormated, keyData);
+  // Attempt to decrypt the master key
+  // go	block, err := aes.NewCipher(key)
+  // go aesgcm, err := cipher.NewGCM(block)
+  //go masterKey, err = aesgcm.Open(nil, nonce, keyData, nil)
+  
+  //let masterKey = await decrypt(nonce, keyScryptFormated, keyData);
+  let masterKey = await decrypt(nonce, keyScrypt, keyData);
 
-    //go nonce, err := hex.DecodeString(params.Nonce)
-    nonceString = GlobalAssociativeArray.header.params.nonce;
-    nonceString = nonceString.normalize("NFKC");
-    nonce = Uint8Array.fromHex(nonceString);
+  // go nonce, err := hex.DecodeString(params.Nonce)
+  nonceString = GlobalAssociativeArray.header.params.nonce;
+  nonceString = nonceString.normalize("NFKC");
+  nonce = Uint8Array.fromHex(nonceString);
 
-    //go tag, err := hex.DecodeString(params.Tag)
-    tagString = GlobalAssociativeArray.header.params.tag;
-    tag = Uint8Array.fromHex(tagString);
+  // go tag, err := hex.DecodeString(params.Tag)
+  tagString = GlobalAssociativeArray.header.params.tag;
+  tag = Uint8Array.fromHex(tagString);
 
-    //go dbData, err := base64.StdEncoding.DecodeString(db)
-    let db = GlobalAssociativeArray.db;
-    let dbData = Uint8Array.fromBase64(db);
+  //go dbData, err := base64.StdEncoding.DecodeString(db)
+  let db = GlobalAssociativeArray.db;
+  let dbData = Uint8Array.fromBase64(db);
 
-    //go var database []byte = append(dbData, tag...)
-    let database = concatenateUint8arrays([dbData, tag]);
+  //go var database []byte = append(dbData, tag...)
+  let database = concatenateUint8arrays([dbData, tag]);
 
-    //go block, err := aes.NewCipher(masterKey)
-    //go aesgcm, err := cipher.NewGCM(block)
-    //content, err := aesgcm.Open(nil, nonce, database, nil)
-    let keyMasterKey = await window.crypto.subtle.importKey(
-      "raw",
-      masterKey,
-      { name: "AES-GCM" },
-      1,
-      ["encrypt", "decrypt"]
-    );
-    let content = await decrypt(nonce, keyMasterKey, database);
-    let unencrypted = TD.decode(content);
-    document.getElementById("unencrypted").innerHTML = unencrypted;
-  }
+  // go block, err := aes.NewCipher(masterKey)
+  // go aesgcm, err := cipher.NewGCM(block)
+  // go content, err := aesgcm.Open(nil, nonce, database, nil)
+  /*let keyMasterKey = await window.crypto.subtle.importKey(
+    "raw",
+    masterKey,
+    { name: "AES-GCM" },
+    1,
+    ["encrypt", "decrypt"]
+  );*/
+  //let content = await decrypt(nonce, keyMasterKey, database);
+ let content = await decrypt(nonce, masterKey, database);
 
-  decryptDB();
+  let unencrypted = TD.decode(content);
 
-  async function decrypt(iv, key, ciphertext) {
-    let decrypted;
-    try {
-      decrypted = await window.crypto.subtle.decrypt(
-        { name: "AES-GCM", iv },
-        key,
-        ciphertext
-      );
-    } catch (error) {
-      document.getElementById("error").innerHTML =
-        document.getElementById("error").innerHTML + error + DOMException.code;
-    }
-    return decrypted;
-  }
+  document.getElementById("unencrypted").innerHTML = unencrypted;
+  return unencrypted;
 }
+
+async function decrypt(iv, key, ciphertext) {
+  let decrypted;
+  try {
+    let block = await window.crypto.subtle.importKey(
+    "raw",
+    key,
+    { name: "AES-GCM" },
+    1,
+    ["encrypt", "decrypt"]
+  );
+    
+    decrypted = await window.crypto.subtle.decrypt(
+      { name: "AES-GCM", iv },
+      block,
+      ciphertext
+    );
+  } catch (error) {
+    document.getElementById("error").innerHTML =
+      document.getElementById("error").innerHTML + error + DOMException.code;
+  }
+  return decrypted;
+}
+
+//test value
+document.getElementById("seed").value = "CCCCCCCC";
+//start counter
+let myInterval = setInterval(eachSecond, 1000);
 
 // entries is an array of
 let me = {
