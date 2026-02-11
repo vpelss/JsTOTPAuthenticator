@@ -31,3 +31,5 @@ Notes:
 - I am using window.crypto.subtle.digest for my SHA1 code as most older browsers will likely be dead or dying
 
 - For Uint8Array concatination I used https://evanhahn.com/the-best-way-to-concatenate-uint8arrays/
+
+- after writing all my code based on rfc6238 I found out (during my unencryption pase) that modern broweses have window.crypto.subtle.sign("HMAC", cryptoKey, msg) , so now many lines of hand written code can be replaced in 3 lines. Ha on me!
