@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" >
 
@@ -17,16 +18,41 @@
   <link rel='stylesheet' href='https://cdn.simplecss.org/simple.css'>
   
 <style>
+#header {
+position:sticky;
+top:0 ;
+  display:flex;
+  background-color : white;
+  
+}
+
 #theBar {
-  _border: solid;
-  _border-width: 1pt;
-  height: 1pt;
+  border: solid;
+  border-width: 1pt;
+  height: 3pt;
   background-color: red;
 }
 
-.border {
+.myTemplate{
+  display: table; 
+  width: 100%;
+  _display: flex;
   border: solid;
   border-width: 1pt;
+  margin: 5pt;
+  padding: 5pt;
+}
+
+.leftTemplate{
+  display: table-cell;  
+}
+
+.rightTemplate{
+  display: table-cell;
+    _border: solid;
+  _float: right;
+  _margin-left: auto;
+  text-align: right;
 }
 </style>
 
@@ -36,9 +62,9 @@
 </head>
 
 <body>
-  <div>Intent is to be able to import encrypted Aegis Authenticator database update it on desktop, encrtypt and send back, etc... TOTP and decryption currently working.</div>
-
-<div_header style="display:flex;">
+  <div>The intent is to be able to use your encrypted Aegis Authenticator database on any platform.</div>
+<p></p>
+<div id="header">
   <center style="width:100%">
     <span id="menu_icon">
       <a onclick="openMenu()" class="button">&#x2261;</a>
@@ -52,14 +78,41 @@
     </span>
     <hr>
   </center>
-</div_header>
+</div>
 
 <br>&nbsp;
 
 <div_main_page id="main_page_component">
 
-  <label for="seed">Seed</label><input type="text" id="seed" name="seed" placeholder="Seed in Base32" oninput="eachSecond();">
+  <ttemplate id="theTemplate">
+    <div id="${templateId}" class="myTemplate">
+      <div class="leftTemplate">
+        <div id="${templateName}">Name</div>
+        <div id="$templateCode">123456</div>
+      </div>
+      <div class="rightTemplate">
+        <a href="#" id="${templateCopyLink}">
+          Copy Link
+        </a>
+      </div>
+    </div>
+  </ttemplate>
 
+  <br>
+
+  <div>
+    <div id="theBar"></div>
+    <span>Countdown: </span>
+    <span id="countdown"></span>
+  </div>
+
+  <br>
+  
+  <div id="entries">
+   <div>ghfhgf</div>
+  </div>
+
+  <label for="seed">Seed</label><input type="text" id="seed" name="seed" placeholder="Seed in Base32" oninput="eachSecond();">
   <div>
     <span>Step Hexed: </span>
     <span id="step"></span>
@@ -72,27 +125,13 @@
     <span>TOTP:</span>
     <span id="totp"></span>
   </div>
-  <div class="border">
-    <div id="theBar"></div>
+  <div>
+    <div id="error"></div>
   </div>
   <div>
-    <span>Countdown: </span>
-    <span id="countdown"></span>
+    <div id="unencrypted"></div>
   </div>
-  <div>
-  <div id="error"></div>
-  </div>
-  <div>
-  <div id="db"></div>
-  </div>
-    <div>
-  <div id="masterKey"></div>
-  </div>
-      <div>
-  <div id="unencrypted"></div>
-  </div>
-  
-  
+
 </div_main_page>
 
 <div_menu_page id="menu_page_component" hidden>
@@ -156,7 +195,8 @@
 
 "use strict";
 let localStorageName = "JsTOTPAuthenticator";
-let GlobalAssociativeArray = {};
+//let localStorageJSON = {};
+let localStorageJSON = {};
 let plaintext;
 let entries = [];
 
@@ -178,16 +218,16 @@ function closeMenu() {
 }
 
 function GetAliasList() {
-  LocalStorageToVar();
+localStorageJSON =  GetLocalStorage();
   document.getElementById("JSONSave").value = JSON.stringify(
-    GlobalAssociativeArray,
+    localStorageJSON,
     null,
     "\t"
   );
 }
 
 function VarToLocalStorage() {
-  let AliasListString = JSON.stringify(GlobalAssociativeArray);
+  let AliasListString = JSON.stringify(localStorageJSON);
   if (supports_html5_storage()) {
     localStorage[localStorageName] = AliasListString;
     //setCookie("AliasList", "", yesterday, "", "", ""); //erase cookie as we want to use local storage now.
@@ -197,23 +237,21 @@ function VarToLocalStorage() {
   }
 }
 
-function LocalStorageToVar() {
+function GetLocalStorage() {
   if (supports_html5_storage()) {
     if (typeof localStorage[localStorageName] === "undefined") {
       return;
     } //nothing to restore
-    GlobalAssociativeArray = JSON.parse(localStorage[localStorageName]);
-  } else {
-    let data = getCookie("AliasList") || "{}";
-    GlobalAssociativeArray = JSON.parse(data);
-  }
+    //localStorageJSON = JSON.parse(localStorage[localStorageName]);
+    return JSON.parse(localStorage[localStorageName]);
+  } 
 }
 
 function SaveAliasList() {
   if (document.getElementById("JSONSave").value == "") {
-    GlobalAssociativeArray = {};
+    localStorageJSON= {};
   } else {
-    GlobalAssociativeArray = JSON.parse(
+    localStorageJSON= JSON.parse(
       document.getElementById("JSONSave").value
     );
   }
@@ -231,8 +269,8 @@ function supports_html5_storage() {
 }
 
 function ExportAll() {
-  LocalStorageToVar();
-  copytoclipboard2(JSON.stringify(GlobalAssociativeArray));
+  localStorageJSON = GetLocalStorage();
+  copytoclipboard2(JSON.stringify(localStorageJSON));
   alert("All your Alias, settings, and comments are on the clipboard!");
 }
 
@@ -334,9 +372,7 @@ async function hmac(
       totp = "0" + totp;
     }
     document.getElementById("error").innerHTML = ""; //clear error on success
-    document.getElementById("step").innerHTML = stepHexString16Bytes;
-    document.getElementById("key").innerHTML = keyHexString;
-    document.getElementById("totp").innerHTML = totp;
+    return totp;
   } catch (error) {
     document.getElementById("error").innerHTML =
       document.getElementById("error").innerHTML + error;
@@ -406,6 +442,17 @@ function concatenateUint8arrays(uint8arrays) {
   return result;
 }
 
+function template( templateid, data ){
+    return document.getElementById( templateid ).innerHTML
+      .replace(
+        ///%(\w*)%/g, // or /{(\w*)}/g for "{this} instead of %this%"
+     /\${(\w*)}/g, // or  for "{this} instead of %this%"
+        function( m, key ){
+          return data.hasOwnProperty( key ) ? data[ key ] : "";
+        }
+      );
+}
+
 async function eachSecond() {
   let unixTime = Date.now() / 1000; //in seconds
   let stepNow = unixTime / 30;
@@ -414,7 +461,8 @@ async function eachSecond() {
   //step MUST be in string HEX
   let step = stepInt.toString(16);
   //show countdown
-  var elem = document.getElementById("theBar");
+  var elem = document.querySelector("#theBar");
+  //var elem = document.getElementById("theBar");
   let barWidth = Math.floor((100 * timeLeft) / 30);
   elem.style.width = barWidth + "%";
   document.getElementById("countdown").innerHTML = timeLeft;
@@ -442,35 +490,46 @@ async function eachSecond() {
   let crypto = "sha1";
 
   try {
-    hmac(seed, step, returnDigits, crypto);
+    let totp = await hmac(seed, step, returnDigits, crypto);
+
+    // https://stackoverflow.com/questions/377961/efficient-javascript-string-replacement
+    //https://stackoverflow.com/questions/68970312/how-do-i-resolve-a-javascript-template-literal-variable-within-a-string-within-a  
+    let modifiedTemplate = template("theTemplate",{templateId:"ooooooooo",word:"MYWORD"});
+
+    const toAppend = document.createElement("div");
+    toAppend.innerHTML = modifiedTemplate;
+    let entries = document.querySelector("#entries");
+    entries.append(ttoAppend);
+    
+    document.getElementById("step").innerHTML = step; //stepHexString16Bytes;
+    document.getElementById("key").innerHTML = seed; //keyHexString;
+    document.getElementById("totp").innerHTML = totp;
   } catch (error) {
     document.getElementById("error").innerHTML =
       document.getElementById("error").innerHTML + error;
     document.getElementById("totp").innerHTML = "";
   }
 
-  document.getElementById("db").innerHTML = plaintext;
+  //document.getElementById("db").innerHTML = plaintext;
 }
 
 // MAIN //
 
 //load database
-LocalStorageToVar();
+localStorageJSON = GetLocalStorage();
 
-//if GlobalAssociativeArray, then
-// entries = unencryptDB()
-// myInterval = setInterval(eachSecond, 1000);
+islocalStorageJSON();
 
 //unencrypt Aegis JSON DB : AES CGM
-async function isGlobalAssociativeArray(){
-if (typeof GlobalAssociativeArray != "undefined") {
-  let entriesJSON = await unencryptDB("VincePelss");
-  entries = JSON.parse(entriesJSON);
-} else {
-  // no stored json create a db
+async function islocalStorageJSON() {
+  if (typeof localStorageJSON!= "undefined") {
+    let entriesJSON = await unencryptDB("VincePelss");
+    entries = JSON.parse(entriesJSON);
+  } else {
+    // no stored json create a db
+    //create a blank one and encrypt?
+  }
 }
-}
-isGlobalAssociativeArray();
 
 async function unencryptDB(password) {
   password = "VincePelss";
@@ -482,14 +541,14 @@ async function unencryptDB(password) {
   // from the vault and returns the master key's bytes.
 
   // go salt, err := hex.DecodeString(slot.Salt)
-  let saltString = GlobalAssociativeArray.header.slots[0].salt;
+  let saltString = localStorageJSON.header.slots[0].salt;
   let salt = Uint8Array.fromHex(saltString);
 
   // Create a key using the slot values and provided password
   // go key, err = scrypt.Key([]byte(pwd), salt, slot.N, slot.R, slot.P, 32)
-  let n = GlobalAssociativeArray.header.slots[0].n;
-  let r = GlobalAssociativeArray.header.slots[0].r;
-  let p = GlobalAssociativeArray.header.slots[0].p;
+  let n = localStorageJSON.header.slots[0].n;
+  let r = localStorageJSON.header.slots[0].r;
+  let p = localStorageJSON.header.slots[0].p;
   let dkLen = 32;
 
   // scrypt is password based key derivation
@@ -499,16 +558,16 @@ async function unencryptDB(password) {
   let keyScrypt = await scrypt.scrypt(pw, salt, n, r, p, dkLen); //asyncronous
 
   //go nonce, err := hex.DecodeString(slot.KeyParams.Nonce)
-  let nonceString = GlobalAssociativeArray.header.slots[0].key_params.nonce;
+  let nonceString = localStorageJSON.header.slots[0].key_params.nonce;
   nonceString = nonceString.normalize("NFKC");
   let nonce = Uint8Array.fromHex(nonceString);
 
   // go	tag, err := hex.DecodeString(slot.KeyParams.Tag)
-  let tagString = GlobalAssociativeArray.header.slots[0].key_params.tag;
+  let tagString = localStorageJSON.header.slots[0].key_params.tag;
   let tag = Uint8Array.fromHex(tagString);
 
   // go slotKey, err := hex.DecodeString(slot.Key)
-  let slotKeyString = GlobalAssociativeArray.header.slots[0].key;
+  let slotKeyString = localStorageJSON.header.slots[0].key;
   let slotKey = Uint8Array.fromHex(slotKeyString);
 
   // go var keyData []byte = append(slotKey, tag...)
@@ -518,21 +577,19 @@ async function unencryptDB(password) {
   // go	block, err := aes.NewCipher(key)
   // go aesgcm, err := cipher.NewGCM(block)
   //go masterKey, err = aesgcm.Open(nil, nonce, keyData, nil)
-  
-  //let masterKey = await decrypt(nonce, keyScryptFormated, keyData);
   let masterKey = await decrypt(nonce, keyScrypt, keyData);
 
   // go nonce, err := hex.DecodeString(params.Nonce)
-  nonceString = GlobalAssociativeArray.header.params.nonce;
+  nonceString = localStorageJSON.header.params.nonce;
   nonceString = nonceString.normalize("NFKC");
   nonce = Uint8Array.fromHex(nonceString);
 
   // go tag, err := hex.DecodeString(params.Tag)
-  tagString = GlobalAssociativeArray.header.params.tag;
+  tagString = localStorageJSON.header.params.tag;
   tag = Uint8Array.fromHex(tagString);
 
   //go dbData, err := base64.StdEncoding.DecodeString(db)
-  let db = GlobalAssociativeArray.db;
+  let db = localStorageJSON.db;
   let dbData = Uint8Array.fromBase64(db);
 
   //go var database []byte = append(dbData, tag...)
@@ -541,15 +598,7 @@ async function unencryptDB(password) {
   // go block, err := aes.NewCipher(masterKey)
   // go aesgcm, err := cipher.NewGCM(block)
   // go content, err := aesgcm.Open(nil, nonce, database, nil)
-  /*let keyMasterKey = await window.crypto.subtle.importKey(
-    "raw",
-    masterKey,
-    { name: "AES-GCM" },
-    1,
-    ["encrypt", "decrypt"]
-  );*/
-  //let content = await decrypt(nonce, keyMasterKey, database);
- let content = await decrypt(nonce, masterKey, database);
+  let content = await decrypt(nonce, masterKey, database);
 
   let unencrypted = TD.decode(content);
 
@@ -561,13 +610,12 @@ async function decrypt(iv, key, ciphertext) {
   let decrypted;
   try {
     let block = await window.crypto.subtle.importKey(
-    "raw",
-    key,
-    { name: "AES-GCM" },
-    1,
-    ["encrypt", "decrypt"]
-  );
-    
+      "raw",
+      key,
+      { name: "AES-GCM" },
+      1,
+      ["encrypt", "decrypt"]
+    );
     decrypted = await window.crypto.subtle.decrypt(
       { name: "AES-GCM", iv },
       block,
@@ -584,6 +632,8 @@ async function decrypt(iv, key, ciphertext) {
 document.getElementById("seed").value = "CCCCCCCC";
 //start counter
 let myInterval = setInterval(eachSecond, 1000);
+
+let myTemplate = "";
 
 // entries is an array of
 let me = {
