@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" >
 
@@ -22,12 +23,6 @@
   top: 0;
   background-color: white;
   width: 100%;
-}
-
-#countdown {
-}
-
-#main_page_component {
 }
 
 #theBar {
@@ -75,13 +70,15 @@
       JsTOTPAuthenticator
     </span>
   </center>
-  <div>
-    <div id="theBar">
-    </div>
-    <div id=""><span>Countdown: </span>
+  
+  <div style="display: inline;">
+    <span id="theBar">
+    </span>
+    <span><span>Countdown: </span>
       <span id="countdown"></span>
-    </div>
+    </span>
   </div>
+  
 </div>
 
 <div_main_page id="main_page_component">
@@ -177,10 +174,8 @@ const TD = new TextDecoder();
 
 // Start MAIN loop //
 
-
 localStorageJSON = GetLocalStorage(); //load database
 GetEntries();
-BuildEntriesDOM();
 let myInterval = setInterval(eachSecond, 1000); //start counter
 
 async function eachSecond() {
@@ -394,6 +389,7 @@ async function GetEntries() { //unencrypt Aegis JSON DB : AES CGM
   dbGlobal = JSON.parse(entriesJSON);
   entriesGlobal = dbGlobal.entries;
   entriesJSON = ""; //data no longer needed
+  BuildEntriesDOM(); //this has to be here as we need to wait for the promise
 }
 
 async function unencryptDB(password) {
@@ -607,3 +603,4 @@ function template(templateid, data) {
 </body>
 
 </html>
+
