@@ -17,17 +17,24 @@
   <link rel='stylesheet' href='https://cdn.simplecss.org/simple.css'>
   
 <style>
+body {
+  margin: 2px;
+}
+
 #header {
   position: sticky;
   top: 0;
   background-color: white;
   width: 100%;
 }
+.codeClass {
+  font-size: 2rem;
+}
 
 #theBar {
   border: solid;
-  border-width: 1pt;
-  height: 3pt;
+  border-width: 1px;
+  height: 3px;
   background-color: red;
 }
 
@@ -35,9 +42,9 @@
   display: table;
   width: 100%;
   border: solid;
-  border-width: 1pt;
-  margin: 5pt;
-  padding: 5pt;
+  border-width: 1px;
+  margin: 5px;
+  padding: 5px;
 }
 
 .leftTemplate {
@@ -48,6 +55,11 @@
   display: table-cell;
   text-align: right;
 }
+
+#error {
+  white-space: pre-wrap;
+  display: block;
+  }
 </style>
 
   
@@ -70,9 +82,9 @@
     </span>
   </center>
   
-  <div style="display: inline;">
-    <span id="theBar">
-    </span>
+  <div style="display: iiiinline;">
+    <div id="theBar">
+    </div>
     <span><span>Countdown: </span>
       <span id="countdown"></span>
     </span>
@@ -86,7 +98,7 @@
     <div id="${entryId}" class="myTemplate">
       <div class="leftTemplate">
         <div id="${entryName}">Loading Database</div>
-        <div id="${entryCode}">Loading Database</div>
+        <div id="${entryCode}" class="codeClass">Loading Database</div>
       </div>
       <div class="rightTemplate">
         <a href="#" id="${entryCopyLink}">
@@ -154,7 +166,8 @@
 
 </div_menu_page>
 
-
+<p></p>
+ccc
  <div id="error"></div>
   <script src='https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js'></script>
     <script id="rendered-js" >
@@ -164,7 +177,7 @@
 
 //always encrypt. However the passwork might just be no text...
 
-//add try{} catch(error){  postError(error); }
+//add try{} catch(err){  postError(err); }
 
 "use strict";
 
@@ -173,6 +186,7 @@ let localStorageJSON = {};
 let plaintext;
 let dbGlobal = {};
 let entriesGlobal = [];
+let errorArray = [];
 const TE = new TextEncoder();
 const TD = new TextDecoder();
 
@@ -215,8 +229,8 @@ async function eachSecond() {
       let totp;
       try {
         totp = await hmac(seed, step, digits, algo);
-      } catch (error) {
-        postError(error);
+      } catch (err) {
+        postError(err);
       }
 
       document.getElementById("entryName" + entriesCount).innerHTML = name;
@@ -228,8 +242,8 @@ async function eachSecond() {
       };
       entriesCount += 1;
     }
-  } catch (error) {
-    postError(error);
+  } catch (err) {
+    postError(err);
   }
 }
 
@@ -241,8 +255,8 @@ function openMenu() {
     document.getElementById("menu_page_component").style.display = "block";
     document.getElementById("menu_icon").style.display = "none";
     document.getElementById("x_icon").style.display = "inline";
-  } catch (error) {
-    postError(error);
+  } catch (err) {
+    postError(err);
   }
 }
 
@@ -252,8 +266,8 @@ function closeMenu() {
     document.getElementById("menu_page_component").style.display = "none";
     document.getElementById("menu_icon").style.display = "inline";
     document.getElementById("x_icon").style.display = "none";
-  } catch (error) {
-    postError(error);
+  } catch (err) {
+    postError(err);
   }
 }
 
@@ -265,8 +279,8 @@ function GetAegisJsonFromTextbox() {
       null,
       "\t"
     );
-  } catch (error) {
-    postError(error);
+  } catch (err) {
+    postError(err);
   }
 }
 
@@ -274,13 +288,16 @@ function SetAegisJsonFromTextbox() {
   try {
     if (document.getElementById("JSONSave").value == "") {
       localStorageJSON = {};
+      return;
     } else {
       localStorageJSON = JSON.parse(document.getElementById("JSONSave").value);
     }
     SetLocalStorage(localStorageJSON);
     GetEntries(); //clear and rebuild
-  } catch (error) {
-    postError(error);
+    document.getElementById("JSONSave").value =
+      "*** Encrypted Aegis database imported ***"; //clear it
+  } catch (err) {
+    postError(err);
   }
 }
 
@@ -288,8 +305,8 @@ function ExportAll() {
   try {
     localStorageJSON = GetLocalStorage();
     copytoclipboard2(JSON.stringify(localStorageJSON));
-  } catch (error) {
-    postError(error);
+  } catch (err) {
+    postError(err);
   }
 }
 
@@ -383,8 +400,8 @@ async function hmac(
       totp = "0" + totp;
     }
     return totp;
-  } catch (error) {
-    postError(error);
+  } catch (err) {
+    postError(err);
   }
 }
 
@@ -396,22 +413,26 @@ async function GetEntries() {
     if (JSON.stringify(localStorageJSON) == "{}") {
       //empty db
       entriesDiv.innerHTML = "";
-      postError("No local database");
+      //postError("No local database");
+      throw { name: "No local database", message: "No local database" };
       return;
     }
     let entriesJSON = await unencryptDB("VincePelss");
+    if (entriesJSON == "") {
+      throw { name: "unencryptDB failed", message: "unencryptDB failed" };
+      //return;
+    }
     dbGlobal = JSON.parse(entriesJSON);
     entriesGlobal = dbGlobal.entries;
     entriesJSON = ""; //data no longer needed
     BuildEntriesDOM(); //this has to be here as we need to wait for the promise
-  } catch (error) {
-    postError(error);
+  } catch (err) {
+    postError(err);
   }
 }
 
 async function unencryptDB(password) {
   try {
-    password = "VincePelss";
     password = password.normalize("NFKC");
     password = TE.encode(password);
 
@@ -482,8 +503,8 @@ async function unencryptDB(password) {
 
     let unencrypted = TD.decode(content);
     return unencrypted;
-  } catch (error) {
-    postError(error);
+  } catch (err) {
+    postError(err);
   }
 }
 
@@ -503,8 +524,9 @@ async function decrypt(iv, key, ciphertext) {
       ciphertext
     );
     return decrypted;
-  } catch (error) {
-    postError(error);
+  } catch (err) {
+    postError(err);
+    //postError("Possible corrupt database or password is wrong<br>" + error);
   }
 }
 
@@ -532,8 +554,8 @@ function BuildEntriesDOM() {
       entriesDiv.append(toAppend);
       entriesCount += 1;
     });
-  } catch (error) {
-    postError(error);
+  } catch (err) {
+    postError(err);
   }
 }
 
@@ -543,8 +565,8 @@ function SetLocalStorage(json) {
     if (supports_html5_storage()) {
       localStorage[localStorageName] = AliasListString;
     }
-  } catch (error) {
-    postError(error);
+  } catch (err) {
+    postError(err);
   }
 }
 
@@ -558,10 +580,13 @@ function GetLocalStorage() {
         return JSON.parse(localStorage[localStorageName]);
       }
     } else {
-      postError("HTML5 Storage is not supported");
+      throw {
+        name: "HTML5 Storage is not supported",
+        message: "HTML5 Storage is not supported"
+      };
     }
-  } catch (error) {
-    postError(error);
+  } catch (err) {
+    postError(err);
   }
 }
 
@@ -569,8 +594,9 @@ function supports_html5_storage() {
   try {
     return "localStorage" in window && window.localStorage !== null;
     //return false;
-  } catch (e) {
-    return false;
+  } catch (err) {
+    postError(err);
+    //return false;
   }
 }
 
@@ -583,8 +609,8 @@ function copytoclipboard2(text) {
     textarea.select();
     document.execCommand("copy", false, null);
     textarea.remove();
-  } catch (error) {
-    postError(error);
+  } catch (err) {
+    postError(err);
   }
 }
 
@@ -611,8 +637,8 @@ function decodeBase32toHex(data) {
       //decoded += parseInt(binaryString.slice(i, i + 4), 2).toString(16).toUpperCase();
     }
     return decoded;
-  } catch (error) {
-    postError(error);
+  } catch (err) {
+    postError(err);
   }
 }
 
@@ -633,8 +659,8 @@ function concatenateUint8arrays(uint8arrays) {
       offset += uint8array.byteLength;
     });
     return result;
-  } catch (error) {
-    postError(error);
+  } catch (err) {
+    postError(err);
   }
 }
 
@@ -647,14 +673,15 @@ function template(templateid, data) {
         return data.hasOwnProperty(key) ? data[key] : "";
       }
     );
-  } catch (error) {
-    postError(error);
+  } catch (err) {
+    postError(err);
   }
 }
 
-function postError(errorText) {
-  document.getElementById("error").innerHTML =
-    document.getElementById("error").innerHTML + errorText + "<br>";
+function postError(err) {
+  errorArray.push({ Name: err.name, Message: err.message, Stack: err.stack });
+  let errorString = JSON.stringify(errorArray, null, 4);
+  document.getElementById("error").innerHTML = "Errors:<br>" + errorString;
 }
   </script>
 
