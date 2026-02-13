@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" >
 
@@ -97,9 +96,9 @@
     </div>
   </template>
 
-  <div id="entriesDiv"></div>
-
-  <div id="error"></div>
+  <div id="entriesDiv">
+    Waiting to load encrypted Aegis database
+  </div>
 
 </div_main_page>
 
@@ -108,11 +107,11 @@
   <form>
     <center>
       <div>
-        <input type="button" value="Get Alias List" onclick="GetAegisJsonFromTextbox();">
+        <input type="button" value="Get Aegis JSON encrypted database" onclick="GetAegisJsonFromTextbox();">
       </div>
 
       <div>
-        <input type="button" value="Save Alias List" onclick="if(confirm('This will overwrite your current Aegis JSON encrypted database. Are you sure?')){SetAegisJsonFromTextbox();}">
+        <input type="button" value="Save Aegis JSON encrypted database to Clipboard" onclick="if(confirm('This will overwrite your current Aegis JSON encrypted database. Are you sure?')){SetAegisJsonFromTextbox();}">
       </div>
 
       <div>
@@ -154,6 +153,9 @@
   </center>
 
 </div_menu_page>
+
+
+ <div id="error"></div>
   <script src='https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js'></script>
     <script id="rendered-js" >
 // the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
@@ -161,6 +163,8 @@
 // no global db??
 
 //always encrypt. However the passwork might just be no text...
+
+//add try{} catch(error){  postError(error); }
 
 "use strict";
 
@@ -174,7 +178,6 @@ const TD = new TextDecoder();
 
 // Start MAIN loop //
 
-localStorageJSON = GetLocalStorage(); //load database
 GetEntries();
 let myInterval = setInterval(eachSecond, 1000); //start counter
 
@@ -203,35 +206,16 @@ async function eachSecond() {
   let entriesCount = 0;
   for (let entry of entriesGlobal) {
     let name = entry.name;
-    let seedBase32 = entry.info.secret;
     let algo = entry.info.algo;
     let digits = entry.info.digits;
     let period = entry.info.period;
-
-    //REMOVE REMOVE REMOVE REMOVE may not be required as decodeBase32toHex pads to byte length
-    //since base32 each character is 5 bits, we need 8 base32 characters to encode 5 byte characters
-    //so padding IS REQUIRED if base32 is not a multiple of 40 bits
-    // google 16, 24, 32 base32 char only. so 80, 120, 160 bits : 10, 15, 20 bytes
-    //try {
-    if (seedBase32.length % 8 != 0) {
-      // test modulo 8
-      //throw "The seed length must be a multiple of 8 characters and be composed of base32 characters [ABCDEFGHIJKLMNOPQRSTUVWXYZ234567]";
-      let errorString =
-        "The seed length must be a multiple of 8 characters and be composed of base32 characters [ABCDEFGHIJKLMNOPQRSTUVWXYZ234567]";
-      document.getElementById("error").innerHTML = errorString + "<br>";
-    }
-    //} catch (error) {
-    // document.getElementById("error").innerHTML = error + "<br>";
-    // }
-
+    let seedBase32 = entry.info.secret;
     let seed = decodeBase32toHex(seedBase32.toUpperCase()); //base32Str to HexStr
-
     let totp;
     try {
       totp = await hmac(seed, step, digits, algo);
     } catch (error) {
-      document.getElementById("error").innerHTML =
-        document.getElementById("error").innerHTML + error;
+postError(error);
     }
 
     document.getElementById("entryName" + entriesCount).innerHTML = name;
@@ -271,6 +255,7 @@ function GetAegisJsonFromTextbox() {
 }
 
 function SetAegisJsonFromTextbox() {
+  try{
   if (document.getElementById("JSONSave").value == "") {
     localStorageJSON = {};
   } else {
@@ -278,7 +263,11 @@ function SetAegisJsonFromTextbox() {
       document.getElementById("JSONSave").value
     );
   }
-  SetLocalStorage();
+  SetLocalStorage(localStorageJSON);
+  GetEntries(); //clear and rebuild
+  }catch(error){
+    postError(error);
+  }
 }
 
 function ExportAll() {
@@ -376,15 +365,20 @@ async function hmac(
       // make sure it is returnDigits long. pad to the left
       totp = "0" + totp;
     }
-    document.getElementById("error").innerHTML = ""; //clear error on success
     return totp;
   } catch (error) {
-    document.getElementById("error").innerHTML =
-      document.getElementById("error").innerHTML + error;
+postError(error);
   }
 }
 
 async function GetEntries() { //unencrypt Aegis JSON DB : AES CGM
+  document.getElementById("error").innerHTML = ""; //clear all errors in optimism!
+  localStorageJSON = GetLocalStorage(); //load database
+  if(JSON.stringify(localStorageJSON) == "{}"){ //empty db
+    entriesDiv.innerHTML = ""; 
+    postError("No local database");
+    return;
+  }
   let entriesJSON = await unencryptDB("VincePelss");
   dbGlobal = JSON.parse(entriesJSON);
   entriesGlobal = dbGlobal.entries;
@@ -393,6 +387,7 @@ async function GetEntries() { //unencrypt Aegis JSON DB : AES CGM
 }
 
 async function unencryptDB(password) {
+  try{
   password = "VincePelss";
   password = password.normalize("NFKC");
   password = TE.encode(password);
@@ -464,6 +459,10 @@ async function unencryptDB(password) {
 
   let unencrypted = TD.decode(content);
   return unencrypted;
+  }
+  catch(error){
+    postError(error);
+  }
 }
 
 async function decrypt(iv, key, ciphertext) {
@@ -482,8 +481,7 @@ async function decrypt(iv, key, ciphertext) {
       ciphertext
     );
   } catch (error) {
-    document.getElementById("error").innerHTML =
-      document.getElementById("error").innerHTML + error;
+postError(error);
   }
   return decrypted;
 }
@@ -492,6 +490,11 @@ async function decrypt(iv, key, ciphertext) {
 
 function BuildEntriesDOM() {
   let entriesCount = 0;
+  let entriesDiv = document.querySelector("#entriesDiv");
+  entriesDiv.innerHTML = "";
+  //if(entriesGlobal.length > 0){
+  //entriesDiv.innerHTML = "";
+  //}
   entriesGlobal.forEach(function (entry) {
     //replace template values
     // https://stackoverflow.com/questions/377961/efficient-javascript-string-replacement
@@ -505,25 +508,36 @@ function BuildEntriesDOM() {
     //add to #entriesDiv
     const toAppend = document.createElement("div");
     toAppend.innerHTML = modifiedTemplate;
-    let entriesDiv = document.querySelector("#entriesDiv");
+   
     entriesDiv.append(toAppend);
     entriesCount += 1;
   });
 }
 
 function SetLocalStorage(json) {
-  let AliasListString = JSON.stringify(json);
+  let AliasListString;
+  try{
+  AliasListString = JSON.stringify(json);
   if (supports_html5_storage()) {
     localStorage[localStorageName] = AliasListString;
   }
+  }catch(error){
+    postError(error);
+  }
+  
 }
 
 function GetLocalStorage() {
   if (supports_html5_storage()) {
-    if (typeof localStorage[localStorageName] === "undefined") {
+    if ( localStorage[localStorageName] == "undefined") {
       return {};
     } //nothing to restore
+    else{
     return JSON.parse(localStorage[localStorageName]);
+    }
+  }
+  else{
+    postError("HTML5 Storage is not supported");
   }
 }
 
@@ -597,10 +611,13 @@ function template(templateid, data) {
     }
   );
 }
+
+function postError(errorText){
+  document.getElementById("error").innerHTML = document.getElementById("error").innerHTML + errorText + "<br>";
+}
   </script>
 
   
 </body>
 
 </html>
-
