@@ -26,7 +26,7 @@ HMAC: https://en.wikipedia.org/wiki/HMAC
 
 Notes:
 
-- Your authentication secrets are in Base32 RFC 4648 and will need to be converted to a Hexidecimal string. I modified https://medium.com/@at.kishor.k/demystifying-base32-an-in-depth-guide-to-this-encoding-standard-697b9426fc25 to do this
+- Authentication secrets are in Base32 RFC 4648 and will need to be converted to a Hexidecimal string. I modified https://medium.com/@at.kishor.k/demystifying-base32-an-in-depth-guide-to-this-encoding-standard-697b9426fc25 to do this
 
   - https://en.wikipedia.org/wiki/Base32
 
