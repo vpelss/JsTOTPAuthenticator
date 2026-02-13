@@ -108,8 +108,8 @@ top:0 ;
 
   <br>
   
-  <div id="entries">
-   <div>ghfhgf</div>
+  <div id="entriesDiv">
+   <div>Entries Here</div>
   </div>
 
   <label for="seed">Seed</label><input type="text" id="seed" name="seed" placeholder="Seed in Base32" oninput="eachSecond();">
@@ -147,7 +147,7 @@ top:0 ;
       </div>
 
       <div>
-        <input type="button" value="Export Alias List to Clipboard" onclick="if(confirm('This will export all Alias, settings, and comments to clipboard. Are you sure?')){ ExportAll(); }">
+        <input type="button" value="Export encrypted Aegis db to Clipboard" onclick="if(confirm('This will export all Alias, settings, and comments to clipboard. Are you sure?')){ ExportAll(); }">
       </div>
 
       <div>
@@ -198,7 +198,8 @@ let localStorageName = "JsTOTPAuthenticator";
 //let localStorageJSON = {};
 let localStorageJSON = {};
 let plaintext;
-let entries = [];
+let dbGlobal = {};
+let entriesGlobal = [];
 
 const TE = new TextEncoder();
 const TD = new TextDecoder();
@@ -217,46 +218,20 @@ function closeMenu() {
   document.getElementById("x_icon").style.display = "none";
 }
 
-function GetAliasList() {
-localStorageJSON =  GetLocalStorage();
-  document.getElementById("JSONSave").value = JSON.stringify(
-    localStorageJSON,
-    null,
-    "\t"
-  );
-}
-
-function VarToLocalStorage() {
-  let AliasListString = JSON.stringify(localStorageJSON);
+function SetLocalStorage(json) {
+  let AliasListString = JSON.stringify(json);
   if (supports_html5_storage()) {
     localStorage[localStorageName] = AliasListString;
-    //setCookie("AliasList", "", yesterday, "", "", ""); //erase cookie as we want to use local storage now.
-  } else {
-    //save to cookie
-    setCookie("AliasList", AliasListString, localStorageName, "", "", "");
   }
 }
 
 function GetLocalStorage() {
   if (supports_html5_storage()) {
     if (typeof localStorage[localStorageName] === "undefined") {
-      return;
+      return {};
     } //nothing to restore
-    //localStorageJSON = JSON.parse(localStorage[localStorageName]);
     return JSON.parse(localStorage[localStorageName]);
-  } 
-}
-
-function SaveAliasList() {
-  if (document.getElementById("JSONSave").value == "") {
-    localStorageJSON= {};
-  } else {
-    localStorageJSON= JSON.parse(
-      document.getElementById("JSONSave").value
-    );
   }
-  VarToLocalStorage();
-  //BuildAliasSelect();
 }
 
 function supports_html5_storage() {
@@ -380,24 +355,6 @@ async function hmac(
   }
 }
 
-//not required
-function _encodeBase32(data) {
-  const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-  let binaryString = "";
-  for (let i = 0; i < data.length; i++) {
-    binaryString += data.charCodeAt(i).toString(2).padStart(8, "0");
-  }
-  let padding = binaryString.length % 5;
-  if (padding !== 0)
-    binaryString = binaryString.padEnd(binaryString.length + 5 - padding, "0");
-  let encoded = "";
-  for (let i = 0; i < binaryString.length; i += 5) {
-    encoded += BASE32_ALPHABET[parseInt(binaryString.slice(i, i + 5), 2)];
-  }
-  while (encoded.length % 8 !== 0) encoded += "=";
-  return encoded;
-}
-
 // modified https://medium.com/@at.kishor.k/demystifying-base32-an-in-depth-guide-to-this-encoding-standard-697b9426fc25
 function decodeBase32toHex(data) {
   const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
@@ -442,99 +399,29 @@ function concatenateUint8arrays(uint8arrays) {
   return result;
 }
 
-function template( templateid, data ){
-    return document.getElementById( templateid ).innerHTML
-      .replace(
-        ///%(\w*)%/g, // or /{(\w*)}/g for "{this} instead of %this%"
-     /\${(\w*)}/g, // or  for "{this} instead of %this%"
-        function( m, key ){
-          return data.hasOwnProperty( key ) ? data[ key ] : "";
-        }
-      );
+function template(templateid, data) {
+  return document.getElementById(templateid).innerHTML.replace(
+    ///%(\w*)%/g, // or /{(\w*)}/g for "{this} instead of %this%"
+    /\${(\w*)}/g, // or  for "{this} instead of %this%"
+    function (m, key) {
+      return data.hasOwnProperty(key) ? data[key] : "";
+    }
+  );
 }
-
-async function eachSecond() {
-  let unixTime = Date.now() / 1000; //in seconds
-  let stepNow = unixTime / 30;
-  let stepInt = Math.floor(stepNow);
-  let timeLeft = Math.floor(30 - 30 * (stepNow - stepInt));
-  //step MUST be in string HEX
-  let step = stepInt.toString(16);
-  //show countdown
-  var elem = document.querySelector("#theBar");
-  //var elem = document.getElementById("theBar");
-  let barWidth = Math.floor((100 * timeLeft) / 30);
-  elem.style.width = barWidth + "%";
-  document.getElementById("countdown").innerHTML = timeLeft;
-  do {
-    step = "0" + step;
-  } while (step.length < 16);
-  // step needs to be 16 characters
-  let seedBase32 = document.getElementById("seed").value;
-
-  //since base32 each character is 5 bits, we need 8 base32 characters to encode 5 byte characters
-  //so padding IS REQUIRED if base32 is not a multiple of 40 bits
-  // google 16, 24, 32 base32 char only. so 80, 120, 160 bits : 10, 15, 20 bytes
-  try {
-    if (seedBase32.length % 8 != 0)
-      // test modulo 8
-      throw "The seed length must be a multiple of 8 characters and be composed of base32 characters [ABCDEFGHIJKLMNOPQRSTUVWXYZ234567]";
-  } catch (error) {
-    document.getElementById("error").innerHTML = error + "<br>";
-    document.getElementById("totp").innerHTML = "";
-    return;
-  }
-  let seed = decodeBase32toHex(seedBase32.toUpperCase()); //base32Str to HexStr
-
-  let returnDigits = 6;
-  let crypto = "sha1";
-
-  try {
-    let totp = await hmac(seed, step, returnDigits, crypto);
-
-    // https://stackoverflow.com/questions/377961/efficient-javascript-string-replacement
-    //https://stackoverflow.com/questions/68970312/how-do-i-resolve-a-javascript-template-literal-variable-within-a-string-within-a  
-    let modifiedTemplate = template("theTemplate",{templateId:"ooooooooo",word:"MYWORD"});
-
-    const toAppend = document.createElement("div");
-    toAppend.innerHTML = modifiedTemplate;
-    let entries = document.querySelector("#entries");
-    entries.append(ttoAppend);
-    
-    document.getElementById("step").innerHTML = step; //stepHexString16Bytes;
-    document.getElementById("key").innerHTML = seed; //keyHexString;
-    document.getElementById("totp").innerHTML = totp;
-  } catch (error) {
-    document.getElementById("error").innerHTML =
-      document.getElementById("error").innerHTML + error;
-    document.getElementById("totp").innerHTML = "";
-  }
-
-  //document.getElementById("db").innerHTML = plaintext;
-}
-
-// MAIN //
-
-//load database
-localStorageJSON = GetLocalStorage();
-
-islocalStorageJSON();
 
 //unencrypt Aegis JSON DB : AES CGM
-async function islocalStorageJSON() {
-  if (typeof localStorageJSON!= "undefined") {
-    let entriesJSON = await unencryptDB("VincePelss");
-    entries = JSON.parse(entriesJSON);
-  } else {
-    // no stored json create a db
-    //create a blank one and encrypt?
-  }
+async function GetEntries() {
+  let entriesJSON = await unencryptDB("VincePelss");
+  dbGlobal = JSON.parse(entriesJSON);
+  entriesGlobal = dbGlobal.entries;
+  entriesJSON = ""; //no longer needed
+  BuildEntriesDOM();
 }
 
 async function unencryptDB(password) {
   password = "VincePelss";
   password = password.normalize("NFKC");
-  let pw = TE.encode(password);
+  password = TE.encode(password);
 
   // based on https://github.com/Sammy-T/avdu/blob/master/vault/decrypt.go
   // FindMasterKey uses the password to decrypt the master key
@@ -555,7 +442,8 @@ async function unencryptDB(password) {
   //from https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js
   //https://github.com/ricmoo/scrypt-js?utm_source=cdnjs&utm_medium=cdnjs_link&utm_campaign=cdnjs_library#readme
   //let keyScrypt = scrypt.syncScrypt(pw, salt, n, r, p, dkLen); //syncronous
-  let keyScrypt = await scrypt.scrypt(pw, salt, n, r, p, dkLen); //asyncronous
+  let keyScrypt = await scrypt.scrypt(password, salt, n, r, p, dkLen); //asyncronous
+  password = ""; // no longer needed
 
   //go nonce, err := hex.DecodeString(slot.KeyParams.Nonce)
   let nonceString = localStorageJSON.header.slots[0].key_params.nonce;
@@ -627,6 +515,82 @@ async function decrypt(iv, key, ciphertext) {
   }
   return decrypted;
 }
+
+function BuildEntriesDOM() {
+  entriesGlobal.forEach(function(entry){
+    
+  });
+  
+  // https://stackoverflow.com/questions/377961/efficient-javascript-string-replacement
+  //https://stackoverflow.com/questions/68970312/how-do-i-resolve-a-javascript-template-literal-variable-within-a-string-within-a
+  let modifiedTemplate = template("theTemplate", {
+    templateId: "ooooooooo",
+    word: "MYWORD"
+  });
+  const toAppend = document.createElement("div");
+  toAppend.innerHTML = modifiedTemplate;
+  let entriesDiv = document.querySelector("#entriesDiv");
+  entriesDiv.append(toAppend);
+}
+
+async function eachSecond() {
+  let unixTime = Date.now() / 1000; //in seconds
+  let stepNow = unixTime / 30;
+  let stepInt = Math.floor(stepNow);
+  let timeLeft = Math.floor(30 - 30 * (stepNow - stepInt));
+  //step MUST be in string HEX
+  let step = stepInt.toString(16);
+  //show countdown
+  var elem = document.querySelector("#theBar");
+  //var elem = document.getElementById("theBar");
+  let barWidth = Math.floor((100 * timeLeft) / 30);
+  elem.style.width = barWidth + "%";
+  document.getElementById("countdown").innerHTML = timeLeft;
+  do {
+    step = "0" + step;
+  } while (step.length < 16);
+  // step needs to be 16 characters
+  let seedBase32 = document.getElementById("seed").value;
+
+  //since base32 each character is 5 bits, we need 8 base32 characters to encode 5 byte characters
+  //so padding IS REQUIRED if base32 is not a multiple of 40 bits
+  // google 16, 24, 32 base32 char only. so 80, 120, 160 bits : 10, 15, 20 bytes
+  try {
+    if (seedBase32.length % 8 != 0)
+      // test modulo 8
+      throw "The seed length must be a multiple of 8 characters and be composed of base32 characters [ABCDEFGHIJKLMNOPQRSTUVWXYZ234567]";
+  } catch (error) {
+    document.getElementById("error").innerHTML = error + "<br>";
+    document.getElementById("totp").innerHTML = "";
+    return;
+  }
+  let seed = decodeBase32toHex(seedBase32.toUpperCase()); //base32Str to HexStr
+
+  let returnDigits = 6;
+  let crypto = "sha1";
+
+  try {
+    let totp = await hmac(seed, step, returnDigits, crypto);
+
+    document.getElementById("step").innerHTML = step; //stepHexString16Bytes;
+    document.getElementById("key").innerHTML = seed; //keyHexString;
+    document.getElementById("totp").innerHTML = totp;
+  } catch (error) {
+    document.getElementById("error").innerHTML =
+      document.getElementById("error").innerHTML + error;
+    document.getElementById("totp").innerHTML = "";
+  }
+
+  //document.getElementById("db").innerHTML = plaintext;
+}
+
+// MAIN //
+
+//load database
+localStorageJSON = GetLocalStorage();
+
+//will not work here. we can't await here
+GetEntries();
 
 //test value
 document.getElementById("seed").value = "CCCCCCCC";
