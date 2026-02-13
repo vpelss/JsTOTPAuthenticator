@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" >
 
@@ -19,17 +18,24 @@
   
 <style>
 #header {
-position:sticky;
-top:0 ;
-  display:flex;
-  background-color : white;
-  
+position: sticky;
+top: 0;
+background-color : white;
+width: 100%;
+_display:flex;
+}
+
+#countdown{
+  _position: relative;
+}
+
+#main_page_component{
 }
 
 #theBar {
   border: solid;
   border-width: 1pt;
-  height: 3pt;
+  height: 10pt;
   background-color: red;
 }
 
@@ -62,10 +68,8 @@ top:0 ;
 </head>
 
 <body>
-  <div>The intent is to be able to use your encrypted Aegis Authenticator database on any platform.</div>
-<p></p>
-<div id="header">
-  <center style="width:100%">
+  <div id="header">
+  <center>
     <span id="menu_icon">
       <a onclick="openMenu()" class="button">&#x2261;</a>
     </span>
@@ -76,61 +80,39 @@ top:0 ;
     <span>
       JsTOTPAuthenticator
     </span>
-    <hr>
   </center>
-</div>
+  <div>
+    <div id="theBar">
+    </div>
+    <div id=""><span>Countdown: </span>
+      <span id="countdown"></span>
+    </div>
 
-<br>&nbsp;
+  </div>
+
+</div>
 
 <div_main_page id="main_page_component">
 
-  <ttemplate id="theTemplate">
-    <div id="${templateId}" class="myTemplate">
+  <ttemplate id="theTemplate" hidden>
+    <div id="${entryId}" class="myTemplate">
       <div class="leftTemplate">
-        <div id="${templateName}">Name</div>
-        <div id="$templateCode">123456</div>
+        <div id="${entryName}">Name</div>
+        <div id="${entryCode}">123456</div>
       </div>
       <div class="rightTemplate">
-        <a href="#" id="${templateCopyLink}">
+        <a href="#" id="${entryCopyLink}">
           Copy Link
         </a>
       </div>
     </div>
   </ttemplate>
 
-  <br>
-
-  <div>
-    <div id="theBar"></div>
-    <span>Countdown: </span>
-    <span id="countdown"></span>
-  </div>
-
-  <br>
-  
   <div id="entriesDiv">
-   <div>Entries Here</div>
+    <div>Entries Here</div>
   </div>
 
-  <label for="seed">Seed</label><input type="text" id="seed" name="seed" placeholder="Seed in Base32" oninput="eachSecond();">
-  <div>
-    <span>Step Hexed: </span>
-    <span id="step"></span>
-  </div>
-  <div>
-    <span>Seed Hexed: </span>
-    <span id="key"></span>
-  </div>
-  <div>
-    <span>TOTP:</span>
-    <span id="totp"></span>
-  </div>
-  <div>
-    <div id="error"></div>
-  </div>
-  <div>
-    <div id="unencrypted"></div>
-  </div>
+  <div id="error"></div>
 
 </div_main_page>
 
@@ -489,8 +471,6 @@ async function unencryptDB(password) {
   let content = await decrypt(nonce, masterKey, database);
 
   let unencrypted = TD.decode(content);
-
-  document.getElementById("unencrypted").innerHTML = unencrypted;
   return unencrypted;
 }
 
@@ -517,20 +497,24 @@ async function decrypt(iv, key, ciphertext) {
 }
 
 function BuildEntriesDOM() {
-  entriesGlobal.forEach(function(entry){
-    
+  let entriesCount = 0;
+  entriesGlobal.forEach(function (entry) {
+    //replace template values
+    // https://stackoverflow.com/questions/377961/efficient-javascript-string-replacement
+    //https://stackoverflow.com/questions/68970312/how-do-i-resolve-a-javascript-template-literal-variable-within-a-string-within-a
+    let modifiedTemplate = template("theTemplate", {
+      entryId: "entryId" + entriesCount,
+      entryName: "entryName" + entriesCount,
+      entryCode: "entryCode" + entriesCount,
+      entryCopyLink: "entryCopyLink" + entriesCount
+    });
+    //add to #entriesDiv
+    const toAppend = document.createElement("div");
+    toAppend.innerHTML = modifiedTemplate;
+    let entriesDiv = document.querySelector("#entriesDiv");
+    entriesDiv.append(toAppend);
+    entriesCount += 1;
   });
-  
-  // https://stackoverflow.com/questions/377961/efficient-javascript-string-replacement
-  //https://stackoverflow.com/questions/68970312/how-do-i-resolve-a-javascript-template-literal-variable-within-a-string-within-a
-  let modifiedTemplate = template("theTemplate", {
-    templateId: "ooooooooo",
-    word: "MYWORD"
-  });
-  const toAppend = document.createElement("div");
-  toAppend.innerHTML = modifiedTemplate;
-  let entriesDiv = document.querySelector("#entriesDiv");
-  entriesDiv.append(toAppend);
 }
 
 async function eachSecond() {
@@ -550,54 +534,55 @@ async function eachSecond() {
     step = "0" + step;
   } while (step.length < 16);
   // step needs to be 16 characters
-  let seedBase32 = document.getElementById("seed").value;
 
-  //since base32 each character is 5 bits, we need 8 base32 characters to encode 5 byte characters
-  //so padding IS REQUIRED if base32 is not a multiple of 40 bits
-  // google 16, 24, 32 base32 char only. so 80, 120, 160 bits : 10, 15, 20 bytes
-  try {
-    if (seedBase32.length % 8 != 0)
-      // test modulo 8
-      throw "The seed length must be a multiple of 8 characters and be composed of base32 characters [ABCDEFGHIJKLMNOPQRSTUVWXYZ234567]";
-  } catch (error) {
-    document.getElementById("error").innerHTML = error + "<br>";
-    document.getElementById("totp").innerHTML = "";
-    return;
+  // calculate and output code for each entry and place on template
+  let entriesCount = 0;
+  for (let entry of entriesGlobal) {
+    let name = entry.name;
+    let seedBase32 = entry.info.secret;
+    let algo = entry.info.algo;
+    let digits = entry.info.digits;
+    let period = entry.info.period;
+
+    //since base32 each character is 5 bits, we need 8 base32 characters to encode 5 byte characters
+    //so padding IS REQUIRED if base32 is not a multiple of 40 bits
+    // google 16, 24, 32 base32 char only. so 80, 120, 160 bits : 10, 15, 20 bytes
+    try {
+      if (seedBase32.length % 8 != 0)
+        // test modulo 8
+        throw "The seed length must be a multiple of 8 characters and be composed of base32 characters [ABCDEFGHIJKLMNOPQRSTUVWXYZ234567]";
+    } catch (error) {
+      document.getElementById("error").innerHTML = error + "<br>";
+      document.getElementById("totp").innerHTML = "";
+    }
+
+    let seed = decodeBase32toHex(seedBase32.toUpperCase()); //base32Str to HexStr
+
+    let totp;
+    try {
+      totp = await hmac(seed, step, digits, algo);
+    } catch (error) {
+      document.getElementById("error").innerHTML =
+        document.getElementById("error").innerHTML + error;
+      document.getElementById("totp").innerHTML = "";
+    }
+
+    document.getElementById("entryName" + entriesCount).innerHTML = name;
+    document.getElementById("entryCode" + entriesCount).innerHTML = totp;
+    document.getElementById("entryName" + entriesCount).innerHTML = name;
+    document.getElementById("entryName" + entriesCount).innerHTML = name;
+    
+    entriesCount += 1;
   }
-  let seed = decodeBase32toHex(seedBase32.toUpperCase()); //base32Str to HexStr
-
-  let returnDigits = 6;
-  let crypto = "sha1";
-
-  try {
-    let totp = await hmac(seed, step, returnDigits, crypto);
-
-    document.getElementById("step").innerHTML = step; //stepHexString16Bytes;
-    document.getElementById("key").innerHTML = seed; //keyHexString;
-    document.getElementById("totp").innerHTML = totp;
-  } catch (error) {
-    document.getElementById("error").innerHTML =
-      document.getElementById("error").innerHTML + error;
-    document.getElementById("totp").innerHTML = "";
-  }
-
-  //document.getElementById("db").innerHTML = plaintext;
 }
 
 // MAIN //
 
 //load database
 localStorageJSON = GetLocalStorage();
-
-//will not work here. we can't await here
 GetEntries();
-
-//test value
-document.getElementById("seed").value = "CCCCCCCC";
 //start counter
 let myInterval = setInterval(eachSecond, 1000);
-
-let myTemplate = "";
 
 // entries is an array of
 let me = {
