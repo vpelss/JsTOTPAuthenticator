@@ -35,7 +35,7 @@ _display:flex;
 #theBar {
   border: solid;
   border-width: 1pt;
-  height: 10pt;
+  height: 3pt;
   background-color: red;
 }
 
@@ -87,9 +87,7 @@ _display:flex;
     <div id=""><span>Countdown: </span>
       <span id="countdown"></span>
     </div>
-
   </div>
-
 </div>
 
 <div_main_page id="main_page_component">
@@ -97,20 +95,18 @@ _display:flex;
   <ttemplate id="theTemplate" hidden>
     <div id="${entryId}" class="myTemplate">
       <div class="leftTemplate">
-        <div id="${entryName}">Name</div>
-        <div id="${entryCode}">123456</div>
+        <div id="${entryName}">Loading Database</div>
+        <div id="${entryCode}">Loading Database</div>
       </div>
       <div class="rightTemplate">
         <a href="#" id="${entryCopyLink}">
-          Copy Link
+          Copy Code
         </a>
       </div>
     </div>
   </ttemplate>
 
-  <div id="entriesDiv">
-    <div>Entries Here</div>
-  </div>
+  <div id="entriesDiv"></div>
 
   <div id="error"></div>
 
@@ -333,7 +329,6 @@ async function hmac(
   } catch (error) {
     document.getElementById("error").innerHTML =
       document.getElementById("error").innerHTML + error;
-    document.getElementById("totp").innerHTML = "";
   }
 }
 
@@ -491,7 +486,7 @@ async function decrypt(iv, key, ciphertext) {
     );
   } catch (error) {
     document.getElementById("error").innerHTML =
-      document.getElementById("error").innerHTML + error + DOMException.code;
+      document.getElementById("error").innerHTML + error;
   }
   return decrypted;
 }
@@ -518,6 +513,7 @@ function BuildEntriesDOM() {
 }
 
 async function eachSecond() {
+  if(entriesGlobal.length == 0){ return "No entries yet"; }
   let unixTime = Date.now() / 1000; //in seconds
   let stepNow = unixTime / 30;
   let stepInt = Math.floor(stepNow);
@@ -547,15 +543,16 @@ async function eachSecond() {
     //since base32 each character is 5 bits, we need 8 base32 characters to encode 5 byte characters
     //so padding IS REQUIRED if base32 is not a multiple of 40 bits
     // google 16, 24, 32 base32 char only. so 80, 120, 160 bits : 10, 15, 20 bytes
-    try {
-      if (seedBase32.length % 8 != 0)
+    //try {
+      if (seedBase32.length % 8 != 0){
         // test modulo 8
-        throw "The seed length must be a multiple of 8 characters and be composed of base32 characters [ABCDEFGHIJKLMNOPQRSTUVWXYZ234567]";
-    } catch (error) {
-      document.getElementById("error").innerHTML = error + "<br>";
-      document.getElementById("totp").innerHTML = "";
-    }
-
+        //throw "The seed length must be a multiple of 8 characters and be composed of base32 characters [ABCDEFGHIJKLMNOPQRSTUVWXYZ234567]";
+        let errorString = "The seed length must be a multiple of 8 characters and be composed of base32 characters [ABCDEFGHIJKLMNOPQRSTUVWXYZ234567]";
+       document.getElementById("error").innerHTML = errorString + "<br>";}
+    //} catch (error) {
+     // document.getElementById("error").innerHTML = error + "<br>";
+   // }
+   
     let seed = decodeBase32toHex(seedBase32.toUpperCase()); //base32Str to HexStr
 
     let totp;
@@ -564,42 +561,22 @@ async function eachSecond() {
     } catch (error) {
       document.getElementById("error").innerHTML =
         document.getElementById("error").innerHTML + error;
-      document.getElementById("totp").innerHTML = "";
     }
 
     document.getElementById("entryName" + entriesCount).innerHTML = name;
     document.getElementById("entryCode" + entriesCount).innerHTML = totp;
-    document.getElementById("entryName" + entriesCount).innerHTML = name;
-    document.getElementById("entryName" + entriesCount).innerHTML = name;
-    
+    document.getElementById("entryCopyLink" + entriesCount).onclick = function(){copytoclipboard2(totp)};
     entriesCount += 1;
   }
 }
 
-// MAIN //
+// Start MAIN //
 
 //load database
 localStorageJSON = GetLocalStorage();
 GetEntries();
 //start counter
 let myInterval = setInterval(eachSecond, 1000);
-
-// entries is an array of
-let me = {
-  type: "totp",
-  uuid: "8ebf3a2c-687b-4c88-9fe1-3a8a6ca3d59e",
-  name: "8xc",
-  issuer: "",
-  note: "",
-  favorite: false,
-  icon: null,
-  info: {
-    secret: "CCCCCCCC",
-    algo: "SHA1",
-    digits: 6,
-    period: 30
-  }
-};
   </script>
 
   
