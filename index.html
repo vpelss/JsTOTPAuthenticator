@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" >
 
@@ -81,7 +82,7 @@ body {
       JsTOTPAuthenticator
     </span>
   </center>
-  
+
   <div style="display: iiiinline;">
     <div id="theBar">
     </div>
@@ -89,7 +90,7 @@ body {
       <span id="countdown"></span>
     </span>
   </div>
-  
+
 </div>
 
 <div_main_page id="main_page_component">
@@ -123,7 +124,7 @@ body {
       </div>
 
       <div>
-        <input type="button" value="Save Aegis JSON encrypted database to Clipboard" onclick="if(confirm('This will overwrite your current Aegis JSON encrypted database. Are you sure?')){SetAegisJsonFromTextbox();}">
+        <input type="button" value="Save Aegis JSON encrypted database" onclick="if(confirm('This will overwrite your current Aegis JSON encrypted database. Are you sure?')){SetAegisJsonFromTextbox();}">
       </div>
 
       <div>
@@ -166,9 +167,30 @@ body {
 
 </div_menu_page>
 
+<div_menu_page id="password_page_component" hidd>
+
+  <form>
+    <center>
+
+      <div>
+        <input type="text" value="" placeholder="Password">
+      </div>
+
+      <span>
+        <input type="button" value="Get Aegis JSON encrypted database" onclick="GetAegisJsonFromTextbox();">
+      </span>
+
+      <span>
+        <input type="button" value="Save Aegis JSON encrypted database" onclick="if(confirm('This will overwrite your current Aegis JSON encrypted database. Are you sure?')){SetAegisJsonFromTextbox();}">
+      </span>
+    </center>
+  </form>
+
+</div_menu_page>
+
 <p></p>
-ccc
- <div id="error"></div>
+
+<div id="error"></div>
   <script src='https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js'></script>
     <script id="rendered-js" >
 // the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
