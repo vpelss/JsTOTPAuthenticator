@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" >
 
@@ -61,6 +60,25 @@ body {
   white-space: pre-wrap;
   display: block;
   }
+
+#password_page_component{
+  position: fixed;
+  background-color: white;
+  width: 100%;
+  height: 100%;
+    top: 0;
+    _left: 0;
+    _z-index: 9998;
+    _display: block;
+    _overflow-y: hidden;
+    _overflow-x: hidden;
+}
+
+:modal {
+  background-color: beige;
+  border: 2px solid burlywood;
+  border-radius: 5px;
+}
 </style>
 
   
@@ -72,7 +90,7 @@ body {
   <div id="header">
   <center>
     <span id="menu_icon">
-      <a onclick="openMenu()" class="button">&#x2261;</a>
+      <a onclick="openMenu();" class="button">&#x2261;</a>
     </span>
     <span id="x_icon" hidden>
       <a onclick="closeMenu()" class="button">X</a>
@@ -167,8 +185,8 @@ body {
 
 </div_menu_page>
 
-<div_menu_page id="password_page_component" hidd>
-
+<div_password_page id="password_page_component" hidden>
+<p></p>
   <form>
     <center>
 
@@ -186,7 +204,7 @@ body {
     </center>
   </form>
 
-</div_menu_page>
+</div_password_page>
 
 <p></p>
 
@@ -201,21 +219,74 @@ body {
 
 //add try{} catch(err){  postError(err); }
 
-"use strict";
+//"use strict";
 
+let password = ""; //it can be "", but we insist on a password when 
 let localStorageName = "JsTOTPAuthenticator";
 let localStorageJSON = {};
 let plaintext;
 let dbGlobal = {};
 let entriesGlobal = [];
 let errorArray = [];
+let entriesDiv = document.querySelector("#entriesDiv");
 const TE = new TextEncoder();
 const TD = new TextDecoder();
 
 // START MAIN LOOP //
 
-GetEntries();
-let myInterval = setInterval(eachSecond, 1000); //start counter
+main();
+
+let el = document.querySelector("#password_page_component");
+el.showModal();
+
+//--------------------------
+
+// + on add an entry, store and encrypt and rebuild dom
+
+//password can be "". but if on save or export, ensure that a passwod is set!!! Warning etc
+
+async function main() {
+  try {
+    entriesDiv.innerHTML = ""; //this may be an imp0rt(dont fix this) situation
+
+    //does browser support local storage? yes continue : no stop
+    if (!supportsHtml5Storage()) {
+      throw {
+        name: "HTML5 Storage is not supported",
+        message: "HTML5 Storage is not supported"
+      };
+    }
+
+    //is there  local storage and is it JSON? yes continue : no stop
+    localStorageJSON = getLocalStorage(); //load database
+    if (JSON.stringify(localStorageJSON) == "{}") {
+      throw { name: "No local database", message: "No local database" };
+      return;
+    }
+
+    //assume pw is "" and try to decrypt if it fails ask for pw and try again loop. give option to wipe local storage and start main loop again incase we have forgottewn password
+    //unencrypt Aegis JSON DB : AES CGM
+    do {
+      let entriesJSON = await unencryptDB(password);
+      if (entriesJSON == "") {
+        //pw failed or db failed so lets get user pw
+
+      }
+      
+    } while (entriesJSON == "");
+
+    dbGlobal = JSON.parse(entriesJSON);
+    entriesGlobal = dbGlobal.entries;
+    entriesJSON = ""; //data no longer needed
+    BuildEntriesDOM(); //this has to be here as we need to wait for the promise
+
+    GetEntries();
+
+    let myInterval = setInterval(eachSecond, 1000); //start counter
+  } catch (err) {
+    postError(err);
+  }
+}
 
 async function eachSecond() {
   try {
@@ -293,7 +364,7 @@ function closeMenu() {
   }
 }
 
-function GetAegisJsonFromTextbox() {
+function getAegisJsonFromTextbox() {
   try {
     GetLocalStorage();
     document.getElementById("JSONSave").value = JSON.stringify(
@@ -306,14 +377,9 @@ function GetAegisJsonFromTextbox() {
   }
 }
 
-function SetAegisJsonFromTextbox() {
+function setAegisJsonFromTextbox() {
   try {
-    if (document.getElementById("JSONSave").value == "") {
-      localStorageJSON = {};
-      return;
-    } else {
-      localStorageJSON = JSON.parse(document.getElementById("JSONSave").value);
-    }
+    localStorageJSON = JSON.parse(document.getElementById("JSONSave").value);
     SetLocalStorage(localStorageJSON);
     GetEntries(); //clear and rebuild
     document.getElementById("JSONSave").value =
@@ -323,7 +389,7 @@ function SetAegisJsonFromTextbox() {
   }
 }
 
-function ExportAll() {
+function exportAll() {
   try {
     localStorageJSON = GetLocalStorage();
     copytoclipboard2(JSON.stringify(localStorageJSON));
@@ -333,6 +399,14 @@ function ExportAll() {
 }
 
 // ENCRYPTION DECRYPTION HMAC FUNCTIONS //
+
+async function getEntries() {
+  try {
+    document.getElementById("error").innerHTML = ""; //clear all errors in optimism!
+  } catch (err) {
+    postError(err);
+  }
+}
 
 // for references see: https://github.com/vpelss/JsTOTPAuthenticator
 async function hmac(
@@ -422,32 +496,6 @@ async function hmac(
       totp = "0" + totp;
     }
     return totp;
-  } catch (err) {
-    postError(err);
-  }
-}
-
-async function GetEntries() {
-  try {
-    //unencrypt Aegis JSON DB : AES CGM
-    document.getElementById("error").innerHTML = ""; //clear all errors in optimism!
-    localStorageJSON = GetLocalStorage(); //load database
-    if (JSON.stringify(localStorageJSON) == "{}") {
-      //empty db
-      entriesDiv.innerHTML = "";
-      //postError("No local database");
-      throw { name: "No local database", message: "No local database" };
-      return;
-    }
-    let entriesJSON = await unencryptDB("VincePelss");
-    if (entriesJSON == "") {
-      throw { name: "unencryptDB failed", message: "unencryptDB failed" };
-      //return;
-    }
-    dbGlobal = JSON.parse(entriesJSON);
-    entriesGlobal = dbGlobal.entries;
-    entriesJSON = ""; //data no longer needed
-    BuildEntriesDOM(); //this has to be here as we need to wait for the promise
   } catch (err) {
     postError(err);
   }
@@ -554,7 +602,7 @@ async function decrypt(iv, key, ciphertext) {
 
 // SUPPORT FUNCTIONS //
 
-function BuildEntriesDOM() {
+function buildEntriesDOM() {
   try {
     let entriesCount = 0;
     let entriesDiv = document.querySelector("#entriesDiv");
@@ -581,7 +629,7 @@ function BuildEntriesDOM() {
   }
 }
 
-function SetLocalStorage(json) {
+function setLocalStorage(json) {
   try {
     let AliasListString = JSON.stringify(json);
     if (supports_html5_storage()) {
@@ -592,27 +640,21 @@ function SetLocalStorage(json) {
   }
 }
 
-function GetLocalStorage() {
+function getLocalStorage() {
+  //return {} if undefineds
+  let jsonParsed = {};
   try {
-    if (supports_html5_storage()) {
-      if (localStorage[localStorageName] == "undefined") {
-        return {};
-      } //nothing to restore
-      else {
-        return JSON.parse(localStorage[localStorageName]);
-      }
-    } else {
-      throw {
-        name: "HTML5 Storage is not supported",
-        message: "HTML5 Storage is not supported"
-      };
+    if (typeof localStorage[localStorageName] != "undefined") {
+      jsonParsed = JSON.parse(localStorage[localStorageName]);
     }
   } catch (err) {
     postError(err);
+  } finally {
+    return jsonParsed;
   }
 }
 
-function supports_html5_storage() {
+function supportsHtml5Storage() {
   try {
     return "localStorage" in window && window.localStorage !== null;
     //return false;
@@ -702,7 +744,7 @@ function template(templateid, data) {
 
 function postError(err) {
   errorArray.push({ Name: err.name, Message: err.message, Stack: err.stack });
-  let errorString = JSON.stringify(errorArray, null, 4);
+  let errorString = JSON.stringify(errorArray, null, "\t");
   document.getElementById("error").innerHTML = "Errors:<br>" + errorString;
 }
   </script>
