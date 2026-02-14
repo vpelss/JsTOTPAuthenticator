@@ -8,7 +8,7 @@ Run at:
 
 - https://codepen.io/vpelss/pen/EayojzL
 
-# TOTP part
+# TOTP
 
 I tried to follow the RFCs:
 
