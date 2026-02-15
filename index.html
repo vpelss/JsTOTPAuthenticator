@@ -27,6 +27,7 @@ body {
   background-color: white;
   width: 100%;
 }
+
 .codeClass {
   font-size: 2rem;
 }
@@ -61,25 +62,6 @@ body {
   display: block;
   }
 
-#_password_page_component{
-  position: fixed;
-  background-color: white;
-  width: 100%;
-  height: 100%;
-    top: 0;
-    _left: 0;
-    _z-index: 9998;
-    _display: block;
-    _overflow-y: hidden;
-    _overflow-x: hidden;
-}
-
-:modal {
-  _background-color: beige;
-  _border: 2px solid burlywood;
-  _border-radius: 5px;
-}
-
 .secret { /*fix / block password managers forcing fields to fill*/
     -webkit-text-security: disc;
 }
@@ -102,6 +84,10 @@ body {
     &nbsp;&nbsp;&nbsp;
     <span>
       JsTOTPAuthenticator
+    </span>
+     &nbsp;&nbsp;&nbsp;
+     <span id="add_icon">
+      <a onclick="" class="button">+</a>
     </span>
   </center>
 
@@ -191,21 +177,19 @@ body {
 
 <dialog id="passwordDialog">
 <p></p>
-  <form method="dialog" onsubmit="closeDialog('passwordDialog');tryPassword(document.querySelector('#password').value)">
+  <form method="dialog" onsubmit="tryPassword(document.querySelector('#password').value)">
     <center>
       <div>
-        <input type="text" id="password" placeholder="Password" class="secret">
+        <input type="text" id="password" placeholder="Password" class="secret" autocomplete="off">
       </div>
       <div>
         <input type="submit" value="Submit">
       </div>
       Or if you forgot your pw or database is corrupt.
          <div>
-        <input type="button" value="Erase Database" onclick="">
+        <input type="button" value="Erase Database" onclick="wipeDatabase()">
       </div>
-
     </center>
-  
   </form>
 </dialog>
 
@@ -214,15 +198,7 @@ body {
 <div id="error"></div>
   <script src='https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js'></script>
     <script id="rendered-js" >
-// the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
-
-// no global db??
-
-//always encrypt. However the passwork might just be no text...
-
-//add try{} catch(err){  postError(err); }
-
-//"use strict";
+"use strict";
 
 let password = ""; //it can be "", but we insist on a password when
 let localStorageName = "JsTOTPAuthenticator";
@@ -235,19 +211,22 @@ let entriesDiv = document.querySelector("#entriesDiv");
 const TE = new TextEncoder();
 const TD = new TextDecoder();
 
+// the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
+
+// no global db??
+
+// + on add an entry, store and encrypt and rebuild dom
+
+//always encrypt. password can be "" but if on save or export, ensure that a passwod is set!!! Warning etc
+
 // START MAIN LOOP //
 
 main();
 
-//--------------------------
-
-// + on add an entry, store and encrypt and rebuild dom
-
-//password can be "" but if on save or export, ensure that a passwod is set!!! Warning etc
-
 async function main() {
   try {
-     document.querySelector("#error").innerHTML = "";
+    closeMenu();
+    document.querySelector("#error").innerHTML = "";
     entriesDiv.innerHTML = ""; //this may be an imp0rt(dont fix this) situation
 
     //does browser support local storage? yes continue : no stop
@@ -261,8 +240,9 @@ async function main() {
     //is there  local storage and is it JSON? yes continue : no stop
     localStorageJSON = getLocalStorage(); //load database
     if (JSON.stringify(localStorageJSON) == "{}") {
-      throw { name: "No local database", message: "No local database" };
-      //return;
+      //no error is required
+      //throw { name: "No local database", message: "No local database" };
+      return;
     }
 
     //assume pw is "" and try to decrypt
@@ -271,13 +251,16 @@ async function main() {
     //2. set password and run main()
     //unencrypt Aegis JSON DB : AES CGM
     let entriesJSON;
-      entriesJSON = await unencryptDB(password);
-      if (entriesJSON == "") {
-        //pw failed so open passwordDialog
-        openDialog("passwordDialog");
-        throw { name: "Error", message: "Password incorrect or Database is corrupt" };
-        return; 
-      }
+    entriesJSON = await unencryptDB(password);
+    if (entriesJSON == "") {
+      //pw failed so open passwordDialog
+      openDialog("passwordDialog");
+      throw {
+        name: "Error",
+        message: "Password incorrect or Database is corrupt"
+      };
+      return;
+    }
 
     dbGlobal = JSON.parse(entriesJSON);
     entriesGlobal = dbGlobal.entries;
@@ -344,17 +327,30 @@ async function eachSecond() {
 
 // BUTTON FUNCTIONS //
 
-function tryPassword(pw){
+function wipeDatabase() {
+  if (
+    confirm(
+      "This will ERASE your current database. Make sre you have a BACKUP. Are you sure?"
+    )
+  ) {
+    closeDialog("passwordDialog");
+    setLocalStorage({});
+    main();
+  }
+}
+
+function tryPassword(pw) {
+  closeDialog("passwordDialog");
   password = pw;
   main();
 }
 
-function openDialog(id){
+function openDialog(id) {
   let el = document.querySelector("#" + id);
-        el.showModal();
+  el.showModal();
 }
 
-function closeDialog(id){
+function closeDialog(id) {
   let el = document.querySelector("#" + id);
   el.close();
 }
@@ -399,8 +395,8 @@ function setAegisJsonFromTextbox() {
     localStorageJSON = JSON.parse(document.getElementById("JSONSave").value);
     setLocalStorage(localStorageJSON);
     main(); //clear and rebuild
-    document.getElementById("JSONSave").value =
-      "*** Encrypted Aegis database imported ***"; //clear it
+    //document.getElementById("JSONSave").value =
+    ("*** Encrypted Aegis database imported ***"); //clear it
   } catch (err) {
     postError(err);
   }
