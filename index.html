@@ -191,13 +191,13 @@ body {
 
 <dialog id="passwordDialog">
 <p></p>
-  <form method="dialog">
+  <form method="dialog" onsubmit="closeDialog('passwordDialog');tryPassword(document.querySelector('#password').value)">
     <center>
       <div>
         <input type="text" id="password" placeholder="Password" class="secret">
       </div>
       <div>
-        <input type="button" value="Submit" onclick="closeDialog('passwordDialog');tryPassword(document.querySelector('#password').value)">
+        <input type="submit" value="Submit">
       </div>
       Or if you forgot your pw or database is corrupt.
          <div>
