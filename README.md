@@ -1,6 +1,6 @@
 # JsTOTPAuthenticator
 
-This web based TOTP Authenticators can import your json database created by the Android Aegis Authenticator app. https://getaegis.app/. There is a desktop app AVDA, but I wanted an OS agnostic version. 
+This web based TOTP Authenticators can import your Aegis Authenticator json database. https://getaegis.app/. There is a desktop app AVDA, but I wanted an OS agnostic version. This also fills the iOS gap.
 
 Run at: 
 
