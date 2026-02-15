@@ -37,6 +37,12 @@ body {
   border-width: 1px;
   height: 3px;
   background-color: red;
+  transition: width 2s linear;
+}
+
+#theBar2{
+  transition: value 2s linear;
+  height: 3px;
 }
 
 .myTemplate {
@@ -90,37 +96,30 @@ body {
       <a onclick="openDialog('addEntryDialog')" class="button">+</a>
     </span>
   </center>
-
   <div>
-    <div id="theBar">
-    </div>
-    <span><span>Countdown: </span>
-      <span id="countdown"></span>
-    </span>
+      <progress id="theBar" value="0" max="100"></progress>
   </div>
-
 </div>
 
-<div_main_page id="main_page_component">
-
-  <template id="theTemplate" hidden>
-    <div id="${entryId}" class="myTemplate">
-      <div class="leftTemplate">
-        <div id="${entryName}">Loading Database</div>
-        <div id="${entryCode}" class="codeClass">Loading Database</div>
-      </div>
-      <div class="rightTemplate">
-        <a href="#" id="${entryCopyLink}">
-          Copy Code
-        </a>
-      </div>
+<template id="theTemplate">
+  <div id="${entryId}" class="myTemplate">
+    <div class="leftTemplate">
+      <div id="${entryName}">Loading Database</div>
+      <div id="${entryCode}" class="codeClass">Loading Database</div>
     </div>
-  </template>
+    <div class="rightTemplate">
+      <a href="#" id="${entryCopyLink}" class="button"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#ffffff">
+          <path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z" />
+        </svg>
+      </a>
+    </div>
+  </div>
+</template>
 
+<div_main_page id="main_page_component">
   <div id="entriesDiv">
     Waiting to load encrypted Aegis database
   </div>
-
 </div_main_page>
 
 <div_menu_page id="menu_page_component" hidden>
@@ -196,15 +195,15 @@ body {
   <form method="dialog" onsubmit="addEntry()">
     <center>
       <div>
-        <input type="text" id="entryName" placeholder="Name"  autocomplete="off">
+        <input type="text" id="entryName" placeholder="Name" autocomplete="off">
       </div>
-            <div>
-        <input type="text" id="entrySecret" placeholder="Secret"  autocomplete="off">
+      <div>
+        <input type="text" id="entrySecret" placeholder="Secret" autocomplete="off">
       </div>
       <div>
         <input type="submit" value="Submit">
       </div>
-   <p></p>
+      <p></p>
       <div>
         <input type="button" value="Cancel" onclick="closeDialog('addEntryDialog')">
       </div>
@@ -226,6 +225,7 @@ let plaintext;
 let dbGlobal = {};
 let entriesGlobal = [];
 let errorArray = [];
+let oldStepInt = 0;
 let entriesDiv = document.querySelector("#entriesDiv");
 const TE = new TextEncoder();
 const TD = new TextDecoder();
@@ -242,10 +242,12 @@ const TD = new TextDecoder();
 //build aegis json db
 //add entry
 //reset password
-//encrypt 
+//encrypt
 //imput url
 //qr code?
 //show secret
+//add issuer and notes
+//timed copied alert
 
 // START MAIN LOOP //
 
@@ -319,20 +321,24 @@ async function eachSecond() {
     }
     let unixTime = Date.now() / 1000; //in seconds
     let stepNow = unixTime / 30;
-    let stepInt = Math.floor(stepNow);
-    let timeLeft = Math.floor(30 - 30 * (stepNow - stepInt));
-    //step MUST be in string HEX
-    let step = stepInt.toString(16);
+    let stepInt = Math.floor(stepNow); //this changes when == to stepNow. so bar should be at 100%
+    let step = stepInt.toString(16); //step MUST be in string HEX
     //show countdown
-    var elem = document.querySelector("#theBar");
-    //var elem = document.getElementById("theBar");
-    let barWidth = Math.floor((100 * timeLeft) / 30);
-    elem.style.width = barWidth + "%";
-    document.getElementById("countdown").innerHTML = timeLeft;
+    // let percentDone = Math.floor( 100 * (stepNow - stepInt + (1/30)) ) ; //need to add one tick 1/30 to progress bar so we can reach 100%
+    let percentDone = Math.floor(100 * (stepNow - stepInt));
+    let barWidth = 100 - percentDone;
+    if (stepInt != oldStepInt) {
+      //percentDone will never coincide with our setInterval. so make barr 100 on change
+      barWidth = 100;
+      oldStepInt = stepInt;
+    }
+    var progress = document.querySelector("#theBar");
+    progress.value = barWidth;
+
+    // step needs to be 16 characters
     do {
       step = "0" + step;
     } while (step.length < 16);
-    // step needs to be 16 characters
 
     // calculate and output code for each entry and place on template
     let entriesCount = 0;
@@ -668,7 +674,7 @@ function buildEntriesDOM() {
       // https://stackoverflow.com/questions/377961/efficient-javascript-string-replacement
       //https://stackoverflow.com/questions/68970312/how-do-i-resolve-a-javascript-template-literal-variable-within-a-string-within-a
       let modifiedTemplate = template("theTemplate", {
-        entryId: "entryId" + entriesCount,
+        entryId: "" + entriesCount,
         entryName: "entryName" + entriesCount,
         entryCode: "entryCode" + entriesCount,
         entryCopyLink: "entryCopyLink" + entriesCount
@@ -676,7 +682,6 @@ function buildEntriesDOM() {
       //add to #entriesDiv
       const toAppend = document.createElement("div");
       toAppend.innerHTML = modifiedTemplate;
-
       entriesDiv.append(toAppend);
       entriesCount += 1;
     });
@@ -803,6 +808,23 @@ function postError(err) {
   let errorString = JSON.stringify(errorArray, null, "\t");
   document.getElementById("error").innerHTML = "Errors:<br>" + errorString;
 }
+
+let example = {
+  type: "totp",
+  uuid: "8ebf3a2c-687b-4c88-9fe1-3a8a6ca3d59e",
+  name: "8xc",
+  issuer: "",
+  note: "",
+  favorite: false,
+  icon: null,
+  info: {
+    secret: "CCCCCCCC",
+    algo: "SHA1",
+    digits: 6,
+    period: 30
+  },
+  groups: []
+};
   </script>
 
   
