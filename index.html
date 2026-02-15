@@ -87,11 +87,11 @@ body {
     </span>
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
     <span id="add_icon">
-      <a onclick="" class="button">+</a>
+      <a onclick="openDialog('addEntryDialog')" class="button">+</a>
     </span>
   </center>
 
-  <div style="display: iiiinline;">
+  <div>
     <div id="theBar">
     </div>
     <span><span>Countdown: </span>
@@ -182,10 +182,31 @@ body {
         <input type="submit" value="Submit">
       </div>
       <div>
-      Or if you forgot your pw or database is corrupt.
+        Or if you forgot your pw or database is corrupt.
       </div>
       <div>
         <input type="button" value="Erase Database" onclick="wipeDatabase()">
+      </div>
+    </center>
+  </form>
+</dialog>
+
+<dialog id="addEntryDialog">
+  <p>Add An Entry</p>
+  <form method="dialog" onsubmit="addEntry()">
+    <center>
+      <div>
+        <input type="text" id="entryName" placeholder="Name"  autocomplete="off">
+      </div>
+            <div>
+        <input type="text" id="entrySecret" placeholder="Secret"  autocomplete="off">
+      </div>
+      <div>
+        <input type="submit" value="Submit">
+      </div>
+   <p></p>
+      <div>
+        <input type="button" value="Cancel" onclick="closeDialog('addEntryDialog')">
       </div>
     </center>
   </form>
@@ -217,6 +238,15 @@ const TD = new TextDecoder();
 
 //always encrypt. password can be "" but if on save or export, ensure that a passwod is set!!! Warning etc
 
+//TO DO:
+//build aegis json db
+//add entry
+//reset password
+//encrypt 
+//imput url
+//qr code?
+//show secret
+
 // START MAIN LOOP //
 
 main();
@@ -227,7 +257,8 @@ async function main() {
     closeMenu();
     errorArray = [];
     document.querySelector("#error").innerHTML = "";
-    entriesDiv.innerHTML = ""; //this may be an imp0rt(dont fix this) situation
+    entriesDiv.innerHTML = "Loading database and attempting decrypt"; //this may be an imp0rt(dont fix this) situation
+    document.getElementById("JSONSave").value = "";
 
     //does browser support local storage? yes continue : no stop
     if (!supportsHtml5Storage()) {
@@ -242,16 +273,20 @@ async function main() {
     if (JSON.stringify(localStorageJSON) == "{}") {
       //no error is required
       //throw { name: "No local database", message: "No local database" };
+      entriesDiv.innerHTML =
+        "No database found. Import an Aegis database with &#x2261; or start adding entries with the +";
       return;
     }
 
     //test to see if json is valid Aegis format. I am only weak testing for localStorageJSON.db
-    if(typeof localStorageJSON.db == "undefined"){
+    if (typeof localStorageJSON.db == "undefined") {
       //no error is required
       //throw { name: "main", message: "Not a vaiid Aegis JSON format" };
+      entriesDiv.innerHTML =
+        "No database found. Import an Aegis database with &#x2261; or start adding entries with the +";
       return;
     }
-    
+
     //assume pw is "" and try to decrypt
     //if it fails bring up passwordDialog it will either:
     //1. wipe local storage and run main()
@@ -262,10 +297,7 @@ async function main() {
     if (entriesJSON == "") {
       //pw failed so open passwordDialog
       openDialog("passwordDialog");
-      throw {
-        name: "main",
-        message: "Password is incorrect or JSON Database is corrupt"
-      };
+      //throw {name: "main",message: "Password is incorrect or maybe JSON Database is corrupt"};
       return;
     }
 
@@ -337,7 +369,7 @@ async function eachSecond() {
 function wipeDatabase() {
   if (
     confirm(
-      "This will ERASE your current database. Please make sure you have a BACKUP. Are you sure?"
+      "This will ERASE your current database. Please make sure you have a BACKUP to restore. Are you sure?"
     )
   ) {
     closeDialog("passwordDialog");
@@ -395,7 +427,10 @@ function getAegisJsonFromTextbox() {
     );
   } catch (err) {
     //postError(err);
-    postError({ name: "getAegisJsonFromTextbox", message: "Malformed JSON Data" });
+    postError({
+      name: "getAegisJsonFromTextbox",
+      message: "Malformed JSON Data"
+    });
   }
 }
 
@@ -404,12 +439,14 @@ function setAegisJsonFromTextbox() {
     errorArray = [];
     localStorageJSON = JSON.parse(document.getElementById("JSONSave").value);
     setLocalStorage(localStorageJSON);
+    document.getElementById("JSONSave").value = "";
     main(); //clear and rebuild
-    //document.getElementById("JSONSave").value =
-    ("*** Encrypted Aegis database imported ***"); //clear it
   } catch (err) {
     //postError(err);
-    postError({ name: "setAegisJsonFromTextbox", message: "Malformed JSON Data" });
+    postError({
+      name: "setAegisJsonFromTextbox",
+      message: "Malformed JSON Data"
+    });
   }
 }
 
