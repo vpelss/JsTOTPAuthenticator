@@ -247,9 +247,8 @@ let password = ""; //it can be "", but we insist on a password when
 let myInterval;
 let localStorageName = "JsTOTPAuthenticator";
 let localStorageObject = {};
-let plaintext;
-//let localStorageObject = {};
-let entriesGlobal = [];
+let dbGlobal; //entries, groups, ect
+let entriesGlobal = []; //just entries
 let errorArray = [];
 let oldStepInt = 0;
 let entriesDiv = document.querySelector("#entriesDiv");
@@ -328,10 +327,12 @@ async function main() {
       //throw {name: "main",message: "Password is incorrect or maybe JSON Database is corrupt"};
       return;
     }
-    localStorageObject = JSON.parse(dbJSON);
+    
+    dbGlobal =  JSON.parse(dbJSON);
+    entriesGlobal = dbGlobal.entries;
     //let test = await encryptDb(password);
 
-    entriesGlobal = localStorageObject.entries;
+   // entriesGlobal = localStorageObject.entries;
     dbJSON = ""; //data no longer needed
     buildEntriesDOM(); //this has to be here as we need to wait for the promise
 
@@ -406,9 +407,10 @@ function changePassword(pw1, pw2) {
       closeDialog("changePasswordDialog");
       
       encryptDb(password);
-      let JsonOutput = JSON.stringify(localStorageObject, null, "\t");
+      
+      //let JsonOutput = JSON.stringify(localStorageObject, null, "\t");
 
-      setLocalStorage(JsonOutput);
+      setLocalStorage(localStorageObject);
       
       main();
     } else {
@@ -776,8 +778,8 @@ async function encryptDb(password) {
     //let tagString = localStorageObject.header.slots[0].key_params.tag;
     localStorageObject.header.slots[0].key_params.tag = tagString;
 
-      
-    let encrypted = TD.decode(db);
+    //let encrypted = TD.decode(db);
+    let encrypted = db;
     return encrypted;
     
   } catch (err) {
