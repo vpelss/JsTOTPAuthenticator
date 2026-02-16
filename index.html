@@ -217,7 +217,7 @@ body {
 
 <dialog id="changePasswordDialog">
   <p>Add An Entry</p>
-  <form method="dialog" onsubmit="changePassword(document.querySelector('#newPassword1').value , document.querySelector('#newPassword2').value)">
+  <form method="dialog" onsubmit="changePassword(document.querySelector('#newPassword1').value , document.querySelector('#newPassword2').value);document.querySelector('#newPassword1').value='';document.querySelector('#newPassword2').value='';">
     <center>
       <div>
         <input type="text" id="newPassword1" placeholder="New Password" autocomplete="off" class="secret">
@@ -405,13 +405,8 @@ function changePassword(pw1, pw2) {
     if (pw1 == pw2) {
       password = pw1;
       closeDialog("changePasswordDialog");
-      
       encryptDb(password);
-      
-      //let JsonOutput = JSON.stringify(localStorageObject, null, "\t");
-
       setLocalStorage(localStorageObject);
-      
       main();
     } else {
       window.alert("Passwords do not match");
@@ -725,8 +720,8 @@ async function encryptDb(password) {
     //let tag = new Uint8Array(16);
     //self.crypto.getRandomValues(tag);
     //convert localStorageObject to content Uint8Array
-    let temp = JSON.stringify(localStorageObject, null, "\t"); //we don't need the formatting
-    let content = TE.encode(temp);
+    let tempdb = JSON.stringify(dbGlobal, null, "\t"); //we don't need the formatting
+    let content = TE.encode(tempdb);
     let database = await encrypt(nonce, masterKey, content);
     // database is an ArrayBuffer, not Uint8Array, so fix it
     database = new Uint8Array(database);
@@ -766,6 +761,7 @@ async function encryptDb(password) {
     let keyData = await encrypt(nonce, keyScrypt, masterKey);
     //keyDaya is 16 bytes bigger than masterKey so tag is that last 16 bytes and so masterKey the remaining first part
     //let keyData = concatenateUint8arrays([slotKey, tag]);
+    keyData = new Uint8Array(keyData);
     length = keyData.length;
     let slotKey = keyData.slice(0, length - 16);
     //let slotKey = Uint8Array.fromHex(slotKeyString);
