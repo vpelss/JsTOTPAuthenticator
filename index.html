@@ -604,8 +604,8 @@ async function hmac(
 
 async function unencryptDB(password) {
   try {
-    password = password.normalize("NFKC");
-    password = TE.encode(password);
+    let pw = password.normalize("NFKC");
+    pw = TE.encode(password);
 
     // based on https://github.com/Sammy-T/avdu/blob/master/vault/decrypt.go
     // FindMasterKey uses the password to decrypt the master key
@@ -626,7 +626,7 @@ async function unencryptDB(password) {
     //from https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js
     //https://github.com/ricmoo/scrypt-js?utm_source=cdnjs&utm_medium=cdnjs_link&utm_campaign=cdnjs_library#readme
     //let keyScrypt = scrypt.syncScrypt(pw, salt, n, r, p, dkLen); //syncronous
-    let keyScrypt = await scrypt.scrypt(password, salt, n, r, p, dkLen); //asyncronous
+    let keyScrypt = await scrypt.scrypt(pw, salt, n, r, p, dkLen); //asyncronous
 
     //go nonce, err := hex.DecodeString(slot.KeyParams.Nonce)
     let nonceString = localStorageJSON.header.slots[0].key_params.nonce;
@@ -705,74 +705,81 @@ async function decrypt(iv, key, ciphertext) {
 }
 
 async function encryptDB(password) {
-  //create a 12 byte nonce
-  let nonce = new Uint8Array(12);
-  self.crypto.getRandomValues(nonce);
-  //create a 32 bit masterKey
-  let masterKey = new Uint8Array(32);
-  self.crypto.getRandomValues(masterKey);
-  //create a 16 bit tag
-  //let tag = new Uint8Array(16);
-  //self.crypto.getRandomValues(tag);
-  //convert dbGlobal to content Uint8Array
-  let temp = JSON.stringify(dbGlobal, null, "\t"); //we don't need the formatting
-  let content = TE.encode(temp);
-  let database = await encrypt(nonce, masterKey, content);
-  // database is an ArrayBuffer, not Uint8Array, so fix it
-  database = new Uint8Array(database);
-  //db is 16 bytes larger, the last 16 byte tag is removed and stored as the tag
-  //  let database = concatenateUint8arrays([dbData, tag]);
-  let length = database.length;
-  let dbData = database.slice(0, length - 16);
-  //let dbData = Uint8Array.fromBase64(db);
-  let db = dbData.toBase64();
-  //let db = localStorageJSON.db;
-  localStorageJSON.db = db;
-  //tag = Uint8Array.fromHex(tagString);
-  let tag = database.slice(length - 16, length);
-  let tagString = tag.toHex();
-  //tagString = localStorageJSON.header.params.tag;
-  localStorageJSON.header.params.tag = tagString;
-  //nonce = Uint8Array.fromHex(nonceString);
-  let nonceString = nonce.toHex();
-  //nonceString = localStorageJSON.header.params.nonce;
-  localStorageJSON.header.params.nonce = nonceString;
+  try {
+    // workimg backwards from decryptDB
+    let pw = password.normalize("NFKC");
+    pw = TE.encode(password);
 
-  self.crypto.getRandomValues(nonce); //new masterKey nonce
-  let salt = new Uint8Array(32); //32 byte salt , 64 hex characters
-  self.crypto.getRandomValues(salt);
-  let n = localStorageJSON.header.slots[0].n;
-  let r = localStorageJSON.header.slots[0].r;
-  let p = localStorageJSON.header.slots[0].p;
-  let dkLen = 32;
-  let keyScrypt = await scrypt.scrypt(password, salt, n, r, p, dkLen); //asyncronous
-  //let masterKey = await decrypt(nonce, keyScrypt, keyData);
-  let keyData = await encrypt(nonce, keyScrypt, masterKey);
-//keyDaya is 16 bytes bigger than keyScrypt so tag is that last 16 bytes and soltKey the first part 
-  
-  
-  //reverse
-  
+    //create a 12 byte nonce
+    let nonce = new Uint8Array(12);
+    self.crypto.getRandomValues(nonce);
+    //create a 32 bit masterKey
+    let masterKey = new Uint8Array(32);
+    self.crypto.getRandomValues(masterKey);
+    //create a 16 bit tag
+    //let tag = new Uint8Array(16);
+    //self.crypto.getRandomValues(tag);
+    //convert dbGlobal to content Uint8Array
+    let temp = JSON.stringify(dbGlobal, null, "\t"); //we don't need the formatting
+    let content = TE.encode(temp);
+    let database = await encrypt(nonce, masterKey, content);
+    // database is an ArrayBuffer, not Uint8Array, so fix it
+    database = new Uint8Array(database);
+    //db is 16 bytes larger, the last 16 byte tag is removed and stored as the tag
+    //  let database = concatenateUint8arrays([dbData, tag]);
+    let length = database.length;
+    let dbData = database.slice(0, length - 16);
+    //let dbData = Uint8Array.fromBase64(db);
+    let db = dbData.toBase64();
+    //let db = localStorageJSON.db;
+    localStorageJSON.db = db;
+    //tag = Uint8Array.fromHex(tagString);
+    let tag = database.slice(length - 16, length);
+    let tagString = tag.toHex();
+    //tagString = localStorageJSON.header.params.tag;
+    localStorageJSON.header.params.tag = tagString;
+    //nonce = Uint8Array.fromHex(nonceString);
+    let nonceString = nonce.toHex();
+    //nonceString = localStorageJSON.header.params.nonce;
+    localStorageJSON.header.params.nonce = nonceString;
+
+    let salt = new Uint8Array(32); //32 byte salt , 64 hex characters
+    self.crypto.getRandomValues(salt);
+    let n = localStorageJSON.header.slots[0].n;
+    let r = localStorageJSON.header.slots[0].r;
+    let p = localStorageJSON.header.slots[0].p;
+    let dkLen = 32;
+    let keyScrypt = await scrypt.scrypt(pw, salt, n, r, p, dkLen); //asyncronous
+
     //let nonceString = localStorageJSON.header.slots[0].key_params.nonce;
-    nonceString = nonceString.normalize("NFKC");
+    //nonceString = nonceString.normalize("NFKC");
     //let nonce = Uint8Array.fromHex(nonceString);
-
-    // go	tag, err := hex.DecodeString(slot.KeyParams.Tag)
-    //let tagString = localStorageJSON.header.slots[0].key_params.tag;
-    //let tag = Uint8Array.fromHex(tagString);
-
-    // go slotKey, err := hex.DecodeString(slot.Key)
-    //let slotKeyString = localStorageJSON.header.slots[0].key;
-    //let slotKey = Uint8Array.fromHex(slotKeyString);
-
-    // go var keyData []byte = append(slotKey, tag...)
+    self.crypto.getRandomValues(nonce); //new masterKey nonce
+    nonceString = nonce.toHex();
+    localStorageJSON.header.slots[0].key_params.nonce = nonceString;
+    //let masterKey = await decrypt(nonce, keyScrypt, keyData);
+    let keyData = await encrypt(nonce, keyScrypt, masterKey);
+    //keyDaya is 16 bytes bigger than masterKey so tag is that last 16 bytes and so masterKey the remaining first part
     //let keyData = concatenateUint8arrays([slotKey, tag]);
-  
-  
-  let y = 8;
-}
+    length = keyData.length;
+    let slotKey = keyData.slice(0, length - 16);
+    //let slotKey = Uint8Array.fromHex(slotKeyString);
+    let slotKeyString = slotKey.toHex();
+    //let slotKeyString = localStorageJSON.header.slots[0].key;
+    localStorageJSON.header.slots[0].key = slotKeyString;
+    tag = keyData.slice(length - 16, length);
+    //let tag = Uint8Array.fromHex(tagString);
+    tagString = tag.toHex();
+    //let tagString = localStorageJSON.header.slots[0].key_params.tag;
+    localStorageJSON.header.slots[0].key_params.tag = tagString;
 
-//encryptDB("fdgd");
+    let y = 8;
+  } catch (err) {
+    //dont bother outer code will log error
+    //postError(err);
+    return;
+  }
+}
 
 async function encrypt(iv, key, ciphertext) {
   let encrypted;
