@@ -127,11 +127,11 @@ body {
   <form>
     <center>
       <div>
-        <input type="button" value="Get Aegis JSON encrypted database" onclick="getAegisJsonFromTextbox();">
+        <input type="button" value="Get Aegis JSON encrypted database" onclick="getLocalStorageToTextbox();">
       </div>
 
       <div>
-        <input type="button" value="Save Aegis JSON encrypted database" onclick="if(confirm('This will overwrite your current Aegis JSON encrypted database. Are you sure?')){setAegisJsonFromTextbox();}">
+        <input type="button" value="Save Aegis JSON encrypted database" onclick="if(confirm('This will overwrite your current Aegis JSON encrypted database. Are you sure?')){setLocalStorageFromTextbox();}">
       </div>
 
       <div>
@@ -246,9 +246,9 @@ body {
 let password = ""; //it can be "", but we insist on a password when
 let myInterval;
 let localStorageName = "JsTOTPAuthenticator";
-let localStorageJSON = {};
+let localStorageObject = {};
 let plaintext;
-let dbGlobal = {};
+//let localStorageObject = {};
 let entriesGlobal = [];
 let errorArray = [];
 let oldStepInt = 0;
@@ -298,8 +298,8 @@ async function main() {
     }
 
     //is there  local storage and is it JSON? yes continue : no stop
-    localStorageJSON = getLocalStorage(); //load database
-    if (JSON.stringify(localStorageJSON) == "{}") {
+    localStorageObject = getLocalStorage(); //load database
+    if (JSON.stringify(localStorageObject) == "{}") {
       //no error is required
       //throw { name: "No local database", message: "No local database" };
       entriesDiv.innerHTML =
@@ -307,8 +307,8 @@ async function main() {
       return;
     }
 
-    //test to see if json is valid Aegis format. I am only weak testing for localStorageJSON.db
-    if (typeof localStorageJSON.db == "undefined") {
+    //test to see if json is valid Aegis format. I am only weak testing for localStorageObject.db
+    if (typeof localStorageObject.db == "undefined") {
       //no error is required
       //throw { name: "main", message: "Not a vaiid Aegis JSON format" };
       entriesDiv.innerHTML =
@@ -321,17 +321,17 @@ async function main() {
     //1. wipe local storage and run main()
     //2. set password and run main()
     //unencrypt Aegis JSON DB : AES CGM
-    let dbJSON = await unencryptDB(password);
+    let dbJSON = await unencryptDb(password);
     if (dbJSON == "") {
       //pw failed so open passwordDialog
       openDialog("passwordDialog");
       //throw {name: "main",message: "Password is incorrect or maybe JSON Database is corrupt"};
       return;
     }
-    dbGlobal = JSON.parse(dbJSON);
-    let test = await encryptDB(password);
+    localStorageObject = JSON.parse(dbJSON);
+    //let test = await encryptDb(password);
 
-    entriesGlobal = dbGlobal.entries;
+    entriesGlobal = localStorageObject.entries;
     dbJSON = ""; //data no longer needed
     buildEntriesDOM(); //this has to be here as we need to wait for the promise
 
@@ -404,7 +404,12 @@ function changePassword(pw1, pw2) {
     if (pw1 == pw2) {
       password = pw1;
       closeDialog("changePasswordDialog");
-      //encrypt db
+      
+      encryptDb(password);
+      let JsonOutput = JSON.stringify(localStorageObject, null, "\t");
+
+      setLocalStorage(JsonOutput);
+      
       main();
     } else {
       window.alert("Passwords do not match");
@@ -464,15 +469,12 @@ function closeMenu() {
   }
 }
 
-function getAegisJsonFromTextbox() {
+function getLocalStorageToTextbox() {
   try {
     errorArray = [];
-    getLocalStorage();
-    document.getElementById("JSONSave").value = JSON.stringify(
-      localStorageJSON,
-      null,
-      "\t"
-    );
+    let jsonObject = getLocalStorage();
+    let jsonString = JSON.stringify(jsonObject, null, "\t");  
+    document.getElementById("JSONSave").value = jsonString;
   } catch (err) {
     //postError(err);
     postError({
@@ -482,11 +484,12 @@ function getAegisJsonFromTextbox() {
   }
 }
 
-function setAegisJsonFromTextbox() {
+function setLocalStorageFromTextbox() {
   try {
     errorArray = [];
-    localStorageJSON = JSON.parse(document.getElementById("JSONSave").value);
-    setLocalStorage(localStorageJSON);
+    let jsonString = document.getElementById("JSONSave").value
+    localStorageObject = JSON.parse(jsonString); //also set obj
+    setLocalStorage(localStorageObject);
     document.getElementById("JSONSave").value = "";
     main(); //clear and rebuild
   } catch (err) {
@@ -500,8 +503,8 @@ function setAegisJsonFromTextbox() {
 
 function exportAll() {
   try {
-    localStorageJSON = GetLocalStorage();
-    copytoclipboard2(JSON.stringify(localStorageJSON));
+    localStorageObject = GetLocalStorage();
+    copytoclipboard2(JSON.stringify(localStorageObject, null, "\t"));
   } catch (err) {
     postError(err);
   }
@@ -602,7 +605,7 @@ async function hmac(
   }
 }
 
-async function unencryptDB(password) {
+async function unencryptDb(password) {
   try {
     let pw = password.normalize("NFKC");
     pw = TE.encode(password);
@@ -612,14 +615,14 @@ async function unencryptDB(password) {
     // from the vault and returns the master key's bytes.
 
     // go salt, err := hex.DecodeString(slot.Salt)
-    let saltString = localStorageJSON.header.slots[0].salt;
+    let saltString = localStorageObject.header.slots[0].salt;
     let salt = Uint8Array.fromHex(saltString);
 
     // Create a key using the slot values and provided password
     // go key, err = scrypt.Key([]byte(pwd), salt, slot.N, slot.R, slot.P, 32)
-    let n = localStorageJSON.header.slots[0].n;
-    let r = localStorageJSON.header.slots[0].r;
-    let p = localStorageJSON.header.slots[0].p;
+    let n = localStorageObject.header.slots[0].n;
+    let r = localStorageObject.header.slots[0].r;
+    let p = localStorageObject.header.slots[0].p;
     let dkLen = 32;
 
     // scrypt is password based key derivation
@@ -629,16 +632,16 @@ async function unencryptDB(password) {
     let keyScrypt = await scrypt.scrypt(pw, salt, n, r, p, dkLen); //asyncronous
 
     //go nonce, err := hex.DecodeString(slot.KeyParams.Nonce)
-    let nonceString = localStorageJSON.header.slots[0].key_params.nonce;
+    let nonceString = localStorageObject.header.slots[0].key_params.nonce;
     nonceString = nonceString.normalize("NFKC");
     let nonce = Uint8Array.fromHex(nonceString);
 
     // go	tag, err := hex.DecodeString(slot.KeyParams.Tag)
-    let tagString = localStorageJSON.header.slots[0].key_params.tag;
+    let tagString = localStorageObject.header.slots[0].key_params.tag;
     let tag = Uint8Array.fromHex(tagString);
 
     // go slotKey, err := hex.DecodeString(slot.Key)
-    let slotKeyString = localStorageJSON.header.slots[0].key;
+    let slotKeyString = localStorageObject.header.slots[0].key;
     let slotKey = Uint8Array.fromHex(slotKeyString);
 
     // go var keyData []byte = append(slotKey, tag...)
@@ -652,16 +655,16 @@ async function unencryptDB(password) {
     //let test =  await encrypt(nonce, keyScrypt, masterKey);
 
     // go nonce, err := hex.DecodeString(params.Nonce)
-    nonceString = localStorageJSON.header.params.nonce;
+    nonceString = localStorageObject.header.params.nonce;
     nonceString = nonceString.normalize("NFKC");
     nonce = Uint8Array.fromHex(nonceString);
 
     // go tag, err := hex.DecodeString(params.Tag)
-    tagString = localStorageJSON.header.params.tag;
+    tagString = localStorageObject.header.params.tag;
     tag = Uint8Array.fromHex(tagString);
 
     //go dbData, err := base64.StdEncoding.DecodeString(db)
-    let db = localStorageJSON.db;
+    let db = localStorageObject.db;
     let dbData = Uint8Array.fromBase64(db);
 
     //go var database []byte = append(dbData, tag...)
@@ -704,7 +707,7 @@ async function decrypt(iv, key, ciphertext) {
   }
 }
 
-async function encryptDB(password) {
+async function encryptDb(password) {
   try {
     // workimg backwards from decryptDB
     let pw = password.normalize("NFKC");
@@ -719,8 +722,8 @@ async function encryptDB(password) {
     //create a 16 bit tag
     //let tag = new Uint8Array(16);
     //self.crypto.getRandomValues(tag);
-    //convert dbGlobal to content Uint8Array
-    let temp = JSON.stringify(dbGlobal, null, "\t"); //we don't need the formatting
+    //convert localStorageObject to content Uint8Array
+    let temp = JSON.stringify(localStorageObject, null, "\t"); //we don't need the formatting
     let content = TE.encode(temp);
     let database = await encrypt(nonce, masterKey, content);
     // database is an ArrayBuffer, not Uint8Array, so fix it
@@ -731,32 +734,32 @@ async function encryptDB(password) {
     let dbData = database.slice(0, length - 16);
     //let dbData = Uint8Array.fromBase64(db);
     let db = dbData.toBase64();
-    //let db = localStorageJSON.db;
-    localStorageJSON.db = db;
+    //let db = localStorageObject.db;
+    localStorageObject.db = db;
     //tag = Uint8Array.fromHex(tagString);
     let tag = database.slice(length - 16, length);
     let tagString = tag.toHex();
-    //tagString = localStorageJSON.header.params.tag;
-    localStorageJSON.header.params.tag = tagString;
+    //tagString = localStorageObject.header.params.tag;
+    localStorageObject.header.params.tag = tagString;
     //nonce = Uint8Array.fromHex(nonceString);
     let nonceString = nonce.toHex();
-    //nonceString = localStorageJSON.header.params.nonce;
-    localStorageJSON.header.params.nonce = nonceString;
+    //nonceString = localStorageObject.header.params.nonce;
+    localStorageObject.header.params.nonce = nonceString;
 
     let salt = new Uint8Array(32); //32 byte salt , 64 hex characters
     self.crypto.getRandomValues(salt);
-    let n = localStorageJSON.header.slots[0].n;
-    let r = localStorageJSON.header.slots[0].r;
-    let p = localStorageJSON.header.slots[0].p;
+    let n = localStorageObject.header.slots[0].n;
+    let r = localStorageObject.header.slots[0].r;
+    let p = localStorageObject.header.slots[0].p;
     let dkLen = 32;
     let keyScrypt = await scrypt.scrypt(pw, salt, n, r, p, dkLen); //asyncronous
 
-    //let nonceString = localStorageJSON.header.slots[0].key_params.nonce;
+    //let nonceString = localStorageObject.header.slots[0].key_params.nonce;
     //nonceString = nonceString.normalize("NFKC");
     //let nonce = Uint8Array.fromHex(nonceString);
     self.crypto.getRandomValues(nonce); //new masterKey nonce
     nonceString = nonce.toHex();
-    localStorageJSON.header.slots[0].key_params.nonce = nonceString;
+    localStorageObject.header.slots[0].key_params.nonce = nonceString;
     //let masterKey = await decrypt(nonce, keyScrypt, keyData);
     let keyData = await encrypt(nonce, keyScrypt, masterKey);
     //keyDaya is 16 bytes bigger than masterKey so tag is that last 16 bytes and so masterKey the remaining first part
@@ -765,15 +768,18 @@ async function encryptDB(password) {
     let slotKey = keyData.slice(0, length - 16);
     //let slotKey = Uint8Array.fromHex(slotKeyString);
     let slotKeyString = slotKey.toHex();
-    //let slotKeyString = localStorageJSON.header.slots[0].key;
-    localStorageJSON.header.slots[0].key = slotKeyString;
+    //let slotKeyString = localStorageObject.header.slots[0].key;
+    localStorageObject.header.slots[0].key = slotKeyString;
     tag = keyData.slice(length - 16, length);
     //let tag = Uint8Array.fromHex(tagString);
     tagString = tag.toHex();
-    //let tagString = localStorageJSON.header.slots[0].key_params.tag;
-    localStorageJSON.header.slots[0].key_params.tag = tagString;
+    //let tagString = localStorageObject.header.slots[0].key_params.tag;
+    localStorageObject.header.slots[0].key_params.tag = tagString;
 
-    let y = 8;
+      
+    let encrypted = TD.decode(db);
+    return encrypted;
+    
   } catch (err) {
     //dont bother outer code will log error
     //postError(err);
@@ -832,28 +838,29 @@ function buildEntriesDOM() {
   }
 }
 
-function setLocalStorage(json) {
+function setLocalStorage(localStorageObject) {//saves object
   try {
-    let AliasListString = JSON.stringify(json);
-    localStorage[localStorageName] = AliasListString;
+    let jsonString = JSON.stringify(localStorageObject, null, "\t");
+    localStorage[localStorageName] = jsonString;
   } catch (err) {
     //postError(err);
     postError({ name: "setLocalStorage", message: "Malformed JSON Data" });
   }
 }
 
-function getLocalStorage() {
+function getLocalStorage() { //returns object
   //return {} if undefined
-  let jsonParsed = {};
+  let json;
   try {
     if (typeof localStorage[localStorageName] != "undefined") {
-      jsonParsed = JSON.parse(localStorage[localStorageName]);
+      let jsonString = localStorage[localStorageName];
+      json = JSON.parse(jsonString);
     }
   } catch (err) {
     //postError(err);
     postError({ name: "getLocalStorage", message: "Malformed JSON Data" });
   } finally {
-    return jsonParsed;
+    return json;
   }
 }
 
