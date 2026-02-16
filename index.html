@@ -147,6 +147,10 @@ body {
 
   <center>
     <div>
+      <a href="#" id="changePassword" class="button" onclick="openDialog('changePasswordDialog')">Change Password</a>
+    </div>
+    
+    <div>
       <a href="#" id="install" class="button">Install as PWA</a>
     </div>
 
@@ -172,7 +176,7 @@ body {
 
 <dialog id="passwordDialog">
   <p>Unencrypt Aegis Database</p>
-  <form method="dialog" onsubmit="tryPassword(document.querySelector('#password').value)">
+  <form method="dialog" onsubmit="tryPassword(document.querySelector('#password').value);document.querySelector('#password').value='';">
     <center>
       <div>
         <input type="text" id="password" placeholder="Password" class="secret" autocomplete="off">
@@ -211,6 +215,27 @@ body {
   </form>
 </dialog>
 
+<dialog id="changePasswordDialog">
+  <p>Add An Entry</p>
+  <form method="dialog" onsubmit="changePassword(document.querySelector('#newPassword1').value , document.querySelector('#newPassword2').value)">
+    <center>
+      <div>
+        <input type="text" id="newPassword1" placeholder="New Password" autocomplete="off" class="secret">
+      </div>
+      <div>
+        <input type="text" id="newPassword2" placeholder="New Password again" autocomplete="off" class="secret">
+      </div>
+      <div>
+        <input type="submit" value="Submit">
+      </div>
+      <p></p>
+      <div>
+        <input type="button" value="Cancel" onclick="closeDialog('changePasswordDialog')">
+      </div>
+    </center>
+  </form>
+</dialog>
+
 <p></p>
 
 <div id="error"></div>
@@ -219,6 +244,7 @@ body {
 "use strict";
 
 let password = ""; //it can be "", but we insist on a password when
+let myInterval;
 let localStorageName = "JsTOTPAuthenticator";
 let localStorageJSON = {};
 let plaintext;
@@ -256,6 +282,7 @@ main();
 async function main() {
   try {
     //fresh start
+    clearInterval(myInterval);
     closeMenu();
     errorArray = [];
     document.querySelector("#error").innerHTML = "";
@@ -294,21 +321,21 @@ async function main() {
     //1. wipe local storage and run main()
     //2. set password and run main()
     //unencrypt Aegis JSON DB : AES CGM
-    let entriesJSON;
-    entriesJSON = await unencryptDB(password);
-    if (entriesJSON == "") {
+    let dbJSON = await unencryptDB(password);
+    if (dbJSON == "") {
       //pw failed so open passwordDialog
       openDialog("passwordDialog");
       //throw {name: "main",message: "Password is incorrect or maybe JSON Database is corrupt"};
       return;
     }
+    dbGlobal = JSON.parse(dbJSON);
+    let test = await encryptDB(password);
 
-    dbGlobal = JSON.parse(entriesJSON);
     entriesGlobal = dbGlobal.entries;
-    entriesJSON = ""; //data no longer needed
+    dbJSON = ""; //data no longer needed
     buildEntriesDOM(); //this has to be here as we need to wait for the promise
 
-    let myInterval = setInterval(eachSecond, 1000); //start counter
+    myInterval = setInterval(eachSecond, 1000); //start counter
   } catch (err) {
     postError(err);
   }
@@ -371,6 +398,21 @@ async function eachSecond() {
 }
 
 // BUTTON FUNCTIONS //
+
+function changePassword(pw1, pw2) {
+  try {
+    if (pw1 == pw2) {
+      password = pw1;
+      closeDialog("changePasswordDialog");
+      //encrypt db
+      main();
+    } else {
+      window.alert("Passwords do not match");
+    }
+  } catch (err) {
+    postError(err);
+  }
+}
 
 function wipeDatabase() {
   if (
@@ -608,6 +650,7 @@ async function unencryptDB(password) {
     // go aesgcm, err := cipher.NewGCM(block)
     //go masterKey, err = aesgcm.Open(nil, nonce, keyData, nil)
     let masterKey = await decrypt(nonce, keyScrypt, keyData);
+    //let test =  await encrypt(nonce, keyScrypt, masterKey);
 
     // go nonce, err := hex.DecodeString(params.Nonce)
     nonceString = localStorageJSON.header.params.nonce;
@@ -655,6 +698,77 @@ async function decrypt(iv, key, ciphertext) {
       ciphertext
     );
     return decrypted;
+  } catch (err) {
+    //dont bother outer code will log error
+    //postError(err);
+    return;
+  }
+}
+
+async function encryptDB(password) {
+  //create a 12 byte nonce
+  let nonce = new Uint8Array(12);
+  self.crypto.getRandomValues(nonce);
+  //create a 32 bit masterKey
+  let masterKey = new Uint8Array(32);
+  self.crypto.getRandomValues(masterKey);
+  //create a 16 bit tag
+  let tag = new Uint8Array(16);
+  self.crypto.getRandomValues(tag);
+  //convert dbGlobal to content Uint8Array
+  let temp = JSON.stringify(dbGlobal, null, "\t"); //we don't need the formatting
+  let content = TE.encode(temp);
+  let database = await encrypt(nonce, masterKey, content);
+  // database is an ArrayBuffer, not Uint8Array
+  database = new Uint8Array(database);
+  
+  
+  //db is 16 bytes larger, the last 16 byte tag is removed and stored as the tag
+  //  let database = concatenateUint8arrays([dbData, tag]);
+  let length = database.length;
+  tag = database.slice(length - 16, length);
+  let dbData = database.slice(0, length - 16);
+  
+  //let dbData = Uint8Array.fromBase64(db);
+  let db = dbData.toBase64();
+  
+  //let db = localStorageJSON.db;
+  localStorageJSON.db = db;
+    
+      
+  let y = 8;
+
+  /*
+    let content = await decrypt(nonce, masterKey, database);
+
+     let database = concatenateUint8arrays([dbData, tag]);
+  
+  //dbData = 
+  
+  //concatenate database dbData + tag
+
+  let database = await decrypt(nonce, masterKey, database);
+  */
+}
+
+//encryptDB("fdgd");
+
+async function encrypt(iv, key, ciphertext) {
+  let encrypted;
+  try {
+    let block = await window.crypto.subtle.importKey(
+      "raw",
+      key,
+      { name: "AES-GCM" },
+      1,
+      ["encrypt", "decrypt"]
+    );
+    encrypted = await window.crypto.subtle.encrypt(
+      { name: "AES-GCM", iv },
+      block,
+      ciphertext
+    );
+    return encrypted;
   } catch (err) {
     //dont bother outer code will log error
     //postError(err);
