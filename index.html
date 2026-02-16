@@ -327,12 +327,12 @@ async function main() {
       //throw {name: "main",message: "Password is incorrect or maybe JSON Database is corrupt"};
       return;
     }
-    
-    dbGlobal =  JSON.parse(dbJSON);
+
+    dbGlobal = JSON.parse(dbJSON);
     entriesGlobal = dbGlobal.entries;
     //let test = await encryptDb(password);
 
-   // entriesGlobal = localStorageObject.entries;
+    // entriesGlobal = localStorageObject.entries;
     dbJSON = ""; //data no longer needed
     buildEntriesDOM(); //this has to be here as we need to wait for the promise
 
@@ -400,12 +400,12 @@ async function eachSecond() {
 
 // BUTTON FUNCTIONS //
 
-function changePassword(pw1, pw2) {
+async function changePassword(pw1, pw2) {
   try {
     if (pw1 == pw2) {
       password = pw1;
       closeDialog("changePasswordDialog");
-      encryptDb(password);
+      await encryptDb(password);
       setLocalStorage(localStorageObject);
       main();
     } else {
@@ -470,7 +470,7 @@ function getLocalStorageToTextbox() {
   try {
     errorArray = [];
     let jsonObject = getLocalStorage();
-    let jsonString = JSON.stringify(jsonObject, null, "\t");  
+    let jsonString = JSON.stringify(jsonObject, null, "\t");
     document.getElementById("JSONSave").value = jsonString;
   } catch (err) {
     //postError(err);
@@ -484,7 +484,7 @@ function getLocalStorageToTextbox() {
 function setLocalStorageFromTextbox() {
   try {
     errorArray = [];
-    let jsonString = document.getElementById("JSONSave").value
+    let jsonString = document.getElementById("JSONSave").value;
     localStorageObject = JSON.parse(jsonString); //also set obj
     setLocalStorage(localStorageObject);
     document.getElementById("JSONSave").value = "";
@@ -743,8 +743,13 @@ async function encryptDb(password) {
     //nonceString = localStorageObject.header.params.nonce;
     localStorageObject.header.params.nonce = nonceString;
 
+    //let saltString = localStorageObject.header.slots[0].salt;
+    //let salt = Uint8Array.fromHex(saltString);
     let salt = new Uint8Array(32); //32 byte salt , 64 hex characters
     self.crypto.getRandomValues(salt);
+    let saltString = salt.toHex();
+    localStorageObject.header.slots[0].salt = saltString;
+    
     let n = localStorageObject.header.slots[0].n;
     let r = localStorageObject.header.slots[0].r;
     let p = localStorageObject.header.slots[0].p;
@@ -777,7 +782,6 @@ async function encryptDb(password) {
     //let encrypted = TD.decode(db);
     let encrypted = db;
     return encrypted;
-    
   } catch (err) {
     //dont bother outer code will log error
     //postError(err);
@@ -836,7 +840,8 @@ function buildEntriesDOM() {
   }
 }
 
-function setLocalStorage(localStorageObject) {//saves object
+function setLocalStorage(localStorageObject) {
+  //saves object
   try {
     let jsonString = JSON.stringify(localStorageObject, null, "\t");
     localStorage[localStorageName] = jsonString;
@@ -846,7 +851,8 @@ function setLocalStorage(localStorageObject) {//saves object
   }
 }
 
-function getLocalStorage() { //returns object
+function getLocalStorage() {
+  //returns object
   //return {} if undefined
   let json;
   try {
