@@ -194,9 +194,31 @@ body {
   </form>
 </dialog>
 
+<dialog id="changePasswordDialog">
+  <p>Add An Entry</p>
+  <form method="dialog" onsubmit="changePassword(this)">
+    <center>
+      <div></div>
+      <div>
+        <input type="text" id="newPassword1" placeholder="New Password" autocomplete="off" class="secret">
+      </div>
+      <div>
+        <input type="text" id="newPassword2" placeholder="New Password again" autocomplete="off" class="secret">
+      </div>
+      <div>
+        <input type="submit" value="Submit">
+      </div>
+      <p></p>
+      <div>
+        <input type="button" value="Cancel" onclick="closeDialog('changePasswordDialog')">
+      </div>
+    </center>
+  </form>
+</dialog>
+
 <dialog id="addEntryDialog">
   <p>Add An Entry</p>
-  <form method="dialog" onsubmit="addEntry()">
+  <form method="dialog" onsubmit="addEntry(this)">
     <center>
       <div>
         <input type="text" id="entryName" placeholder="Name" autocomplete="off">
@@ -215,27 +237,6 @@ body {
   </form>
 </dialog>
 
-<dialog id="changePasswordDialog">
-  <p>Add An Entry</p>
-  <form method="dialog" onsubmit="changePassword(document.querySelector('#newPassword1').value , document.querySelector('#newPassword2').value);document.querySelector('#newPassword1').value='';document.querySelector('#newPassword2').value='';">
-    <center>
-      <div>
-        <input type="text" id="newPassword1" placeholder="New Password" autocomplete="off" class="secret">
-      </div>
-      <div>
-        <input type="text" id="newPassword2" placeholder="New Password again" autocomplete="off" class="secret">
-      </div>
-      <div>
-        <input type="submit" value="Submit">
-      </div>
-      <p></p>
-      <div>
-        <input type="button" value="Cancel" onclick="closeDialog('changePasswordDialog')">
-      </div>
-    </center>
-  </form>
-</dialog>
-
 <p></p>
 
 <div id="error"></div>
@@ -248,7 +249,10 @@ let myInterval;
 let localStorageName = "JsTOTPAuthenticator";
 let localStorageObject = {};
 let dbGlobal; //entries, groups, ect
-let entriesGlobal = []; //just entries
+
+// DO WE NEED THIS...
+//let dbGlobal.entries = []; //just entries
+
 let errorArray = [];
 let oldStepInt = 0;
 let entriesDiv = document.querySelector("#entriesDiv");
@@ -266,13 +270,11 @@ const TD = new TextDecoder();
 //TO DO:
 //build aegis json db
 //add entry
-//reset password
-//encrypt
-//imput url
+//input url
 //qr code?
 //show secret
 //add issuer and notes
-//timed copied alert
+//copied alert message
 
 // START MAIN LOOP //
 
@@ -329,10 +331,10 @@ async function main() {
     }
 
     dbGlobal = JSON.parse(dbJSON);
-    entriesGlobal = dbGlobal.entries;
+    dbGlobal.entries = dbGlobal.entries;
     //let test = await encryptDb(password);
 
-    // entriesGlobal = localStorageObject.entries;
+    // dbGlobal.entries = localStorageObject.entries;
     dbJSON = ""; //data no longer needed
     buildEntriesDOM(); //this has to be here as we need to wait for the promise
 
@@ -344,7 +346,7 @@ async function main() {
 
 async function eachSecond() {
   try {
-    if (entriesGlobal.length == 0) {
+    if (dbGlobal.entries.length == 0) {
       return "No entries yet";
     }
     let unixTime = Date.now() / 1000; //in seconds
@@ -370,7 +372,7 @@ async function eachSecond() {
 
     // calculate and output code for each entry and place on template
     let entriesCount = 0;
-    for (let entry of entriesGlobal) {
+    for (let entry of dbGlobal.entries) {
       let name = entry.name;
       let algo = entry.info.algo;
       let digits = entry.info.digits;
@@ -400,13 +402,50 @@ async function eachSecond() {
 
 // BUTTON FUNCTIONS //
 
-async function changePassword(pw1, pw2) {
+async function addEntry(el) {
   try {
+    let entryName = el[0].value;
+    let entrySecret = el[1].value;
+
+    let uuid = self.crypto.randomUUID();
+
+    let template = {
+      type: "totp",
+      uuid: uuid,
+      name: entryName,
+      issuer: "",
+      note: "",
+      favorite: false,
+      icon: null,
+      info: {
+        secret: entrySecret,
+        algo: "SHA1",
+        digits: 6,
+        period: 30
+      },
+      groups: []
+    };
+
+    dbGlobal.entries.push(template);
+    encryptDb();
+    setLocalStorage(localStorageObject);
+    main();
+  } catch (err) {
+    postError(err);
+  }
+}
+
+async function changePassword(el) {
+  try {
+    let pw1 = el[0].value;
+    let pw2 = el[1].value;
     if (pw1 == pw2) {
       password = pw1;
       closeDialog("changePasswordDialog");
       await encryptDb(password);
       setLocalStorage(localStorageObject);
+      el[0].value = "";
+      el[1].value = "";
       main();
     } else {
       window.alert("Passwords do not match");
@@ -749,7 +788,7 @@ async function encryptDb(password) {
     self.crypto.getRandomValues(salt);
     let saltString = salt.toHex();
     localStorageObject.header.slots[0].salt = saltString;
-    
+
     let n = localStorageObject.header.slots[0].n;
     let r = localStorageObject.header.slots[0].r;
     let p = localStorageObject.header.slots[0].p;
@@ -819,7 +858,7 @@ function buildEntriesDOM() {
     let entriesCount = 0;
     let entriesDiv = document.querySelector("#entriesDiv");
     entriesDiv.innerHTML = "";
-    entriesGlobal.forEach(function (entry) {
+    dbGlobal.entries.forEach(function (entry) {
       //replace template values
       // https://stackoverflow.com/questions/377961/efficient-javascript-string-replacement
       //https://stackoverflow.com/questions/68970312/how-do-i-resolve-a-javascript-template-literal-variable-within-a-string-within-a
