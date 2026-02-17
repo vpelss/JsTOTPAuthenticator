@@ -249,10 +249,6 @@ let myInterval;
 let localStorageName = "JsTOTPAuthenticator";
 let localStorageObject = {};
 let dbGlobal; //entries, groups, ect
-
-// DO WE NEED THIS...
-//let dbGlobal.entries = []; //just entries
-
 let errorArray = [];
 let oldStepInt = 0;
 let entriesDiv = document.querySelector("#entriesDiv");
@@ -261,20 +257,17 @@ const TD = new TextDecoder();
 
 // the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
 
-// no global db??
-
-// + on add an entry, store and encrypt and rebuild dom
-
 //always encrypt. password can be "" but if on save or export, ensure that a passwod is set!!! Warning etc
 
 //TO DO:
-//build aegis json db
-//add entry
+//build aegis json db from empty
 //input url
 //qr code?
 //show secret
 //add issuer and notes
 //copied alert message
+//remove entry
+//edit entry
 
 // START MAIN LOOP //
 
@@ -337,6 +330,17 @@ async function main() {
     // dbGlobal.entries = localStorageObject.entries;
     dbJSON = ""; //data no longer needed
     buildEntriesDOM(); //this has to be here as we need to wait for the promise
+
+    //harangue those with a blank password
+    if (password == "") {
+      if (
+        confirm(
+          "You currently have a blank password. This means anyone can access your Authentication codes. This is unwise. Do you wish to set a password"
+        )
+      ) {
+        openDialog("changePasswordDialog");
+      }
+    }
 
     myInterval = setInterval(eachSecond, 1000); //start counter
   } catch (err) {
@@ -427,7 +431,7 @@ async function addEntry(el) {
     };
 
     dbGlobal.entries.push(template);
-    encryptDb();
+    await encryptDb(password);
     setLocalStorage(localStorageObject);
     main();
   } catch (err) {
@@ -440,6 +444,15 @@ async function changePassword(el) {
     let pw1 = el[0].value;
     let pw2 = el[1].value;
     if (pw1 == pw2) {
+      if (pw1 == "") {
+        if (
+          !confirm(
+            "You have chosen a blank password. This means anyone can access your Authentication codes. This is UNWISE. Do you wish to continue?"
+          )
+        ) {
+          return;
+        }
+      }
       password = pw1;
       closeDialog("changePasswordDialog");
       await encryptDb(password);
@@ -1000,23 +1013,6 @@ function postError(err) {
   let errorString = JSON.stringify(errorArray, null, "\t");
   document.getElementById("error").innerHTML = "Errors:<br>" + errorString;
 }
-
-let example = {
-  type: "totp",
-  uuid: "8ebf3a2c-687b-4c88-9fe1-3a8a6ca3d59e",
-  name: "8xc",
-  issuer: "",
-  note: "",
-  favorite: false,
-  icon: null,
-  info: {
-    secret: "CCCCCCCC",
-    algo: "SHA1",
-    digits: 6,
-    period: 30
-  },
-  groups: []
-};
   </script>
 
   
