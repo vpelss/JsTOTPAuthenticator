@@ -41,7 +41,7 @@ body {
   transition: width 2s linear;
 }
 
-#theBar2{
+#theBar2 {
   transition: value 2s linear;
   height: 3px;
 }
@@ -67,13 +67,20 @@ body {
 #error {
   white-space: pre-wrap;
   display: block;
-  }
-
-.secret { /*fix / block password managers forcing fields to fill*/
-    -webkit-text-security: disc;
 }
 
-.borders div,span{
+.secret {
+  /*fix / block password managers forcing fields to fill*/
+  -webkit-text-security: disc;
+}
+
+.secret:active {
+  /*fix / block password managers forcing fields to fill*/
+  -webkit-text-security: none;
+}
+
+.borders div,
+span {
   border: solid;
   border-width: 1px;
 }
@@ -168,24 +175,24 @@ body {
 <ttemplate id="theTemplate">
   <div id="${entryId}" class="myTemplate borders">
     <div class="leftTemplate">
-      
-      <div>
-      <span id="entryIssuer${entryId}">Issuer</span>
-      :
+
+      <div style="display: flex;">
+        <span id="entryIssuer${entryId}">Issuer</span>
+        :
         <span id="entryName${entryId}">Name</span>
-        </div>
-      
+      </div>
+
       <div id="entryCode${entryId}" class="codeClass" onclick="copyElementValueToClipboard('${entryId}')">Code</div>
     </div>
     <div class="rightTemplate">
-      <a id="copyIcon"${entryId}" href="#" class="button" onclick="copyElementValueToClipboard('${entryId}')">
+      <a id="copyIcon" ${entryId}" href="#" class="button" onclick="copyElementValueToClipboard('${entryId}')">
         <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#ffffff">
           <path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z" />
         </svg>
       </a>
-       <div id="editIcon"${entryId}"><a href="#" class="button" onclick="editEntryDialog('${entryId}');">&#x2261;</a>
+      <div id="editIcon" ${entryId}"><a href="#" class="button" onclick="editEntryDialog('${entryId}');">&#x2261;</a>
+      </div>
     </div>
-    </div>  
   </div>
 </ttemplate>
 
@@ -258,10 +265,16 @@ body {
     <form method="dialog" onsubmit="editEntry('${entryId}')">
       <center>
         <div>
+          <input type="text" id="editEntryIssuer" placeholder="Issuer" autocomplete="off" value="${entryIssuer}">
+        </div>
+        <div>
           <input type="text" id="editEntryName" placeholder="Name" autocomplete="off" value="${entryName}">
         </div>
         <div>
           <input type="text" id="editEntryInfoSecret" placeholder="Secret" autocomplete="off" class="secret" value="${entryInfoSecret}">
+        </div>
+        <div>
+          <input type="text" id="editEntryNote" placeholder="Note" autocomplete="off" value="${entryNote}">
         </div>
         <div>
           <input type="submit" value="Submit">
@@ -284,7 +297,11 @@ body {
 </dialog>
 
 <dialog id="copiedDialog">
-  copied
+  Code Copied to Clipboard
+</dialog>
+
+<dialog id="waitDialog">
+  Please Wait
 </dialog>
 
 <p></p>
@@ -321,6 +338,7 @@ main();
 async function main() {
   try {
     //fresh start
+    closeDialog("waitDialog");
     clearInterval(myInterval);
     closeMenu();
     errorArray = [];
@@ -430,12 +448,8 @@ async function eachSecond() {
       let period = entry.info.period;
       let seedBase32 = entry.info.secret;
       let seed = decodeBase32toHex(seedBase32.toUpperCase()); //base32Str to HexStr
-      let totp;
-      try {
-        totp = await hmac(seed, step, digits, algo);
-      } catch (err) {
-        postError(err);
-      }
+      
+      let totp = await hmac(seed, step, digits, algo);
 
       document.getElementById("" + entriesCount).value = totp; //we are setting a value in a div. that can't be good
       document.getElementById("entryName" + entriesCount).innerHTML = name;
@@ -468,12 +482,14 @@ function editEntryDialog(id) {
     //build html tempalte with data
     let modifiedTemplate = template("editEntryTemplate", {
       entryId: "" + id,
+      entryIssuer: dbGlobal.entries[id].issuer,
       entryName: dbGlobal.entries[id].name,
+       entryNote: dbGlobal.entries[id].note,
       entryInfoSecret: dbGlobal.entries[id].info["secret"]
     });
     let el = document.querySelector("#tempDialog");
     el.innerHTML = modifiedTemplate;
-    //open tempDialog
+    //open tempDialog: it is temparary so our code knows all the ids and we can easily fill in all the input values
     openDialog("tempDialog");
   } catch (err) {
     postError(err);
@@ -485,11 +501,18 @@ async function editEntry(id) {
     // tempDialog will contain the form
     let el = document.querySelector("#tempDialog").querySelector("form");
     let entryName = el.editEntryName.value;
+    let entryIssuer = el.editEntryIssuer.value;
+    let entryNote = el.editEntryNote.value;
     let entrySecret = el.editEntryInfoSecret.value;
 
-    //await encryptDb(password);
-    //setLocalStorage(localStorageObject);
-    //main();
+    dbGlobal.entries[id].name = entryName;
+    dbGlobal.entries[id].issuer = entryIssuer;
+    dbGlobal.entries[id].note = entryNote;
+    dbGlobal.entries[id].info.secret = entrySecret;
+    
+    await encryptDb(password);
+    setLocalStorage(localStorageObject);
+    main();
   } catch (err) {
     postError(err);
   }
@@ -902,6 +925,8 @@ async function decrypt(iv, key, ciphertext) {
 
 async function encryptDb(password) {
   try {
+    openDialog("waitDialog");
+    
     // workimg backwards from decryptDB
     let pw = password.normalize("NFKC");
     pw = TE.encode(password);
