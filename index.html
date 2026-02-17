@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" >
 
@@ -102,23 +101,6 @@ body {
   </div>
 </div>
 
-<template id="theTemplate">
-  <div id="${entryId}" class="myTemplate">
-    <div class="leftTemplate">
-      <div id="${entryName}">Loading Database</div>
-      <div id="${entryCode}" class="codeClass">Loading Database</div>
-    </div>
-    <div class="rightTemplate">
-      <div><a href="#" id="${entryCopyLink}" class="button"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#ffffff">
-            <path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z" />
-          </svg>
-        </a></div>
-          <div><a href="#" class="button" onclick="editEntryDialog('${entryId}');">&#x2261;</a></div>
-  </div>
-    </div>
-
-</template>
-
 <div_main_page id="main_page_component">
   <div id="entriesDiv">
     Waiting to load encrypted Aegis database
@@ -177,8 +159,28 @@ body {
 
 </div_menu_page>
 
+<template id="theTemplate">
+  <div id="${entryId}" class="myTemplate">
+    <div class="leftTemplate">
+      <div id="entryName${entryId}">Loading Database</div>
+      <div id="entryCode${entryId}" class="codeClass" onclick="copyElementValueToClipboard('${entryId}')">Loading Database</div>
+    </div>
+    <div class="rightTemplate">
+      <div><span class="tooltiptext" id="myTooltip">Copy to clipboard</span>
+        <a href="#" class="button" onclick="copyElementValueToClipboard('${entryId}')">
+          <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#ffffff">
+            <path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z" />
+          </svg>
+        </a>
+      </div>
+      <div><a href="#" class="button" onclick="editEntryDialog('${entryId}');">&#x2261;</a></div>
+    </div>
+  </div>
+
+</template>
+
 <dialog id="passwordDialog">
-  <p>Unencrypt Aegis Database</p>
+  <p>Enter or Set a password for the Aegis Database</p>
   <form method="dialog" onsubmit="tryPassword(document.querySelector('#password').value);document.querySelector('#password').value='';">
     <center>
       <div>
@@ -258,7 +260,8 @@ body {
         <div>
           <input type="button" value="Cancel" onclick="closeDialog('tempDialog')">
         </div>
-         <div>
+        <p></p>
+        <div>
           <input type="button" value="Delete Entry" onclick="deleteEntry('${entryId}')">
         </div>
       </center>
@@ -270,6 +273,10 @@ body {
   tempate id=editEntryTemplate will go here
 </dialog>
 
+<dialog id="copiedDialog">
+  copied
+</dialog>
+
 <p></p>
 
 <div id="error"></div>
@@ -277,11 +284,11 @@ body {
     <script id="rendered-js" >
 "use strict";
 
-let password = ""; //it can be "", but we insist on a password when
+let password = ""; //it can be "", but harangue to set a password
 let myInterval;
 let localStorageName = "JsTOTPAuthenticator";
 let localStorageObject = {};
-let dbGlobal; //entries, groups, ect
+let dbGlobal = {}; //entries, groups, ect
 let errorArray = [];
 let oldStepInt = 0;
 let entriesDiv = document.querySelector("#entriesDiv");
@@ -290,16 +297,12 @@ const TD = new TextDecoder();
 
 // the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
 
-//always encrypt. password can be "" but if on save or export, ensure that a passwod is set!!! Warning etc
-
 //TO DO:
 //edit entry
-//build aegis json db from empty
 //input url
 //qr code?
 //show secret
 //add issuer and notes !!!
-//copied alert message
 
 // START MAIN LOOP //
 
@@ -312,7 +315,7 @@ async function main() {
     closeMenu();
     errorArray = [];
     document.querySelector("#error").innerHTML = "";
-    entriesDiv.innerHTML = "Loading database and attempting decrypt"; //this may be an imp0rt(dont fix this) situation
+    entriesDiv.innerHTML = "Loading database and attempting decrypt"; //this may be an imp0rt (dont fix this) situation
     document.getElementById("JSONSave").value = "";
 
     //does browser support local storage? yes continue : no stop
@@ -422,13 +425,9 @@ async function eachSecond() {
         postError(err);
       }
 
+      document.getElementById("" + entriesCount).value = totp; //we are setting a value in a div. that can't be good
       document.getElementById("entryName" + entriesCount).innerHTML = name;
       document.getElementById("entryCode" + entriesCount).innerHTML = totp;
-      document.getElementById(
-        "entryCopyLink" + entriesCount
-      ).onclick = function () {
-        copytoclipboard2(totp);
-      };
       entriesCount += 1;
     }
   } catch (err) {
@@ -438,32 +437,49 @@ async function eachSecond() {
 
 // BUTTON FUNCTIONS //
 
-function editEntryDialog(id) {
-  //build html tempalte with data
-  let modifiedTemplate = template("editEntryTemplate", {
-    entryId: "" + id,
-    entryName: dbGlobal.entries[id].name,
-    entryInfoSecret: dbGlobal.entries[id].info["secret"]
-  });
-  let el = document.querySelector("#tempDialog");
-  el.innerHTML = modifiedTemplate;
-  //open tempDialog
-  openDialog("tempDialog");
+function copyElementValueToClipboard(id) {
+  try {
+    let code = document.getElementById(id).value; //we stored a value in a div for simplicity
+    copytoclipboard2(code);
+    openDialog("copiedDialog");
+    setTimeout(function () {
+      closeDialog("copiedDialog");
+    }, 1500);
+  } catch (err) {
+    postError(err);
+  }
+}
 
-  let h = id;
+function editEntryDialog(id) {
+  try {
+    //build html tempalte with data
+    let modifiedTemplate = template("editEntryTemplate", {
+      entryId: "" + id,
+      entryName: dbGlobal.entries[id].name,
+      entryInfoSecret: dbGlobal.entries[id].info["secret"]
+    });
+    let el = document.querySelector("#tempDialog");
+    el.innerHTML = modifiedTemplate;
+    //open tempDialog
+    openDialog("tempDialog");
+  } catch (err) {
+    postError(err);
+  }
 }
 
 async function editEntry(id) {
-  // tempDialog will contain the form
-  let el = document.querySelector("#tempDialog").querySelector("form");
-  let entryName = el.editEntryName.value;
-  let entrySecret = el.editEntryInfoSecret.value;
+  try {
+    // tempDialog will contain the form
+    let el = document.querySelector("#tempDialog").querySelector("form");
+    let entryName = el.editEntryName.value;
+    let entrySecret = el.editEntryInfoSecret.value;
 
-  //await encryptDb(password);
-  //setLocalStorage(localStorageObject);
-  //main();
-
-  let r = 9;
+    //await encryptDb(password);
+    //setLocalStorage(localStorageObject);
+    //main();
+  } catch (err) {
+    postError(err);
+  }
 }
 
 async function deleteEntry(id) {
@@ -488,7 +504,47 @@ async function addEntry(el) {
 
     let uuid = self.crypto.randomUUID();
 
-    let template = {
+    //rebuild localStorageObject, it may not exist and will be rewritten anyway
+     if (JSON.stringify(localStorageObject) == "{}") {
+    localStorageObject = {
+      version: 1,
+      header: {
+        slots: [
+          {
+            type: 1,
+            uuid: "2b7ef3b1-419e-479c-a094-98e52e5bb523",
+            key: "",
+            key_params: {
+              nonce: "0",
+              tag: ""
+            },
+            n: 32768,
+            r: 8,
+            p: 1,
+            salt: "",
+            repaired: true,
+            is_backup: false
+          }
+        ],
+        params: {
+          nonce: "",
+          tag: ""
+        }
+      },
+      db: ""
+    };
+     };
+
+    if (JSON.stringify(dbGlobal) == "{}") {
+      dbGlobal = {
+        version: 3,
+        entries: [],
+        groups: [],
+        icons_optimized: true
+      };
+    }
+
+    let entryTemplate = {
       type: "totp",
       uuid: uuid,
       name: entryName,
@@ -505,7 +561,7 @@ async function addEntry(el) {
       groups: []
     };
 
-    dbGlobal.entries.push(template);
+    dbGlobal.entries.push(entryTemplate);
     await encryptDb(password);
     setLocalStorage(localStorageObject);
     main();
@@ -951,10 +1007,7 @@ function buildEntriesDOM() {
       // https://stackoverflow.com/questions/377961/efficient-javascript-string-replacement
       //https://stackoverflow.com/questions/68970312/how-do-i-resolve-a-javascript-template-literal-variable-within-a-string-within-a
       let modifiedTemplate = template("theTemplate", {
-        entryId: "" + entriesCount,
-        entryName: "entryName" + entriesCount,
-        entryCode: "entryCode" + entriesCount,
-        entryCopyLink: "entryCopyLink" + entriesCount
+        entryId: "" + entriesCount
       });
       //add to #entriesDiv
       const toAppend = document.createElement("div");
