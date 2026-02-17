@@ -19,6 +19,7 @@
 <style>
 body {
   margin: 2px;
+  width: 90%;
 }
 
 #header {
@@ -70,6 +71,11 @@ body {
 
 .secret { /*fix / block password managers forcing fields to fill*/
     -webkit-text-security: disc;
+}
+
+.borders div,span{
+  border: solid;
+  border-width: 1px;
 }
 </style>
 
@@ -159,25 +165,29 @@ body {
 
 </div_menu_page>
 
-<template id="theTemplate">
-  <div id="${entryId}" class="myTemplate">
+<ttemplate id="theTemplate">
+  <div id="${entryId}" class="myTemplate borders">
     <div class="leftTemplate">
-      <div id="entryName${entryId}">Loading Database</div>
-      <div id="entryCode${entryId}" class="codeClass" onclick="copyElementValueToClipboard('${entryId}')">Loading Database</div>
+      
+      <div>
+      <span id="entryIssuer${entryId}">Issuer</span>
+      :
+        <span id="entryName${entryId}">Name</span>
+        </div>
+      
+      <div id="entryCode${entryId}" class="codeClass" onclick="copyElementValueToClipboard('${entryId}')">Code</div>
     </div>
     <div class="rightTemplate">
-      <div><span class="tooltiptext" id="myTooltip">Copy to clipboard</span>
-        <a href="#" class="button" onclick="copyElementValueToClipboard('${entryId}')">
-          <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#ffffff">
-            <path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z" />
-          </svg>
-        </a>
-      </div>
-      <div><a href="#" class="button" onclick="editEntryDialog('${entryId}');">&#x2261;</a></div>
+      <a id="copyIcon"${entryId}" href="#" class="button" onclick="copyElementValueToClipboard('${entryId}')">
+        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#ffffff">
+          <path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z" />
+        </svg>
+      </a>
+       <div id="editIcon"${entryId}"><a href="#" class="button" onclick="editEntryDialog('${entryId}');">&#x2261;</a>
     </div>
+    </div>  
   </div>
-
-</template>
+</ttemplate>
 
 <dialog id="passwordDialog">
   <p>Enter or Set a password for the Aegis Database</p>
@@ -413,6 +423,8 @@ async function eachSecond() {
     let entriesCount = 0;
     for (let entry of dbGlobal.entries) {
       let name = entry.name;
+      let issuer = entry.issuer;
+      
       let algo = entry.info.algo;
       let digits = entry.info.digits;
       let period = entry.info.period;
@@ -427,6 +439,7 @@ async function eachSecond() {
 
       document.getElementById("" + entriesCount).value = totp; //we are setting a value in a div. that can't be good
       document.getElementById("entryName" + entriesCount).innerHTML = name;
+      document.getElementById("entryIssuer" + entriesCount).innerHTML = issuer;
       document.getElementById("entryCode" + entriesCount).innerHTML = totp;
       entriesCount += 1;
     }
