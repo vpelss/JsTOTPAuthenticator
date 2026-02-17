@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" >
 
@@ -97,7 +98,7 @@ body {
     </span>
   </center>
   <div>
-      <progress id="theBar" value="0" max="100"></progress>
+    <progress id="theBar" value="0" max="100"></progress>
   </div>
 </div>
 
@@ -108,12 +109,14 @@ body {
       <div id="${entryCode}" class="codeClass">Loading Database</div>
     </div>
     <div class="rightTemplate">
-      <a href="#" id="${entryCopyLink}" class="button"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#ffffff">
-          <path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z" />
-        </svg>
-      </a>
-    </div>
+      <div><a href="#" id="${entryCopyLink}" class="button"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#ffffff">
+            <path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z" />
+          </svg>
+        </a></div>
+          <div><a href="#" class="button" onclick="editEntryDialog('${entryId}');">&#x2261;</a></div>
   </div>
+    </div>
+
 </template>
 
 <div_main_page id="main_page_component">
@@ -149,7 +152,7 @@ body {
     <div>
       <a href="#" id="changePassword" class="button" onclick="openDialog('changePasswordDialog')">Change Password</a>
     </div>
-    
+
     <div>
       <a href="#" id="install" class="button">Install as PWA</a>
     </div>
@@ -237,6 +240,36 @@ body {
   </form>
 </dialog>
 
+<template id="editEntryTemplate">
+  <div>
+    <p>Edit Entry</p>
+    <form method="dialog" onsubmit="editEntry('${entryId}')">
+      <center>
+        <div>
+          <input type="text" id="editEntryName" placeholder="Name" autocomplete="off" value="${entryName}">
+        </div>
+        <div>
+          <input type="text" id="editEntryInfoSecret" placeholder="Secret" autocomplete="off" class="secret" value="${entryInfoSecret}">
+        </div>
+        <div>
+          <input type="submit" value="Submit">
+        </div>
+        <p></p>
+        <div>
+          <input type="button" value="Cancel" onclick="closeDialog('tempDialog')">
+        </div>
+         <div>
+          <input type="button" value="Delete Entry" onclick="deleteEntry('${entryId}')">
+        </div>
+      </center>
+    </form>
+  </div>
+</template>
+
+<dialog id="tempDialog">
+  tempate id=editEntryTemplate will go here
+</dialog>
+
 <p></p>
 
 <div id="error"></div>
@@ -260,14 +293,13 @@ const TD = new TextDecoder();
 //always encrypt. password can be "" but if on save or export, ensure that a passwod is set!!! Warning etc
 
 //TO DO:
+//edit entry
 //build aegis json db from empty
 //input url
 //qr code?
 //show secret
-//add issuer and notes
+//add issuer and notes !!!
 //copied alert message
-//remove entry
-//edit entry
 
 // START MAIN LOOP //
 
@@ -405,6 +437,49 @@ async function eachSecond() {
 }
 
 // BUTTON FUNCTIONS //
+
+function editEntryDialog(id) {
+  //build html tempalte with data
+  let modifiedTemplate = template("editEntryTemplate", {
+    entryId: "" + id,
+    entryName: dbGlobal.entries[id].name,
+    entryInfoSecret: dbGlobal.entries[id].info["secret"]
+  });
+  let el = document.querySelector("#tempDialog");
+  el.innerHTML = modifiedTemplate;
+  //open tempDialog
+  openDialog("tempDialog");
+
+  let h = id;
+}
+
+async function editEntry(id) {
+  // tempDialog will contain the form
+  let el = document.querySelector("#tempDialog").querySelector("form");
+  let entryName = el.editEntryName.value;
+  let entrySecret = el.editEntryInfoSecret.value;
+
+  //await encryptDb(password);
+  //setLocalStorage(localStorageObject);
+  //main();
+
+  let r = 9;
+}
+
+async function deleteEntry(id) {
+  try {
+    //are you sure?
+    if (confirm("This will delete this Entry. Are you sure?")) {
+      dbGlobal.entries.splice(id, 1);
+      await encryptDb(password);
+      setLocalStorage(localStorageObject);
+      closeDialog("tempDialog");
+      main();
+    }
+  } catch (err) {
+    postError(err);
+  }
+}
 
 async function addEntry(el) {
   try {
