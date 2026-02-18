@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" >
 
@@ -544,12 +543,11 @@ async function addEntry(el) {
   try {
     let entryIssuer = el.addEntryIssuer.value;
      let entryName = el.addEntryName.value;
-    let entrySecret = el.addEentrySecret.value;
+    let entrySecret = el.addEntrySecret.value;
      let entryNote = el.addEntryNote.value;
 
     let uuid = self.crypto.randomUUID();
 
-    //rebuild localStorageObject, it may not exist and will be rewritten anyway
     if (JSON.stringify(localStorageObject) == "{}") {
       localStorageObject = {
         version: 1,
@@ -589,6 +587,7 @@ async function addEntry(el) {
       };
     }
 
+    //add values here
     let entryTemplate = {
       type: "totp",
       uuid: uuid,
