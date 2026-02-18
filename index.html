@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" >
 
@@ -79,11 +80,12 @@ body {
   -webkit-text-security: none;
 }
 
-.borders div,
-span {
+/*
+div,span {
   border: solid;
   border-width: 1px;
 }
+*/
 </style>
 
   
@@ -172,8 +174,8 @@ span {
 
 </div_menu_page>
 
-<ttemplate id="theTemplate">
-  <div id="${entryId}" class="myTemplate borders">
+<template id="theTemplate">
+  <div id="${entryId}" class="myTemplate">
     <div class="leftTemplate">
 
       <div style="display: flex;">
@@ -185,16 +187,16 @@ span {
       <div id="entryCode${entryId}" class="codeClass" onclick="copyElementValueToClipboard('${entryId}')">Code</div>
     </div>
     <div class="rightTemplate">
-      <a id="copyIcon" ${entryId}" href="#" class="button" onclick="copyElementValueToClipboard('${entryId}')">
+      <a id="copyIcon${entryId}" href="#" class="button" onclick="copyElementValueToClipboard('${entryId}')">
         <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#ffffff">
           <path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z" />
         </svg>
       </a>
-      <div id="editIcon" ${entryId}"><a href="#" class="button" onclick="editEntryDialog('${entryId}');">&#x2261;</a>
+      <div id="editIcon${entryId}"><a href="#" class="button" onclick="editEntryDialog('${entryId}');">&#x2261;</a>
       </div>
     </div>
   </div>
-</ttemplate>
+</template>
 
 <dialog id="passwordDialog">
   <p>Enter or Set a password for the Aegis Database</p>
@@ -243,10 +245,16 @@ span {
   <form method="dialog" onsubmit="addEntry(this)">
     <center>
       <div>
-        <input type="text" id="entryName" placeholder="Name" autocomplete="off">
+        <input type="text" id="addEntryIssuer" placeholder="Issuer" autocomplete="off">
+      </div>
+     <div>
+        <input type="text" id="addEntryName" placeholder="Name" autocomplete="off">
       </div>
       <div>
-        <input type="text" id="entrySecret" placeholder="Secret" autocomplete="off">
+        <input type="text" id="addEntrySecret" placeholder="Secret" autocomplete="off">
+      </div>
+        <div>
+        <input type="text" id="addEntryNote" placeholder="Note" autocomplete="off">
       </div>
       <div>
         <input type="submit" value="Submit">
@@ -325,11 +333,10 @@ const TD = new TextDecoder();
 // the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
 
 //TO DO:
-//edit entry
+//add entry fields
 //input url
 //qr code?
 //show secret
-//add issuer and notes !!!
 
 // START MAIN LOOP //
 
@@ -442,13 +449,13 @@ async function eachSecond() {
     for (let entry of dbGlobal.entries) {
       let name = entry.name;
       let issuer = entry.issuer;
-      
+
       let algo = entry.info.algo;
       let digits = entry.info.digits;
       let period = entry.info.period;
       let seedBase32 = entry.info.secret;
       let seed = decodeBase32toHex(seedBase32.toUpperCase()); //base32Str to HexStr
-      
+
       let totp = await hmac(seed, step, digits, algo);
 
       document.getElementById("" + entriesCount).value = totp; //we are setting a value in a div. that can't be good
@@ -484,7 +491,7 @@ function editEntryDialog(id) {
       entryId: "" + id,
       entryIssuer: dbGlobal.entries[id].issuer,
       entryName: dbGlobal.entries[id].name,
-       entryNote: dbGlobal.entries[id].note,
+      entryNote: dbGlobal.entries[id].note,
       entryInfoSecret: dbGlobal.entries[id].info["secret"]
     });
     let el = document.querySelector("#tempDialog");
@@ -509,7 +516,7 @@ async function editEntry(id) {
     dbGlobal.entries[id].issuer = entryIssuer;
     dbGlobal.entries[id].note = entryNote;
     dbGlobal.entries[id].info.secret = entrySecret;
-    
+
     await encryptDb(password);
     setLocalStorage(localStorageObject);
     main();
@@ -535,41 +542,43 @@ async function deleteEntry(id) {
 
 async function addEntry(el) {
   try {
-    let entryName = el[0].value;
-    let entrySecret = el[1].value;
+    let entryIssuer = el.addEntryIssuer.value;
+     let entryName = el.addEntryName.value;
+    let entrySecret = el.addEentrySecret.value;
+     let entryNote = el.addEntryNote.value;
 
     let uuid = self.crypto.randomUUID();
 
     //rebuild localStorageObject, it may not exist and will be rewritten anyway
-     if (JSON.stringify(localStorageObject) == "{}") {
-    localStorageObject = {
-      version: 1,
-      header: {
-        slots: [
-          {
-            type: 1,
-            uuid: "2b7ef3b1-419e-479c-a094-98e52e5bb523",
-            key: "",
-            key_params: {
-              nonce: "0",
-              tag: ""
-            },
-            n: 32768,
-            r: 8,
-            p: 1,
-            salt: "",
-            repaired: true,
-            is_backup: false
+    if (JSON.stringify(localStorageObject) == "{}") {
+      localStorageObject = {
+        version: 1,
+        header: {
+          slots: [
+            {
+              type: 1,
+              uuid: "2b7ef3b1-419e-479c-a094-98e52e5bb523",
+              key: "",
+              key_params: {
+                nonce: "0",
+                tag: ""
+              },
+              n: 32768,
+              r: 8,
+              p: 1,
+              salt: "",
+              repaired: true,
+              is_backup: false
+            }
+          ],
+          params: {
+            nonce: "",
+            tag: ""
           }
-        ],
-        params: {
-          nonce: "",
-          tag: ""
-        }
-      },
-      db: ""
-    };
-     };
+        },
+        db: ""
+      };
+    }
 
     if (JSON.stringify(dbGlobal) == "{}") {
       dbGlobal = {
@@ -584,8 +593,8 @@ async function addEntry(el) {
       type: "totp",
       uuid: uuid,
       name: entryName,
-      issuer: "",
-      note: "",
+      issuer: entryIssuer,
+      note: entryNote,
       favorite: false,
       icon: null,
       info: {
@@ -926,7 +935,7 @@ async function decrypt(iv, key, ciphertext) {
 async function encryptDb(password) {
   try {
     openDialog("waitDialog");
-    
+
     // workimg backwards from decryptDB
     let pw = password.normalize("NFKC");
     pw = TE.encode(password);
