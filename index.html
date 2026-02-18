@@ -37,7 +37,7 @@ body {
   border: solid;
   border-width: 1px;
   height: 3px;
-  background-color: red;
+  color: red;
   transition: width 2s linear;
 }
 
@@ -117,28 +117,28 @@ div,span {
 
 <div_main_page id="main_page_component">
   <div id="entriesDiv">
-    Waiting to load encrypted Aegis database
+    <center><b>Waiting to load encrypted Aegis database...</b></center>
   </div>
 </div_main_page>
 
 <div_menu_page id="menu_page_component" hidden>
 
   <form>
-    <center>
+    <center><div>Import / Export encrypted JSON database</div>
       <div>
-        <input type="button" value="Get Aegis JSON encrypted database" onclick="getLocalStorageToTextbox();">
+        <input type="button" value="Export encrypted JSON database text" onclick="getLocalStorageToTextbox();">
       </div>
 
       <div>
-        <input type="button" value="Save Aegis JSON encrypted database" onclick="if(confirm('This will overwrite your current Aegis JSON encrypted database. Are you sure?')){setLocalStorageFromTextbox();}">
+        <input type="button" value="Import encrypted JSON database text" onclick="if(confirm('This will overwrite your current Aegis JSON encrypted database. Are you sure?')){setLocalStorageFromTextbox();}">
       </div>
 
       <div>
-        <input type="button" value="Export your Aegis JSON encrypted database to Clipboard" onclick="if(confirm('This will export Aegis JSON encrypted database, and comments to clipboard. Are you sure?')){ ExportAll(); alert('Your current Aegis JSON encrypted database is on the clipboard!');}">
+        <input type="button" value="Export encrypted JSON database text to Clipboard" onclick="exportAll();">
       </div>
 
       <div>
-        <textarea id="JSONSave" rows="3" cols="50" placeholder="Import/Export/Backup Aegis JSON encrypted database. Save the text generated in a safe location." title="You can import/export your current  Aegis JSON encrypted database (which is saved localy). This is helful to move it to another computer or use it as a backup." class="u-full-width">
+        <textarea id="JSONSave" rows="3" cols="50" placeholder="Encrypted JSON database text goes here. Save this text in a safe location. Use it as a backup or to import it on another device." title="You can import/export your current  encrypted JSON database. This is helful to move it to another computer or to create  it as a backup." class="u-full-width">
 </textarea>
       </div>
     </center>
@@ -244,13 +244,13 @@ div,span {
   <form method="dialog" onsubmit="addEntry(this)">
     <center>
       <div>
-        <input type="text" id="addEntryIssuer" placeholder="Issuer" autocomplete="off">
+        <input type="text" id="addEntryIssuer" placeholder="Issuer / Company" autocomplete="off">
       </div>
      <div>
-        <input type="text" id="addEntryName" placeholder="Name" autocomplete="off">
+        <input type="text" id="addEntryName" placeholder="Name / Description" autocomplete="off">
       </div>
       <div>
-        <input type="text" id="addEntrySecret" placeholder="Secret" autocomplete="off">
+        <input type="text" id="addEntrySecret" placeholder="Secret / Code" autocomplete="off">
       </div>
         <div>
         <input type="text" id="addEntryNote" placeholder="Note" autocomplete="off">
@@ -272,15 +272,19 @@ div,span {
     <form method="dialog" onsubmit="editEntry('${entryId}')">
       <center>
         <div>
+          <label for="editEntryIssuer">Issuer</label>
           <input type="text" id="editEntryIssuer" placeholder="Issuer" autocomplete="off" value="${entryIssuer}">
         </div>
         <div>
+          <label for="editEntryName">Name</label>
           <input type="text" id="editEntryName" placeholder="Name" autocomplete="off" value="${entryName}">
         </div>
         <div>
+          <label for="editEntryInfoSecret">Secret</label>
           <input type="text" id="editEntryInfoSecret" placeholder="Secret" autocomplete="off" class="secret" value="${entryInfoSecret}">
         </div>
         <div>
+          <label for="editEntryNote">Note</label>
           <input type="text" id="editEntryNote" placeholder="Note" autocomplete="off" value="${entryNote}">
         </div>
         <div>
@@ -349,7 +353,7 @@ async function main() {
     closeMenu();
     errorArray = [];
     document.querySelector("#error").innerHTML = "";
-    entriesDiv.innerHTML = "Loading database and attempting decrypt"; //this may be an imp0rt (dont fix this) situation
+    entriesDiv.innerHTML = "<center><b>Loading database and decrypting...</b></center>"; //this may be an imp0rt (dont fix this) situation
     document.getElementById("JSONSave").value = "";
 
     //does browser support local storage? yes continue : no stop
@@ -542,9 +546,9 @@ async function deleteEntry(id) {
 async function addEntry(el) {
   try {
     let entryIssuer = el.addEntryIssuer.value;
-     let entryName = el.addEntryName.value;
+    let entryName = el.addEntryName.value;
     let entrySecret = el.addEntrySecret.value;
-     let entryNote = el.addEntryNote.value;
+    let entryNote = el.addEntryNote.value;
 
     let uuid = self.crypto.randomUUID();
 
@@ -727,8 +731,16 @@ function setLocalStorageFromTextbox() {
 
 function exportAll() {
   try {
-    localStorageObject = GetLocalStorage();
+    if (
+      !confirm(
+        "This will export Aegis JSON encrypted database, and comments to clipboard. Are you sure?"
+      )
+    ) {
+      return false;
+    }
+    localStorageObject = getLocalStorage();
     copytoclipboard2(JSON.stringify(localStorageObject, null, "\t"));
+    alert("Your current Aegis JSON encrypted database is on the clipboard!");
   } catch (err) {
     postError(err);
   }
@@ -1067,7 +1079,7 @@ function buildEntriesDOM() {
 }
 
 function setLocalStorage(localStorageObject) {
-  //saves object
+  //saves object as json string
   try {
     let jsonString = JSON.stringify(localStorageObject, null, "\t");
     localStorage[localStorageName] = jsonString;
@@ -1078,19 +1090,19 @@ function setLocalStorage(localStorageObject) {
 }
 
 function getLocalStorage() {
-  //returns object
-  //return {} if undefined
-  let json;
+  //returns object from json string
+  //return empty object {} if undefined
+  let jsonObject;
   try {
     if (typeof localStorage[localStorageName] != "undefined") {
       let jsonString = localStorage[localStorageName];
-      json = JSON.parse(jsonString);
+      jsonObject = JSON.parse(jsonString);
     }
   } catch (err) {
     //postError(err);
     postError({ name: "getLocalStorage", message: "Malformed JSON Data" });
   } finally {
-    return json;
+    return jsonObject;
   }
 }
 
