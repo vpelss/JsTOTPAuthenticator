@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" >
 
@@ -124,19 +125,17 @@ div,span {
 <div_menu_page id="menu_page_component" hidden>
 
   <form>
-    <center><div>Import / Export encrypted JSON database</div>
-      <div>
-        <input type="button" value="Export encrypted JSON database text" onclick="getLocalStorageToTextbox();">
-      </div>
-
+    <center>
+      <div>Import / Export encrypted JSON database</div>
       <div>
         <input type="button" value="Import encrypted JSON database text" onclick="if(confirm('This will overwrite your current Aegis JSON encrypted database. Are you sure?')){setLocalStorageFromTextbox();}">
       </div>
-
+      <div>
+        <input type="button" value="Export encrypted JSON database text" onclick="getLocalStorageToTextbox();">
+      </div>
       <div>
         <input type="button" value="Export encrypted JSON database text to Clipboard" onclick="exportAll();">
       </div>
-
       <div>
         <textarea id="JSONSave" rows="3" cols="50" placeholder="Encrypted JSON database text goes here. Save this text in a safe location. Use it as a backup or to import it on another device." title="You can import/export your current  encrypted JSON database. This is helful to move it to another computer or to create  it as a backup." class="u-full-width">
 </textarea>
@@ -246,13 +245,13 @@ div,span {
       <div>
         <input type="text" id="addEntryIssuer" placeholder="Issuer / Company" autocomplete="off">
       </div>
-     <div>
+      <div>
         <input type="text" id="addEntryName" placeholder="Name / Description" autocomplete="off">
       </div>
       <div>
         <input type="text" id="addEntrySecret" placeholder="Secret / Code" autocomplete="off">
       </div>
-        <div>
+      <div>
         <input type="text" id="addEntryNote" placeholder="Note" autocomplete="off">
       </div>
       <div>
@@ -336,10 +335,12 @@ const TD = new TextDecoder();
 // the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
 
 //TO DO:
+//Authenticator Anywhere
 //add entry fields
 //input url
 //qr code?
 //show secret
+//browser support alert?
 
 // START MAIN LOOP //
 
@@ -352,9 +353,9 @@ async function main() {
     clearInterval(myInterval);
     closeMenu();
     errorArray = [];
-    document.querySelector("#error").innerHTML = "";
-    entriesDiv.innerHTML = "<center><b>Loading database and decrypting...</b></center>"; //this may be an imp0rt (dont fix this) situation
+    document.querySelector("#error").innerHTML = "";    
     document.getElementById("JSONSave").value = "";
+    entriesDiv.innerHTML = "<center><b>Loading database and decrypting...</b></center>"; //this may be an imp0rt (dont fix this) situation
 
     //does browser support local storage? yes continue : no stop
     if (!supportsHtml5Storage()) {
@@ -363,26 +364,14 @@ async function main() {
         message: "HTML5 Storage is not supported in this browser"
       };
     }
-
     //is there  local storage and is it JSON? yes continue : no stop
     localStorageObject = getLocalStorage(); //load database
-    if (JSON.stringify(localStorageObject) == "{}") {
-      //no error is required
-      //throw { name: "No local database", message: "No local database" };
-      entriesDiv.innerHTML =
-        "No database found. Import an Aegis database with &#x2261; or start adding entries with the +";
+//test to see if json is valid Aegis format. I am only weak testing for localStorageObject.db
+    if(! isValidlocalStorageObject()){  
+      entriesDiv.innerHTML = "<center><b>No database found. Import an encrypted JSON database with &#x2261; or start adding entries with the +</b></center>";
       return;
     }
-
-    //test to see if json is valid Aegis format. I am only weak testing for localStorageObject.db
-    if (typeof localStorageObject.db == "undefined") {
-      //no error is required
-      //throw { name: "main", message: "Not a vaiid Aegis JSON format" };
-      entriesDiv.innerHTML =
-        "No database found. Import an Aegis database with &#x2261; or start adding entries with the +";
-      return;
-    }
-
+   
     //assume pw is "" and try to decrypt
     //if it fails bring up passwordDialog it will either:
     //1. wipe local storage and run main()
@@ -552,7 +541,7 @@ async function addEntry(el) {
 
     let uuid = self.crypto.randomUUID();
 
-    if (JSON.stringify(localStorageObject) == "{}") {
+    if (! isValidlocalStorageObject()) {
       localStorageObject = {
         version: 1,
         header: {
@@ -622,6 +611,10 @@ async function changePassword(el) {
   try {
     let pw1 = el[0].value;
     let pw2 = el[1].value;
+    if(! isValidlocalStorageObject()){
+      alert("There is no database yet.");
+      return;
+    }
     if (pw1 == pw2) {
       if (pw1 == "") {
         if (
@@ -1055,6 +1048,19 @@ async function encrypt(iv, key, ciphertext) {
 
 // SUPPORT FUNCTIONS //
 
+function isValidlocalStorageObject(){
+  try{ 
+  if((JSON.stringify(localStorageObject) == "{}") || (typeof localStorageObject.db == "undefined")){ 
+    return false;
+   }
+    else{
+      return true;
+    }  
+  }catch (err) {
+    postError(err);
+  }
+}
+
 function buildEntriesDOM() {
   try {
     let entriesCount = 0;
@@ -1094,7 +1100,9 @@ function getLocalStorage() {
   //return empty object {} if undefined
   let jsonObject;
   try {
-    if (typeof localStorage[localStorageName] != "undefined") {
+    if (typeof localStorage[localStorageName] == "undefined") {
+      jsonObject = {};
+    }else{
       let jsonString = localStorage[localStorageName];
       jsonObject = JSON.parse(jsonString);
     }
