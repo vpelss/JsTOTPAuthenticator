@@ -57,16 +57,18 @@ Steps to Encrypt:
 - generate a random 32 byte masterKey, a random 12 byte nonce value
 -  encrypt to 'database' using window.crypto.subtle.encrypt using the nonce, masterKey, and 'plaintext' you want encrypted
 - note: the encrypted text is 16 bytes longer than the 'plaintext'
-- set 'db' to 'database' , removing the last 16 bytes
+- set 'db' to a value of 'database' minus the last 16 bytes
 - set 'tag' to the last removed 16 bytes mentioned previously
 - store 'nonce', 'db', and 'tag' in the JSON header.params
 - generate a random 32 byte 'salt' value
 - using settings n=32768, r =8, p=1, dkLen=32 set 'keyScrypt' from scrypt.scrypt(password, salt, n, r, p, dkLen) : you proivide the password
-- note: scrypt is intended to make automated password attempts too slow and onerous to attempt. so 'keyScrypt' is a heavily hashed password
+- note: scrypt is intended to make automated password attempts slow and onerous. 'keyScrypt' is a **heavily** hashed password
 - generate a random 12 byte 'nonce2' value 
-- set 'key' from window.crypto.subtle.encrypt using 'nonce', 'keyScrypt', 'masterKey' : We are encrypting the 'masterKey' used to encrypt/decrypt our initial 'plainext'
-- 
-- store 'nonce2', 'salt', '' in the JSON header.params.nonce
+- set 'key' from window.crypto.subtle.encrypt using 'nonce2', 'keyScrypt', 'masterKey' : We are encrypting the 'masterKey' used to encrypt/decrypt our initial 'plainext'. It is encypted with a hashed version of our password and a public nonce
+- note: the encrypted 'key' is 16 bytes longer than 'masterKey'
+- set 'slotKey' to a value equal to 'key' minus the last 16 bytes
+- set 'tag2' to the last removed 16 bytes mentioned previously
+- store 'nonce2', 'salt', 'tag2', 'slotKey' in the JSON header.params.nonce
 
  
     //let masterKey = await decrypt(nonce, keyScrypt, keyData);
