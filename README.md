@@ -74,6 +74,7 @@ Steps to Decrypt:
 
 - get public 'nonce2', 'salt', 'tag2', 'slotKey' values in the JSON header.slots
 - using settings n=32768, r =8, p=1, dkLen=32 set 'keyScrypt' from scrypt.scrypt(password, salt, n, r, p, dkLen) : you proivide the password
+- note: 'keyScrypt' is a **heavily** hashed password
 - set 'key' by concatinating 'slotKey' + 'tag2'
 - set 'masterKey' using decrypt(nonce2, keyScrypt, key);
 - get public 'nonce', 'db', and 'tag' in the JSON header.params
