@@ -1,12 +1,22 @@
 # JsTOTPAuthenticator
 
-This web based TOTP Authenticators can import your Aegis Authenticator json database. https://getaegis.app/. There is a desktop app AVDA, but I wanted an OS agnostic version. This also fills the iOS gap.
+This web based TOTP Authenticators can import your encrytpted **Aegis** Authenticator database. https://getaegis.app/. There is a desktop app AVDA, but I wanted an OS agnostic version. This also fills the iOS gap.
+
+It was mainly designed for Desktops, but it can be used on mobile.
 
 Run at: 
 
 - https://vpelss.github.io/JsTOTPAuthenticator/ 
 
 - https://codepen.io/vpelss/pen/EayojzL
+
+# Use
+
+If you already have a saved encrytpted Aegis Authenticator database, just click the menu icon, paste the db in the text box and click Import.
+
+If you have no backed up data, click the plus and enter your Authenticator data manually. The data can be found in the URL usuially found near the QR code. eg: otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example
+
+I do plan to implimemt a paste the url feature in the near future, and possibly copy and paste a qr code option, 
 
 # TOTP
 
