@@ -61,10 +61,10 @@ Steps to Encrypt:
 - set 'tag' to the last removed 16 bytes mentioned previously
 - store 'nonce', 'db', and 'tag' in the JSON header.params
 - generate a random 32 byte 'salt' value
-- using settings n=32768, r =8, p=1, dkLen=32 set 'keyScrypt' from scrypt.scrypt(password, salt, n, r, p, dkLen) : you proivide the password
-- note: scrypt is intended to make automated password attempts slow and onerous. 'keyScrypt' is a **heavily** hashed password
+- using settings n=32768, r =8, p=1, dkLen=32 set 'hashedPassword' from scrypt.scrypt(password, salt, n, r, p, dkLen) : you proivide the password
+- note: scrypt is intended to make automated password attempts onerous. 'hashedPassword' is a **heavily** hashed password
 - generate a random 12 byte 'nonce2' value 
-- set 'key' from window.crypto.subtle.encrypt using 'nonce2', 'keyScrypt', 'masterKey' : We are encrypting the 'masterKey' used to encrypt/decrypt our initial 'plainext'. It is encypted with a hashed version of our password and a public nonce
+- set 'key' from window.crypto.subtle.encrypt using 'nonce2', 'hashedPassword', 'masterKey' : We are encrypting the 'masterKey' used to encrypt/decrypt our initial 'plainext'. It is encypted with a hashed version of our password and a public nonce
 - note: the encrypted 'key' is 16 bytes longer than 'masterKey'
 - set 'slotKey' to a value equal to 'key' minus the last 16 bytes
 - set 'tag2' to the last removed 16 bytes mentioned previously
@@ -73,10 +73,10 @@ Steps to Encrypt:
 Steps to Decrypt:
 
 - get public 'nonce2', 'salt', 'tag2', 'slotKey' values in the JSON header.slots
-- using settings n=32768, r =8, p=1, dkLen=32 set 'keyScrypt' from scrypt.scrypt(password, salt, n, r, p, dkLen) : you proivide the password
-- note: 'keyScrypt' is a **heavily** hashed password
+- using settings n=32768, r =8, p=1, dkLen=32 set 'hashedPassword' from scrypt.scrypt(password, salt, n, r, p, dkLen) : you proivide the password
+- note: 'hashedPassword' is a **heavily** hashed password
 - set 'key' by concatinating 'slotKey' + 'tag2'
-- set 'masterKey' using decrypt(nonce2, keyScrypt, key);
+- set 'masterKey' using decrypt(nonce2, hashedPassword, key);
 - get public 'nonce', 'db', and 'tag' in the JSON header.params
 - set 'database' by concatinating 'db' + 'tag'
 - set 'plaintext' from window.crypto.subtle.decrypt using the nonce, masterKey, and 'database' you want decrypted
