@@ -54,8 +54,8 @@ Notes:
 
 Steps to Encrypt:
 
-- generate a random 32 byte masterKey, a random 12 byte nonce value
--  encrypt to 'database' using window.crypto.subtle.encrypt using the nonce, masterKey, and 'plaintext' you want encrypted
+- generate a random 32 byte 'masterKey', and a random 12 byte 'nonce' value
+- encrypt to 'database' using window.crypto.subtle.encrypt using the 'nonce', 'masterKey', and 'plaintext' you want encrypted
 - note: the encrypted text is 16 bytes longer than the 'plaintext'
 - set 'db' to a value of 'database' minus the last 16 bytes
 - set 'tag' to the last removed 16 bytes mentioned previously
