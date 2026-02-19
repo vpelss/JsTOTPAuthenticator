@@ -54,17 +54,20 @@ Notes:
 
 Steps to Encrypt:
 
+Short version: Using a random 'nonce' and 'masterKey value encypt your 'plaintext'. Then encrypt your 'masterKey' using your password (hashed) and a second nonce. Store all non 'plaintext' values in the JSON.
+
 - generate a random 32 byte 'masterKey', and a random 12 byte 'nonce' value
 - encrypt to 'database' using window.crypto.subtle.encrypt using the 'nonce', 'masterKey', and 'plaintext' you want encrypted
 - note: the encrypted text is 16 bytes longer than the 'plaintext'
 - set 'db' to a value of 'database' minus the last 16 bytes
 - set 'tag' to the last removed 16 bytes mentioned previously
+- Note: that tags are only used to authenticate that the encrypted data was not tampered with 
 - store 'nonce', 'db', and 'tag' in the JSON header.params
 - generate a random 32 byte 'salt' value
 - using settings n=32768, r =8, p=1, dkLen=32 set 'hashedPassword' from scrypt.scrypt(password, salt, n, r, p, dkLen) : you proivide the password
 - note: scrypt is intended to make automated password attempts onerous. 'hashedPassword' is a **heavily** hashed password
 - generate a random 12 byte 'nonce2' value 
-- set 'key' from window.crypto.subtle.encrypt using 'nonce2', 'hashedPassword', 'masterKey' : We are encrypting the 'masterKey' used to encrypt/decrypt our initial 'plainext'. It is encypted with a hashed version of our password and a public nonce
+- set 'key' from window.crypto.subtle.encrypt using 'nonce2', 'hashedPassword', 'masterKey' : We are encrypting the 'masterKey' used to encrypt/decrypt our initial 'plainext'. It is encypted with a hashed version of our password and a nonce value
 - note: the encrypted 'key' is 16 bytes longer than 'masterKey'
 - set 'slotKey' to a value equal to 'key' minus the last 16 bytes
 - set 'tag2' to the last removed 16 bytes mentioned previously
