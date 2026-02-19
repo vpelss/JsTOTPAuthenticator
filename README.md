@@ -22,7 +22,7 @@ Should you need to set or change your password, click the menu and click 'Change
 
 # TOTP
 
-I tried to follow the RFCs:
+For those trying to write thier own TOTP code, I tried to follow the RFCs:
 
 TOTP: Time-Based One-Time Password Algorithm: https://datatracker.ietf.org/doc/html/rfc6238
 
@@ -30,7 +30,7 @@ HOTP: An HMAC-Based One-Time Password Algorithm: https://datatracker.ietf.org/do
 
 HMAC: Keyed-Hashing for Message Authentication: https://datatracker.ietf.org/doc/html/rfc2104
 
-Wikipedia was much more helpful: 
+But wikipedia was much more helpful: 
 
 Time-based one-time password: https://en.wikipedia.org/wiki/Time-based_one-time_password
 
@@ -48,7 +48,7 @@ Notes:
 
 - For Uint8Array concatination I used https://evanhahn.com/the-best-way-to-concatenate-uint8arrays/
 
-- after writing all my code based on rfc6238 I found out (during my unencryption pase) that modern broweses have window.crypto.subtle.sign("HMAC", cryptoKey, msg) , so now many lines of hand written code can be replaced in 3 lines. Ha on me! Well at least I learned a few things.
+- after completing all my code based on rfc6238 I found out that modern browsers have window.crypto.subtle.sign("HMAC", cryptoKey, msg) , so now my many lines of code can be replaced by 3 lines. Ha on me! Well at least I learned a few things.
 
 # Unencrypting and Encrypting the Aegis json database
 
