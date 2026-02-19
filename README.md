@@ -16,7 +16,9 @@ If you already have a saved encrytpted Aegis Authenticator database, just click 
 
 If you have no backed up data, click the plus and enter your Authenticator data manually. The data can be found in the URL usuially found near the QR code. eg: otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example
 
-I do plan to implimemt a paste the url feature in the near future, and possibly copy and paste a qr code option, 
+I do plan to implimemt a paste the url feature in the near future, and possibly copy and paste a qr code option.
+
+Should you need to set or change your password, click the menu and click 'Change Password' after you have unecryped the databse.
 
 # TOTP
 
