@@ -56,50 +56,17 @@ Steps to Encrypt:
 
 - generate a random 32 byte masterKey, a random 12 byte nonce value
 -  encrypt to 'database' using window.crypto.subtle.encrypt and the masterKey, nonce, and plaintext you want encrypted
+- note: the encrypted text is 16 bytes longer than the plaintext
 - set 'db' to 'database' , removing the last 16 bytes
 - set 'tag' to the last removed 16 bytes mentioned previously
+- store 'nonce', 'db', and 'tag' in the JSON header.params
+- generate a random 12 byte 'nonce2' value
+- generate a random 32 byte 'salt' value
+- using settings n=32768, r =8, p=1, dkLen=32 set a 'key' value from scrypt.scrypt(password, salt, n, r, p, dkLen)
 
 - 
--  //create a 12 byte nonce
-    let nonce = new Uint8Array(12);
-    self.crypto.getRandomValues(nonce);
-    //create a 32 bit masterKey
-    let masterKey = new Uint8Array(32);
-    self.crypto.getRandomValues(masterKey);
-    //create a 16 bit tag
-    //let tag = new Uint8Array(16);
-    //self.crypto.getRandomValues(tag);
-    //convert localStorageObject to content Uint8Array
-    let tempdb = JSON.stringify(dbGlobal, null, "\t"); //we don't need the formatting
-    let content = TE.encode(tempdb);
-    let database = await encrypt(nonce, masterKey, content);
-   
-    // database is an ArrayBuffer, not Uint8Array, so fix it
-    database = new Uint8Array(database);
-    //db is 16 bytes larger, the last 16 byte tag is removed and stored as the tag
-    //  let database = concatenateUint8arrays([dbData, tag]);
-    let length = database.length;
-    let dbData = database.slice(0, length - 16);
-    //let dbData = Uint8Array.fromBase64(db);
-    let db = dbData.toBase64();
-    //let db = localStorageObject.db;
-    localStorageObject.db = db;
-    //tag = Uint8Array.fromHex(tagString);
-    let tag = database.slice(length - 16, length);
-    let tagString = tag.toHex();
-    //tagString = localStorageObject.header.params.tag;
-    localStorageObject.header.params.tag = tagString;
-    //nonce = Uint8Array.fromHex(nonceString);
-    let nonceString = nonce.toHex();
-    //nonceString = localStorageObject.header.params.nonce;
-    localStorageObject.header.params.nonce = nonceString;
+- store 'nonce2', 'salt', '' in the JSON header.params.nonce
 
-    //let saltString = localStorageObject.header.slots[0].salt;
-    //let salt = Uint8Array.fromHex(saltString);
-    let salt = new Uint8Array(32); //32 byte salt , 64 hex characters
-    self.crypto.getRandomValues(salt);
-    let saltString = salt.toHex();
-    localStorageObject.header.slots[0].salt = saltString;
 
     let n = localStorageObject.header.slots[0].n;
     let r = localStorageObject.header.slots[0].r;
