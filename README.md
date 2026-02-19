@@ -68,29 +68,14 @@ Steps to Encrypt:
 - note: the encrypted 'key' is 16 bytes longer than 'masterKey'
 - set 'slotKey' to a value equal to 'key' minus the last 16 bytes
 - set 'tag2' to the last removed 16 bytes mentioned previously
-- store 'nonce2', 'salt', 'tag2', 'slotKey' in the JSON header.params.nonce
-
- 
-    //let masterKey = await decrypt(nonce, keyScrypt, keyData);
-    let keyData = await encrypt(nonce, keyScrypt, masterKey);
-    //keyDaya is 16 bytes bigger than masterKey so tag is that last 16 bytes and so masterKey the remaining first part
-    //let keyData = concatenateUint8arrays([slotKey, tag]);
-    keyData = new Uint8Array(keyData);
-    length = keyData.length;
-    let slotKey = keyData.slice(0, length - 16);
-    //let slotKey = Uint8Array.fromHex(slotKeyString);
-    let slotKeyString = slotKey.toHex();
-    //let slotKeyString = localStorageObject.header.slots[0].key;
-    localStorageObject.header.slots[0].key = slotKeyString;
-    tag = keyData.slice(length - 16, length);
-    //let tag = Uint8Array.fromHex(tagString);
-    tagString = tag.toHex();
-    //let tagString = localStorageObject.header.slots[0].key_params.tag;
-    localStorageObject.header.slots[0].key_params.tag = tagString;
-
-    //let encrypted = TD.decode(db);
-    let encrypted = db;
-    return encrypted;
+- store 'nonce2', 'salt', 'tag2', 'slotKey' in the JSON header.slots
 
 Steps to Decrypt:
 
+- get public 'nonce2', 'salt', 'tag2', 'slotKey' values in the JSON header.slots
+- using settings n=32768, r =8, p=1, dkLen=32 set 'keyScrypt' from scrypt.scrypt(password, salt, n, r, p, dkLen) : you proivide the password
+- set 'key' by concatinating 'slotKey' + 'tag2'
+- set 'masterKey' using decrypt(nonce2, keyScrypt, key);
+- get public 'nonce', 'db', and 'tag' in the JSON header.params
+- set 'database' by concatinating 'db' + 'tag'
+- set 'plaintext' from window.crypto.subtle.decrypt using the nonce, masterKey, and 'database' you want decrypted
