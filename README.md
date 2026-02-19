@@ -55,31 +55,20 @@ Notes:
 Steps to Encrypt:
 
 - generate a random 32 byte masterKey, a random 12 byte nonce value
--  encrypt to 'database' using window.crypto.subtle.encrypt and the masterKey, nonce, and plaintext you want encrypted
-- note: the encrypted text is 16 bytes longer than the plaintext
+-  encrypt to 'database' using window.crypto.subtle.encrypt using the nonce, masterKey, and 'plaintext' you want encrypted
+- note: the encrypted text is 16 bytes longer than the 'plaintext'
 - set 'db' to 'database' , removing the last 16 bytes
 - set 'tag' to the last removed 16 bytes mentioned previously
 - store 'nonce', 'db', and 'tag' in the JSON header.params
-- generate a random 12 byte 'nonce2' value
 - generate a random 32 byte 'salt' value
-- using settings n=32768, r =8, p=1, dkLen=32 set a 'key' value from scrypt.scrypt(password, salt, n, r, p, dkLen)
-
+- using settings n=32768, r =8, p=1, dkLen=32 set 'keyScrypt' from scrypt.scrypt(password, salt, n, r, p, dkLen) : you proivide the password
+- note: scrypt is intended to make automated password attempts too slow and onerous to attempt. so 'keyScrypt' is a heavily hashed password
+- generate a random 12 byte 'nonce2' value 
+- set 'key' from window.crypto.subtle.encrypt using 'nonce', 'keyScrypt', 'masterKey' : We are encrypting the 'masterKey' used to encrypt/decrypt our initial 'plainext'
 - 
 - store 'nonce2', 'salt', '' in the JSON header.params.nonce
 
-
-    let n = localStorageObject.header.slots[0].n;
-    let r = localStorageObject.header.slots[0].r;
-    let p = localStorageObject.header.slots[0].p;
-    let dkLen = 32;
-    let keyScrypt = await scrypt.scrypt(pw, salt, n, r, p, dkLen); //asyncronous
-
-    //let nonceString = localStorageObject.header.slots[0].key_params.nonce;
-    //nonceString = nonceString.normalize("NFKC");
-    //let nonce = Uint8Array.fromHex(nonceString);
-    self.crypto.getRandomValues(nonce); //new masterKey nonce
-    nonceString = nonce.toHex();
-    localStorageObject.header.slots[0].key_params.nonce = nonceString;
+ 
     //let masterKey = await decrypt(nonce, keyScrypt, keyData);
     let keyData = await encrypt(nonce, keyScrypt, masterKey);
     //keyDaya is 16 bytes bigger than masterKey so tag is that last 16 bytes and so masterKey the remaining first part
