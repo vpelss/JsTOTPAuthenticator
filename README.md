@@ -75,6 +75,8 @@ Short version: Using a random 'nonce' and 'masterKey value encypt your 'plaintex
 
 Steps to Decrypt:
 
+Short version: Unencrypt the 'masterKey' using your password (hashed) and the nonce used to encrypt it. Then unencrypt the 'plaintext' using the 'masterKey' and the nonce used to encrypt it.
+
 - get public 'nonce2', 'salt', 'tag2', 'slotKey' values in the JSON header.slots
 - using settings n=32768, r =8, p=1, dkLen=32 set 'hashedPassword' from scrypt.scrypt(password, salt, n, r, p, dkLen) : you proivide the password
 - note: 'hashedPassword' is a **heavily** hashed password
@@ -82,4 +84,5 @@ Steps to Decrypt:
 - set 'masterKey' using decrypt(nonce2, hashedPassword, key);
 - get public 'nonce', 'db', and 'tag' in the JSON header.params
 - set 'database' by concatinating 'db' + 'tag'
+- Note: the tag is used to prove that the encrypted database was not altered
 - set 'plaintext' from window.crypto.subtle.decrypt using the nonce, masterKey, and 'database' you want decrypted
