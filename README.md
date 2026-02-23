@@ -56,7 +56,7 @@ Notes:
 
 - after completing all my code based on rfc6238 I found out that modern browsers have window.crypto.subtle.sign("HMAC", cryptoKey, msg) , so now my many lines of code can be replaced by 3 lines. Ha on me! Well at least I learned a few things.
 
-# Unencrypting and Encrypting the Aegis json database
+# Unencrypting and Encrypting the json database
 
 Steps to Encrypt:
 
