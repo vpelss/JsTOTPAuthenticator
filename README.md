@@ -12,8 +12,7 @@ It also shows the next upcomming code. An nice old man feature!
 
 Run at: 
 
-- https://vpelss.github.io/JsTOTPAuthenticator/ 
-
+- https://vpelss.github.io/AuthenticatorAnywhere/
 - https://codepen.io/vpelss/pen/EayojzL
 
 # Use
