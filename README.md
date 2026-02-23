@@ -6,7 +6,9 @@ You can easily import, export and share your database between **all** your devic
 
 It was designed for Desktops, but it can be used on mobile.
 
-It runs entirely in your browser using Javascript. The database is encrypted and stored in your browser.
+It runs entirely in your browser using Javascript. 
+
+**The database is encrypted and stored in your browsers memory. If you clear your cache, or reinsall your browser, your database is gone. Please create/export a backup and keep it in a safe place.**
 
 It also shows the next upcomming code. An nice old man feature!
 
