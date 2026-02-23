@@ -7,7 +7,7 @@
   
   
 
-  <title>JsTOTPAuthenticator</title>
+  <title>AuthenticatorAnywhere</title>
 
     <link rel="canonical" href="https://codepen.io/vpelss/pen/EayojzL">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -41,7 +41,7 @@ body {
 #theBar {
   border: solid;
   border-width: 1px;
-  height: 3px;
+  height: 5px;
   color: red;
   transition: width 2s linear;
 }
@@ -108,7 +108,7 @@ div,span {
     </span>
     &nbsp;&nbsp;&nbsp;
     <span>
-      JsTOTPAuthenticator
+      AuthenticatorAnywhere
     </span>
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
     <span id="add_icon">
@@ -478,20 +478,6 @@ async function eachSecond() {
 }
 
 // BUTTON FUNCTIONS //
-
-//not required?
-function copyElementValueToClipboard(id) {
-  try {
-    let code = document.getElementById(id).value; //we stored a value in a div for simplicity
-    copytoclipboard2(code);
-    openDialog("copiedDialog");
-    setTimeout(function () {
-      closeDialog("copiedDialog");
-    }, 1500);
-  } catch (err) {
-    postError(err);
-  }
-}
 
 function copyElementInnerHTMLToClipboard(id) {
   try {
