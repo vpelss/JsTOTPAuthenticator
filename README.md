@@ -1,6 +1,6 @@
 # AuthenticatorAnywhere
 
-This Web based TOTP Authenticator can be used on **any** device that has a modern web browser.
+This Web based TOTP Authenticator can be used on **any device** that has a modern web browser.
 
 You can easily import, export and share your database between **all** your devices. The database format is compatable with the **Aegis** Authenticator database. https://getaegis.app/.
 
