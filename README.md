@@ -1,8 +1,10 @@
 # JsTOTPAuthenticator
 
-This web based TOTP Authenticators can import your encrytpted **Aegis** Authenticator database. https://getaegis.app/. There is a desktop app AVDA, but I wanted an OS agnostic version. This also fills the iOS gap.
+This web based TOTP Authenticators can be used on **any** device that has a modern web browser.
 
-It was mainly designed for Desktops, but it can be used on mobile.
+You can easily import, export and share your database between **all** your devices. The database format is compatable with the *Aegis** Authenticator database. https://getaegis.app/. So you can still use that.
+
+It was designed for Desktops, but it can be used on mobile.
 
 Run at: 
 
