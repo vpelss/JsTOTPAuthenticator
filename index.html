@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" >
 
@@ -32,6 +31,11 @@ body {
 
 .codeClass {
   font-size: 2rem;
+}
+
+.codeClassNext {
+  font-size: 1rem;
+  color: gray;
 }
 
 #theBar {
@@ -182,10 +186,15 @@ div,span {
         <span id="entryName${entryId}">Name</span>
       </div>
 
-      <div id="entryCode${entryId}" class="codeClass" onclick="copyElementValueToClipboard('${entryId}')">Code</div>
+      <div>
+        <span id="entryCode${entryId}" class="codeClass" onclick="copyElementInnerHTMLToClipboard('entryCode${entryId}')">Code</span>
+        <span id="entryCodeNext${entryId}" class="codeClassNext" onclick="copyElementInnerHTMLToClipboard('entryCodeNext${entryId}')">CodeNext</span>
+      </div>
+
     </div>
+
     <div class="rightTemplate">
-      <a id="copyIcon${entryId}" href="#" class="button" onclick="copyElementValueToClipboard('${entryId}')">
+      <a id="copyIcon${entryId}" href="#" class="button" onclick="copyElementInnerHTMLToClipboard('entryCode${entryId}')">
         <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#ffffff">
           <path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z" />
         </svg>
@@ -207,7 +216,7 @@ div,span {
         <input type="submit" value="Submit">
       </div>
       <div>
-        Or if you forgot your pw or database is corrupt.
+        Or if you forgot your pw:
       </div>
       <div>
         <input type="button" value="Erase Database" onclick="wipeDatabase()">
@@ -335,11 +344,10 @@ const TD = new TextDecoder();
 // the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
 
 //TO DO:
+//web app code
 //Authenticator Anywhere
-//add entry fields
 //input url
 //qr code?
-//show secret
 //browser support alert?
 
 // START MAIN LOOP //
@@ -353,9 +361,10 @@ async function main() {
     clearInterval(myInterval);
     closeMenu();
     errorArray = [];
-    document.querySelector("#error").innerHTML = "";    
+    document.querySelector("#error").innerHTML = "";
     document.getElementById("JSONSave").value = "";
-    entriesDiv.innerHTML = "<center><b>Loading database and decrypting...</b></center>"; //this may be an imp0rt (dont fix this) situation
+    entriesDiv.innerHTML =
+      "<center><b>Loading database and decrypting...</b></center>"; //this may be an imp0rt (dont fix this) situation
 
     //does browser support local storage? yes continue : no stop
     if (!supportsHtml5Storage()) {
@@ -366,12 +375,13 @@ async function main() {
     }
     //is there  local storage and is it JSON? yes continue : no stop
     localStorageObject = getLocalStorage(); //load database
-//test to see if json is valid Aegis format. I am only weak testing for localStorageObject.db
-    if(! isValidlocalStorageObject()){  
-      entriesDiv.innerHTML = "<center><b>No database found. Import an encrypted JSON database with &#x2261; or start adding entries with the +</b></center>";
+    //test to see if json is valid Aegis format. I am only weak testing for localStorageObject.db
+    if (!isValidlocalStorageObject()) {
+      entriesDiv.innerHTML =
+        "<center><b>No database found. Import an encrypted JSON database with &#x2261; or start adding entries with the +</b></center>";
       return;
     }
-   
+
     //assume pw is "" and try to decrypt
     //if it fails bring up passwordDialog it will either:
     //1. wipe local storage and run main()
@@ -432,9 +442,13 @@ async function eachSecond() {
     progress.value = barWidth;
 
     // step needs to be 16 characters
-    do {
-      step = "0" + step;
-    } while (step.length < 16);
+    step = leaingZeros(step);
+
+    //calc next one too
+    let stepInt2 = stepInt + 1;
+    let step2 = stepInt2.toString(16); //step MUST be in string HEX
+    // step needs to be 16 characters
+    step2 = leaingZeros(step2);
 
     // calculate and output code for each entry and place on template
     let entriesCount = 0;
@@ -449,11 +463,13 @@ async function eachSecond() {
       let seed = decodeBase32toHex(seedBase32.toUpperCase()); //base32Str to HexStr
 
       let totp = await hmac(seed, step, digits, algo);
+      let totp2 = await hmac(seed, step2, digits, algo);
 
-      document.getElementById("" + entriesCount).value = totp; //we are setting a value in a div. that can't be good
+      //document.getElementById("" + entriesCount).value = totp; //we are setting a value in a div. that can't be good
       document.getElementById("entryName" + entriesCount).innerHTML = name;
       document.getElementById("entryIssuer" + entriesCount).innerHTML = issuer;
       document.getElementById("entryCode" + entriesCount).innerHTML = totp;
+      document.getElementById("entryCodeNext" + entriesCount).innerHTML = totp2;
       entriesCount += 1;
     }
   } catch (err) {
@@ -463,9 +479,23 @@ async function eachSecond() {
 
 // BUTTON FUNCTIONS //
 
+//not required?
 function copyElementValueToClipboard(id) {
   try {
     let code = document.getElementById(id).value; //we stored a value in a div for simplicity
+    copytoclipboard2(code);
+    openDialog("copiedDialog");
+    setTimeout(function () {
+      closeDialog("copiedDialog");
+    }, 1500);
+  } catch (err) {
+    postError(err);
+  }
+}
+
+function copyElementInnerHTMLToClipboard(id) {
+  try {
+    let code = document.getElementById(id).innerHTML; //we stored a value in a div for simplicity
     copytoclipboard2(code);
     openDialog("copiedDialog");
     setTimeout(function () {
@@ -541,7 +571,7 @@ async function addEntry(el) {
 
     let uuid = self.crypto.randomUUID();
 
-    if (! isValidlocalStorageObject()) {
+    if (!isValidlocalStorageObject()) {
       localStorageObject = {
         version: 1,
         header: {
@@ -611,7 +641,7 @@ async function changePassword(el) {
   try {
     let pw1 = el[0].value;
     let pw2 = el[1].value;
-    if(! isValidlocalStorageObject()){
+    if (!isValidlocalStorageObject()) {
       alert("There is no database yet.");
       return;
     }
@@ -858,7 +888,7 @@ async function unencryptDb(password) {
     //from https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js
     //https://github.com/ricmoo/scrypt-js?utm_source=cdnjs&utm_medium=cdnjs_link&utm_campaign=cdnjs_library#readme
     //let keyScrypt = scrypt.syncScrypt(pw, salt, n, r, p, dkLen); //syncronous
-    let keyScrypt = await scrypt.scrypt(pw, salt, n, r, p, dkLen); //asyncronous
+    let hashedPassword = await scrypt.scrypt(pw, salt, n, r, p, dkLen); //asyncronous
 
     //go nonce, err := hex.DecodeString(slot.KeyParams.Nonce)
     let nonceString = localStorageObject.header.slots[0].key_params.nonce;
@@ -880,7 +910,7 @@ async function unencryptDb(password) {
     // go	block, err := aes.NewCipher(key)
     // go aesgcm, err := cipher.NewGCM(block)
     //go masterKey, err = aesgcm.Open(nil, nonce, keyData, nil)
-    let masterKey = await decrypt(nonce, keyScrypt, keyData);
+    let masterKey = await decrypt(nonce, hashedPassword, keyData);
     //let test =  await encrypt(nonce, keyScrypt, masterKey);
 
     // go nonce, err := hex.DecodeString(params.Nonce)
@@ -902,9 +932,9 @@ async function unencryptDb(password) {
     // go block, err := aes.NewCipher(masterKey)
     // go aesgcm, err := cipher.NewGCM(block)
     // go content, err := aesgcm.Open(nil, nonce, database, nil)
-    let content = await decrypt(nonce, masterKey, database);
+    let plaintext = await decrypt(nonce, masterKey, database);
 
-    let unencrypted = TD.decode(content);
+    let unencrypted = TD.decode(plaintext);
     return unencrypted;
   } catch (err) {
     //dont bother outer code will log error
@@ -941,24 +971,26 @@ async function encryptDb(password) {
     openDialog("waitDialog");
 
     // workimg backwards from decryptDB
-    let pw = password.normalize("NFKC");
-    pw = TE.encode(password);
 
     //create a 12 byte nonce
     let nonce = new Uint8Array(12);
     self.crypto.getRandomValues(nonce);
+    //nonce = Uint8Array.fromHex(nonceString);
+    let nonceString = nonce.toHex();
+    //nonceString = localStorageObject.header.params.nonce;
+    localStorageObject.header.params.nonce = nonceString;
     //create a 32 bit masterKey
     let masterKey = new Uint8Array(32);
     self.crypto.getRandomValues(masterKey);
-    //create a 16 bit tag
-    //let tag = new Uint8Array(16);
-    //self.crypto.getRandomValues(tag);
-    //convert localStorageObject to content Uint8Array
+    //convert dbGlobal to content Uint8Array
     let tempdb = JSON.stringify(dbGlobal, null, "\t"); //we don't need the formatting
-    let content = TE.encode(tempdb);
-    let database = await encrypt(nonce, masterKey, content);
+    let plaintext = TE.encode(tempdb);
+    //encrypt dbGlobal using nonce and masterKey
+    let database = await encrypt(nonce, masterKey, plaintext);
     // database is an ArrayBuffer, not Uint8Array, so fix it
     database = new Uint8Array(database);
+
+    //separate db and tag from encrypted database
     //db is 16 bytes larger, the last 16 byte tag is removed and stored as the tag
     //  let database = concatenateUint8arrays([dbData, tag]);
     let length = database.length;
@@ -972,11 +1004,9 @@ async function encryptDb(password) {
     let tagString = tag.toHex();
     //tagString = localStorageObject.header.params.tag;
     localStorageObject.header.params.tag = tagString;
-    //nonce = Uint8Array.fromHex(nonceString);
-    let nonceString = nonce.toHex();
-    //nonceString = localStorageObject.header.params.nonce;
-    localStorageObject.header.params.nonce = nonceString;
 
+    let pw = password.normalize("NFKC");
+    pw = TE.encode(password);
     //let saltString = localStorageObject.header.slots[0].salt;
     //let salt = Uint8Array.fromHex(saltString);
     let salt = new Uint8Array(32); //32 byte salt , 64 hex characters
@@ -988,7 +1018,7 @@ async function encryptDb(password) {
     let r = localStorageObject.header.slots[0].r;
     let p = localStorageObject.header.slots[0].p;
     let dkLen = 32;
-    let keyScrypt = await scrypt.scrypt(pw, salt, n, r, p, dkLen); //asyncronous
+    let hashedPassword = await scrypt.scrypt(pw, salt, n, r, p, dkLen); //asyncronous
 
     //let nonceString = localStorageObject.header.slots[0].key_params.nonce;
     //nonceString = nonceString.normalize("NFKC");
@@ -997,17 +1027,17 @@ async function encryptDb(password) {
     nonceString = nonce.toHex();
     localStorageObject.header.slots[0].key_params.nonce = nonceString;
     //let masterKey = await decrypt(nonce, keyScrypt, keyData);
-    let keyData = await encrypt(nonce, keyScrypt, masterKey);
-    //keyDaya is 16 bytes bigger than masterKey so tag is that last 16 bytes and so masterKey the remaining first part
-    //let keyData = concatenateUint8arrays([slotKey, tag]);
-    keyData = new Uint8Array(keyData);
-    length = keyData.length;
-    let slotKey = keyData.slice(0, length - 16);
+    let masterKeyEncrypted = await encrypt(nonce, hashedPassword, masterKey);
+    //masterKeyEncrypted is 16 bytes bigger than masterKey so tag is that last 16 bytes and so masterKey the remaining first part
+    //let masterKeyEncrypted = concatenateUint8arrays([slotKey, tag]);
+    masterKeyEncrypted = new Uint8Array(masterKeyEncrypted);
+    length = masterKeyEncrypted.length;
+    let slotKey = masterKeyEncrypted.slice(0, length - 16);
     //let slotKey = Uint8Array.fromHex(slotKeyString);
     let slotKeyString = slotKey.toHex();
     //let slotKeyString = localStorageObject.header.slots[0].key;
     localStorageObject.header.slots[0].key = slotKeyString;
-    tag = keyData.slice(length - 16, length);
+    tag = masterKeyEncrypted.slice(length - 16, length);
     //let tag = Uint8Array.fromHex(tagString);
     tagString = tag.toHex();
     //let tagString = localStorageObject.header.slots[0].key_params.tag;
@@ -1048,15 +1078,25 @@ async function encrypt(iv, key, ciphertext) {
 
 // SUPPORT FUNCTIONS //
 
-function isValidlocalStorageObject(){
-  try{ 
-  if((JSON.stringify(localStorageObject) == "{}") || (typeof localStorageObject.db == "undefined")){ 
-    return false;
-   }
-    else{
+function leaingZeros(step) {
+  // step needs to be 16 characters
+  do {
+    step = "0" + step;
+  } while (step.length < 16);
+  return step;
+}
+
+function isValidlocalStorageObject() {
+  try {
+    if (
+      JSON.stringify(localStorageObject) == "{}" ||
+      typeof localStorageObject.db == "undefined"
+    ) {
+      return false;
+    } else {
       return true;
-    }  
-  }catch (err) {
+    }
+  } catch (err) {
     postError(err);
   }
 }
@@ -1102,7 +1142,7 @@ function getLocalStorage() {
   try {
     if (typeof localStorage[localStorageName] == "undefined") {
       jsonObject = {};
-    }else{
+    } else {
       let jsonString = localStorage[localStorageName];
       jsonObject = JSON.parse(jsonString);
     }
