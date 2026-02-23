@@ -6,6 +6,8 @@ You can easily import, export and share your database between **all** your devic
 
 It was designed for Desktops, but it can be used on mobile.
 
+It also shows the next upcomming code. An nice old man feature!
+
 Run at: 
 
 - https://vpelss.github.io/JsTOTPAuthenticator/ 
