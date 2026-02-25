@@ -251,12 +251,10 @@ div,span {
   <p>Add An Entry</p>
   <form method="dialog" onsubmit="addEntry(this)">
     <center>
-         <div>
+      <div>
         <input type="text" id="addEntryURL" placeholder="url otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example" autocomplete="off">
       </div>
-
       <div>OR</div>
-      
       <div>
         <input type="text" id="addEntryIssuer" placeholder="Issuer / Company" autocomplete="off">
       </div>
@@ -339,6 +337,9 @@ div,span {
 <div id="error"></div>
   <script src='https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js'></script>
     <script id="rendered-js" >
+// scrypt from https://www.jsdelivr.com/package/npm/scrypt-js
+// https://github.com/ricmoo/scrypt-js/
+
 "use strict";
 
 let password = ""; //it can be "", but harangue to set a password
@@ -355,13 +356,15 @@ const TD = new TextDecoder();
 // the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
 
 //TO DO:
-//input url
 //generate or read qr code?
-//browser support alert?
 //scan qr code
 //copy qr code
-//?? backup reminder
-//ADD web app code 
+//create url
+//create qr code
+//backup reminder
+//ADD web app code
+//browser support alert?
+//scrypt local?
 
 // START MAIN LOOP //
 
@@ -403,7 +406,7 @@ async function main() {
     //1. wipe local storage and run main()
     //2. set password and run main()
     //unencrypt Aegis JSON DB : AES CGM
-    let dbJSON = await unencryptDb(password);
+    let dbJSON = await decryptDb(password);
     if (dbJSON == "") {
       closeDialog("waitDialog");
       //pw failed so open passwordDialog
@@ -569,13 +572,59 @@ async function deleteEntry(id) {
 
 async function addEntry(el) {
   try {
-    let entryIssuer = el.addEntryIssuer.value;
-    let entryName = el.addEntryName.value;
-    let entrySecret = el.addEntrySecret.value;
-    let entryNote = el.addEntryNote.value;
-
+    let url = el.addEntryURL.value;
+    let issuer;
+    let name;
+    let secret;
+    let note;
+    let algo = "SHA1";
+    let period = 30;
+    let digits = 6;
     let uuid = self.crypto.randomUUID();
 
+    //build value object
+    let entryTemplate = {
+      type: "totp",
+      uuid: uuid,
+      name: name,
+      issuer: issuer,
+      note: note,
+      favorite: false,
+      icon: null,
+      info: {
+        secret: secret,
+        algo: "SHA1",
+        digits: digits,
+        period: period
+      },
+      groups: []
+    };
+
+    let urlArray = new URL(url);
+    //URL or manual
+    if (url != "") {
+      //let paramsString = "q=URLUtils.searchParams&topic=api";
+      // otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example&algorithm=SHA1 &digits=6&period=30
+      let searchParams = new URLSearchParams(urlArray.search);
+      for (let [key, value] of searchParams) {
+        let preVariable = entryTemplate;
+        if (["secret", "algo", "digits", "period"].includes(key)) {
+          preVariable = entryTemplate.info;
+        }
+        if (key == "algorithm") {
+          key = "algo";
+        }
+        preVariable[key] = value;
+      }
+      let r = 9;
+    } else {
+      entryTemplate[issuer] = el.addEntryIssuer.value;
+      entryTemplate[name] = el.addEntryName.value;
+      entryTemplate[note] = el.addEntryNote.value;
+      entryTemplate.info[secret] = el.addEntrySecret.value;
+    }
+
+    //create object if we need to
     if (!isValidlocalStorageObject()) {
       localStorageObject = {
         version: 1,
@@ -614,24 +663,6 @@ async function addEntry(el) {
         icons_optimized: true
       };
     }
-
-    //add values here
-    let entryTemplate = {
-      type: "totp",
-      uuid: uuid,
-      name: entryName,
-      issuer: entryIssuer,
-      note: entryNote,
-      favorite: false,
-      icon: null,
-      info: {
-        secret: entrySecret,
-        algo: "SHA1",
-        digits: 6,
-        period: 30
-      },
-      groups: []
-    };
 
     dbGlobal.entries.push(entryTemplate);
     await encryptDb(password);
@@ -745,6 +776,7 @@ function setLocalStorageFromTextbox() {
     errorArray = [];
     let jsonString = document.getElementById("JSONSave").value;
     localStorageObject = JSON.parse(jsonString); //also set obj
+    dbGlobal = {}; //wipe old data
     setLocalStorage(localStorageObject);
     document.getElementById("JSONSave").value = "";
     main(); //clear and rebuild
@@ -869,7 +901,7 @@ async function hmac(
   }
 }
 
-async function unencryptDb(password) {
+async function decryptDb(password) {
   try {
     let pw = password.normalize("NFKC");
     pw = TE.encode(password);
@@ -974,6 +1006,7 @@ async function decrypt(iv, key, ciphertext) {
 async function encryptDb(password) {
   try {
     openDialog("waitDialog");
+    clearInterval(myInterval);
 
     // workimg backwards from decryptDB
 
