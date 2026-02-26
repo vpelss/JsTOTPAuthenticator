@@ -83,6 +83,13 @@ background-color: lightgray;
   -webkit-text-security: none;
 }
 
+#qrcode:hover{
+  width: 100%;
+}
+
+#qrcode{
+  width: 0%;
+}
 /*
 div,span {
   border: solid;
@@ -314,10 +321,8 @@ div,span {
         <div>
           <label for="editEntryUrl">URL</label>
           <input type="text" id="editEntryUrl" placeholder="URL" autocomplete="off" value="${editEntryUrl}" class="secret">
-        </div>
-        
-        <canvas id="canvas"></canvas>
-        
+        </div>   
+     <div id="qrcode"><u>Click to show QR code</u></div>
       </center>
     </form>
   </div>
@@ -347,14 +352,32 @@ div,span {
 <button id="flip-button" type="button">flip</button>
 <video src=""></video>
   <script src='https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js'></script>
-<script src='https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.4.4/qrcode.js'></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.4.4/qqrcode.js'></script>
+<script src='https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@gh-pages/qrcode.min.js'></script>
     <script id="rendered-js" >
+// EXTERNAL CODE
 // scrypt from https://www.jsdelivr.com/package/npm/scrypt-js
 // https://github.com/ricmoo/scrypt-js/
-
 //qr code
 // https://davidshimjs.github.io/qrcodejs/
-// https://cdnjs.com/libraries/qrcode/1.4.4
+// larger 340 kb requires canvas
+// https://cdnjs.com/libraries/qrcode/1.4.4  
+//smaller 34 kb requires div
+
+//TO DO:
+
+// https://developer.mozilla.org/en-US/docs/Web/API/Barcode_Detection_API
+
+//hide qr code?
+
+//read qr code?
+//scan qr code
+//copy qr code
+
+//backup reminder
+//ADD web app code
+//browser support alert?
+// the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
 
 "use strict";
 
@@ -368,23 +391,6 @@ let oldStepInt = 0;
 let entriesDiv = document.querySelector("#entriesDiv");
 const TE = new TextEncoder();
 const TD = new TextDecoder();
-
-// the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
-
-//TO DO:
-
-// https://developer.mozilla.org/en-US/docs/Web/API/Barcode_Detection_API
-
-//read qr code?
-//scan qr code
-//copy qr code
-
-//create url
-//create qr code
-
-//backup reminder
-//ADD web app code
-//browser support alert?
 
 // START MAIN LOOP //
 
@@ -546,7 +552,7 @@ function editEntryDialog(id) {
 
     //build url otpauth://totp/ACME%20Co:john.doe@email.com?secret=HXDMVJECJJWSRB3HWIZR4IFUGFTMXBOZ&issuer=ACME%20Co&algorithm=SHA1&digits=6&period=30
     let url = `otpauth://totp/${issuer}:${name}?issuer=${issuer}&name=${name}&secret=${secret}&algorithm=${algorithm}&digits=${digits}&period=${period}&note=${note}`;
-
+    
     //build html tempalte with data
     let modifiedTemplate = template("editEntryTemplate", {
       entryId: "" + id,
@@ -560,12 +566,17 @@ function editEntryDialog(id) {
     el.innerHTML = modifiedTemplate;
     //open tempDialog: it is temparary so our code knows all the ids and we can easily fill in all the input values
     openDialog("tempDialog");
-        //qr code : dialog must be open
-    var canvas = document.getElementById("canvas");
+
+    //qr code : dialog MUST be open
+    /*
+    var canvas = document.getElementById("canvas"); //requires canvas
     QRCode.toCanvas(canvas, url, function (error) {
       if (error) console.error(error);
       console.log("success!");
     });
+    */
+    new QRCode(document.getElementById("qrcode"), url); //requires div
+
   } catch (err) {
     postError(err);
   }
