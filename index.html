@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" >
 
@@ -310,6 +311,13 @@ div,span {
         <div>
           <input type="button" value="Delete Entry" onclick="deleteEntry('${entryId}')">
         </div>
+        <div>
+          <label for="editEntryUrl">URL</label>
+          <input type="text" id="editEntryUrl" placeholder="URL" autocomplete="off" value="${editEntryUrl}" class="secret">
+        </div>
+        
+        <canvas id="canvas"></canvas>
+        
       </center>
     </form>
   </div>
@@ -335,10 +343,18 @@ div,span {
 <p></p>
 
 <div id="error"></div>
+
+<button id="flip-button" type="button">flip</button>
+<video src=""></video>
   <script src='https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js'></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.4.4/qrcode.js'></script>
     <script id="rendered-js" >
 // scrypt from https://www.jsdelivr.com/package/npm/scrypt-js
 // https://github.com/ricmoo/scrypt-js/
+
+//qr code
+// https://davidshimjs.github.io/qrcodejs/
+// https://cdnjs.com/libraries/qrcode/1.4.4
 
 "use strict";
 
@@ -356,15 +372,19 @@ const TD = new TextDecoder();
 // the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
 
 //TO DO:
-//generate or read qr code?
+
+// https://developer.mozilla.org/en-US/docs/Web/API/Barcode_Detection_API
+
+//read qr code?
 //scan qr code
 //copy qr code
+
 //create url
 //create qr code
+
 //backup reminder
 //ADD web app code
 //browser support alert?
-//scrypt local?
 
 // START MAIN LOOP //
 
@@ -516,18 +536,36 @@ function copyElementInnerHTMLToClipboard(id) {
 
 function editEntryDialog(id) {
   try {
+    let issuer = dbGlobal.entries[id].issuer;
+    let name = dbGlobal.entries[id].name;
+    let algorithm = dbGlobal.entries[id].info.algo;
+    let digits = dbGlobal.entries[id].info.digits;
+    let period = dbGlobal.entries[id].info.period;
+    let secret = dbGlobal.entries[id].info.secret;
+    let note = dbGlobal.entries[id].info.note;
+
+    //build url otpauth://totp/ACME%20Co:john.doe@email.com?secret=HXDMVJECJJWSRB3HWIZR4IFUGFTMXBOZ&issuer=ACME%20Co&algorithm=SHA1&digits=6&period=30
+    let url = `otpauth://totp/${issuer}:${name}?issuer=${issuer}&name=${name}&secret=${secret}&algorithm=${algorithm}&digits=${digits}&period=${period}&note=${note}`;
+
     //build html tempalte with data
     let modifiedTemplate = template("editEntryTemplate", {
       entryId: "" + id,
-      entryIssuer: dbGlobal.entries[id].issuer,
-      entryName: dbGlobal.entries[id].name,
-      entryNote: dbGlobal.entries[id].note,
-      entryInfoSecret: dbGlobal.entries[id].info["secret"]
+      entryIssuer: issuer,
+      entryName: name,
+      entryNote: note,
+      entryInfoSecret: secret,
+      editEntryUrl: url
     });
     let el = document.querySelector("#tempDialog");
     el.innerHTML = modifiedTemplate;
     //open tempDialog: it is temparary so our code knows all the ids and we can easily fill in all the input values
     openDialog("tempDialog");
+        //qr code : dialog must be open
+    var canvas = document.getElementById("canvas");
+    QRCode.toCanvas(canvas, url, function (error) {
+      if (error) console.error(error);
+      console.log("success!");
+    });
   } catch (err) {
     postError(err);
   }
@@ -1285,6 +1323,31 @@ function postError(err) {
   let errorString = JSON.stringify(errorArray, null, "\t");
   document.getElementById("error").innerHTML = "Errors:<br>" + errorString;
 }
+
+/*
+let front = false;
+document.getElementById("flip-button").onclick = () => {
+  front = !front;
+};
+
+const constraints = {
+  video: { facingMode: front ? "user" : "environment" },
+};
+
+navigator.mediaDevices
+  .getUserMedia(constraints)
+  .then((mediaStream) => {
+    const video = document.querySelector("video");
+    video.srcObject = mediaStream;
+    video.onloadedmetadata = () => {
+      video.play();
+    };
+  })
+  .catch((err) => {
+    // always check for errors at the end.
+    console.error(`${err.name}: ${err.message}`);
+  });
+  */
   </script>
 
   
