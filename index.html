@@ -111,7 +111,7 @@ div,span {
     </span>
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
     <span id="add_icon">
-      <a onclick="openDialog('addEntryDialog');nimiq();" class="button">+</a>
+      <a onclick="openDialog('addEntryDialog');html5QrCode();" class="button">+</a>
     </span>
   </center>
   <div>
@@ -250,10 +250,9 @@ div,span {
 
 <dialog id="addEntryDialog">
   
-  <button id="flip-button" type="button">flip</button>
-<video src="" id="videoViewer"></video>
-<div id="barcodeText"></div>
-  
+ <video id="videoViewer"></video>
+ <div id="barcodeText"></div>
+  <div id="reader"></div> 
   
   <p>Add An Entry</p>
   <form method="dialog" onsubmit="addEntry(this)">
@@ -350,6 +349,7 @@ div,span {
 <div id="error"></div>
   <script src='https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js'></script>
 <script src='https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@gh-pages/qrcode.min.js'></script>
+<script src='https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'></script>
     <script id="rendered-js" >
 // EXTERNAL CODE
 // scrypt from https://www.jsdelivr.com/package/npm/scrypt-js
@@ -366,7 +366,6 @@ div,span {
 // 60 kb
 // https://github.com/nimiq/qr-scanner
 // https://nimiq.github.io/qr-scanner/qr-scanner.umd.min.js
-
 
 // TO DO:
 //backup reminder
@@ -622,19 +621,14 @@ async function deleteEntry(id) {
   }
 }
 
-//enable video
-let front = false;
-document.getElementById("flip-button").onclick = () => {
-  front = !front;
-};
-
-const constraints = {
-  video: { facingMode: front ? "user" : "environment" }
-};
-
+/*
+//qr native version
 const video = document.querySelector("#videoViewer");
 
 function turnOnVideo(video) {
+  const constraints = {
+  video: { user: "environment" }
+};
   navigator.mediaDevices
     .getUserMedia(constraints)
     .then((mediaStream) => {
@@ -645,14 +639,13 @@ function turnOnVideo(video) {
       };
     })
     .catch((err) => {
-    postError(err);
+      postError(err);
     });
 }
 
 function stopStreamedVideo(videoElem) {
   const stream = videoElem.srcObject;
   const tracks = stream.getTracks();
-
   tracks.forEach((track) => {
     track.stop();
   });
@@ -660,9 +653,8 @@ function stopStreamedVideo(videoElem) {
 }
 
 let barcodeDetector;
-
-function enableQrSearch(){
-    // check compatibility
+function enableQrSearch() {
+  // check compatibility
   if (!("BarcodeDetector" in globalThis)) {
     console.log("Barcode Detector is not supported by this browser.");
   } else {
@@ -673,45 +665,97 @@ function enableQrSearch(){
     barcodeDetector = new BarcodeDetector({
       formats: ["qr_code"]
     });
-    
-    setInterval(getQrCode , 1000);
-  }  
+    setInterval(getQrCode, 1000);
+  }
 }
 
-function getQrCode() {  
+function getQrCode() {
   if ("BarcodeDetector" in globalThis) {
+    ////video needs to be video element
     barcodeDetector
       .detect(video)
       .then((barcodes) => {
         barcodes.forEach((barcode) => {
-          //console.log(barcode.rawValue);
           document.querySelector("#addEntryURL").value = barcode.rawValue;
           beep();
         });
       })
       .catch((err) => {
-        //console.error(err);
-      postError(err);
+        postError(err);
       });
   }
 }
 
+*/
+
+/*
+// https://github.com/nimiq/qr-scanner
 let qrScanner;
-function nimiq(){
-  import('https://nimiq.github.io/qr-scanner/qr-scanner.min.js').then((module) => {
-    const QrScanner = module.default;
-    // do something with QrScanner
-    
-     qrScanner = new QrScanner(
-    video,
-    function(result) { 
-      document.querySelector("#addEntryURL").value = result.data; 
-      beep();
-    } ,
-    { /* your options or returnDetailedScanResult: true if you're not specifying any other options */ },
-);
-  qrScanner.start(); 
-});
+function nimiq() {
+  import("https://nimiq.github.io/qr-scanner/qr-scanner.min.js").then(
+    (module) => {
+      const QrScanner = module.default;
+      //video needs to be video element
+      qrScanner = new QrScanner(
+        video,
+        function (result) {
+          document.querySelector("#addEntryURL").value = result.data;
+          beep();
+        },
+        {
+          // your options or returnDetailedScanResult: true if you're not specifying any other options 
+        }
+      );
+      qrScanner.start();
+    }
+  );
+}
+*/
+
+// https://github.com/mebjas/html5-qrcode
+// https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js
+let html5QrcodeScanner;
+function html5QrCode() {
+  // stop scanning if we are not visible : beforeunload
+  const qrReader = document.getElementById("reader");
+  // Add EventListener to btn
+  qrReader.addEventListener("beforeunload", function () {
+    html5QrCodeStop;
+  });
+
+  let config = {
+    fps: 10,
+    //qrbox: { width: 100, height: 100 },
+    rememberLastUsedCamera: true,
+    // Only support camera scan type.
+    supportedScanTypes: [
+      Html5QrcodeScanType.SCAN_TYPE_CAMERA,
+      Html5QrcodeScanType.SCAN_TYPE_FILE
+    ]
+  };
+
+  // reader needs to be a div id
+  html5QrcodeScanner = new Html5QrcodeScanner(
+    "reader",
+    config,
+    /* verbose= */ true
+  );
+  html5QrcodeScanner.render(function (result) {
+    document.querySelector("#addEntryURL").value = result;
+    beep();
+  });
+}
+
+function html5QrCodeStop() {
+  try {
+    let elReader = document.getElementById("reader");
+    if (elReader.checkVisibility()) {
+      let elStop = document.getElementById("html5-qrcode-button-camera-stop");
+      elStop.click();
+    }
+  } catch (err) {
+    postError(err);
+  }
 }
 
 async function addEntry(el) {
@@ -727,11 +771,12 @@ async function addEntry(el) {
     let uuid = self.crypto.randomUUID();
 
     // if camera is on, turn it off
-    if(video.srcOblect != null){
-      stopStreamedVideo(video);
-    }
-    qrScanner.stop();
-    
+   // if (video.srcOblect != null) {
+     // stopStreamedVideo(video);
+    //}
+    //html5QrCodeStop();
+    //document.getElementById("reader").innerHTML = "";
+
     //build value object
     let entryTemplate = {
       type: "totp",
@@ -880,6 +925,7 @@ function openDialog(id) {
 }
 
 function closeDialog(id) {
+  html5QrCodeStop();
   let el = document.querySelector("#" + id);
   el.close();
 }
@@ -1267,24 +1313,23 @@ async function encrypt(iv, key, ciphertext) {
 // SUPPORT FUNCTIONS //
 
 function beep() {
-   // Source - https://stackoverflow.com/a/29641185
-// Posted by Houshalter, modified by community. See post 'Timeline' for change history
-// Retrieved 2026-02-27, License - CC BY-SA 4.0
+  // Source - https://stackoverflow.com/a/29641185
+  // Posted by Houshalter, modified by community. See post 'Timeline' for change history
+  // Retrieved 2026-02-27, License - CC BY-SA 4.0
 
-/*if you want to beep without using a wave file*/
-  try{
-var context = new AudioContext();
-var oscillator = context.createOscillator();
-oscillator.type = "sine";
-oscillator.frequency.value = 800;
-oscillator.connect(context.destination);
-oscillator.start();
-// Beep for 500 milliseconds
-setTimeout(function () {
-    oscillator.stop();
-}, 100);
-  }
-  catch(err){
+  /*if you want to beep without using a wave file*/
+  try {
+    var context = new AudioContext();
+    var oscillator = context.createOscillator();
+    oscillator.type = "sine";
+    oscillator.frequency.value = 800;
+    oscillator.connect(context.destination);
+    oscillator.start();
+    // Beep for 500 milliseconds
+    setTimeout(function () {
+      oscillator.stop();
+    }, 100);
+  } catch (err) {
     postError(err);
   }
 }
@@ -1459,8 +1504,6 @@ function postError(err) {
   let errorString = JSON.stringify(errorArray, null, "\t");
   document.getElementById("error").innerHTML = "Errors:<br>" + errorString;
 }
-
-
 
 beep();
   </script>
