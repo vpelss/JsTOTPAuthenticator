@@ -181,10 +181,9 @@ div,span {
   <div id="${entryId}" class="myTemplate">
     <div class="leftTemplate">
 
-      <div style="display: flex;">
-        <span id="entryIssuer${entryId}">Issuer</span>
-        :
-        <span id="entryName${entryId}">Name</span>
+      <div>
+        <div id="entryIssuer${entryId}">Issuer</div>
+        <div id="entryName${entryId}">Name</div>
       </div>
 
       <div>
@@ -249,11 +248,7 @@ div,span {
 </dialog>
 
 <dialog id="addEntryDialog">
-  
- <video id="videoViewer"></video>
- <div id="barcodeText"></div>
-  <div id="reader"></div> 
-  
+ <div id="reader"></div>  
   <p>Add An Entry</p>
   <form method="dialog" onsubmit="addEntry(this)">
     <center>
@@ -355,23 +350,29 @@ div,span {
 // scrypt from https://www.jsdelivr.com/package/npm/scrypt-js
 // https://github.com/ricmoo/scrypt-js/
 // qr code creator
-// larger 340 kb requires canvas
 // https://cdnjs.com/libraries/qrcode/1.4.4
-// smaller 34 kb requires div
+// 340 kb requires canvas
 // https://davidshimjs.github.io/qrcodejs/
+// 34 kb requires div
 // scan qr code from camera
 // https://developer.mozilla.org/en-US/docs/Web/API/Barcode_Detection_API
-// 366 kb
+// ?? poor support
 // https://github.com/mebjas/html5-qrcode
-// 60 kb
+// https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js
+// 366 kb
 // https://github.com/nimiq/qr-scanner
 // https://nimiq.github.io/qr-scanner/qr-scanner.umd.min.js
+// 60 kb
 
 // TO DO:
+//css fix
+//show qr button at top
 //backup reminder
 //ADD web app code
 //browser support alert?
 // the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
+// timed logout?
+// search?
 
 "use strict";
 
@@ -748,11 +749,11 @@ function html5QrCode() {
 
 function html5QrCodeStop() {
   try {
-    let elReader = document.getElementById("reader");
-    if (elReader.checkVisibility()) {
+    //let elReader = document.getElementById("reader");
+    //if (elReader.checkVisibility()) {
       let elStop = document.getElementById("html5-qrcode-button-camera-stop");
       elStop.click();
-    }
+    //}
   } catch (err) {
     postError(err);
   }
@@ -925,7 +926,9 @@ function openDialog(id) {
 }
 
 function closeDialog(id) {
-  html5QrCodeStop();
+  if(id == "addEntryDialog"){
+    html5QrCodeStop();
+      }
   let el = document.querySelector("#" + id);
   el.close();
 }
