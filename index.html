@@ -111,7 +111,7 @@ div,span {
     </span>
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
     <span id="add_icon">
-      <a onclick="openDialog('addEntryDialog');enableQrSearch();" class="button">+</a>
+      <a onclick="openDialog('addEntryDialog');nimiq();" class="button">+</a>
     </span>
   </center>
   <div>
@@ -349,25 +349,26 @@ div,span {
 
 <div id="error"></div>
   <script src='https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js'></script>
-<script src='https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.4.4/qqrcode.js'></script>
 <script src='https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@gh-pages/qrcode.min.js'></script>
     <script id="rendered-js" >
 // EXTERNAL CODE
 // scrypt from https://www.jsdelivr.com/package/npm/scrypt-js
 // https://github.com/ricmoo/scrypt-js/
-// qr code
+// qr code creator
 // larger 340 kb requires canvas
 // https://cdnjs.com/libraries/qrcode/1.4.4
 // smaller 34 kb requires div
 // https://davidshimjs.github.io/qrcodejs/
-
-// TO DO:
-
-// https://developer.mozilla.org/en-US/docs/Web/API/Barcode_Detection_API
-// read qr code from image
 // scan qr code from camera
 // https://developer.mozilla.org/en-US/docs/Web/API/Barcode_Detection_API
+// 366 kb
+// https://github.com/mebjas/html5-qrcode
+// 60 kb
+// https://github.com/nimiq/qr-scanner
+// https://nimiq.github.io/qr-scanner/qr-scanner.umd.min.js
 
+
+// TO DO:
 //backup reminder
 //ADD web app code
 //browser support alert?
@@ -621,6 +622,98 @@ async function deleteEntry(id) {
   }
 }
 
+//enable video
+let front = false;
+document.getElementById("flip-button").onclick = () => {
+  front = !front;
+};
+
+const constraints = {
+  video: { facingMode: front ? "user" : "environment" }
+};
+
+const video = document.querySelector("#videoViewer");
+
+function turnOnVideo(video) {
+  navigator.mediaDevices
+    .getUserMedia(constraints)
+    .then((mediaStream) => {
+      //const video = document.querySelector("video");
+      video.srcObject = mediaStream;
+      video.onloadedmetadata = () => {
+        video.play();
+      };
+    })
+    .catch((err) => {
+    postError(err);
+    });
+}
+
+function stopStreamedVideo(videoElem) {
+  const stream = videoElem.srcObject;
+  const tracks = stream.getTracks();
+
+  tracks.forEach((track) => {
+    track.stop();
+  });
+  videoElem.srcObject = null;
+}
+
+let barcodeDetector;
+
+function enableQrSearch(){
+    // check compatibility
+  if (!("BarcodeDetector" in globalThis)) {
+    console.log("Barcode Detector is not supported by this browser.");
+  } else {
+    // create new detector
+    document.querySelector("#addEntryURL").value = "";
+    turnOnVideo(video);
+    console.log("Barcode Detector supported!");
+    barcodeDetector = new BarcodeDetector({
+      formats: ["qr_code"]
+    });
+    
+    setInterval(getQrCode , 1000);
+  }  
+}
+
+function getQrCode() {  
+  if ("BarcodeDetector" in globalThis) {
+    barcodeDetector
+      .detect(video)
+      .then((barcodes) => {
+        barcodes.forEach((barcode) => {
+          //console.log(barcode.rawValue);
+          document.querySelector("#addEntryURL").value = barcode.rawValue;
+          beep();
+        });
+      })
+      .catch((err) => {
+        //console.error(err);
+      postError(err);
+      });
+  }
+}
+
+let qrScanner;
+function nimiq(){
+  import('https://nimiq.github.io/qr-scanner/qr-scanner.min.js').then((module) => {
+    const QrScanner = module.default;
+    // do something with QrScanner
+    
+     qrScanner = new QrScanner(
+    video,
+    function(result) { 
+      document.querySelector("#addEntryURL").value = result.data; 
+      beep();
+    } ,
+    { /* your options or returnDetailedScanResult: true if you're not specifying any other options */ },
+);
+  qrScanner.start(); 
+});
+}
+
 async function addEntry(el) {
   try {
     let url = el.addEntryURL.value;
@@ -637,6 +730,7 @@ async function addEntry(el) {
     if(video.srcOblect != null){
       stopStreamedVideo(video);
     }
+    qrScanner.stop();
     
     //build value object
     let entryTemplate = {
@@ -1366,79 +1460,7 @@ function postError(err) {
   document.getElementById("error").innerHTML = "Errors:<br>" + errorString;
 }
 
-//enable video
-let front = false;
-document.getElementById("flip-button").onclick = () => {
-  front = !front;
-};
 
-const constraints = {
-  video: { facingMode: front ? "user" : "environment" }
-};
-
-const video = document.querySelector("#videoViewer");
-
-function turnOnVideo(video) {
-  navigator.mediaDevices
-    .getUserMedia(constraints)
-    .then((mediaStream) => {
-      //const video = document.querySelector("video");
-      video.srcObject = mediaStream;
-      video.onloadedmetadata = () => {
-        video.play();
-      };
-    })
-    .catch((err) => {
-    postError(err);
-    });
-}
-
-function stopStreamedVideo(videoElem) {
-  const stream = videoElem.srcObject;
-  const tracks = stream.getTracks();
-
-  tracks.forEach((track) => {
-    track.stop();
-  });
-  videoElem.srcObject = null;
-}
-
-let barcodeDetector;
-
-function enableQrSearch(){
-    // check compatibility
-  if (!("BarcodeDetector" in globalThis)) {
-    console.log("Barcode Detector is not supported by this browser.");
-  } else {
-    // create new detector
-    document.querySelector("#addEntryURL").value = "";
-    turnOnVideo(video);
-    console.log("Barcode Detector supported!");
-    barcodeDetector = new BarcodeDetector({
-      formats: ["qr_code"]
-    });
-    
-    setInterval(getQrCode , 1000);
-  }  
-}
-
-function getQrCode() {  
-  if ("BarcodeDetector" in globalThis) {
-    barcodeDetector
-      .detect(video)
-      .then((barcodes) => {
-        barcodes.forEach((barcode) => {
-          //console.log(barcode.rawValue);
-          document.querySelector("#addEntryURL").value = barcode.rawValue;
-          beep();
-        });
-      })
-      .catch((err) => {
-        //console.error(err);
-      postError(err);
-      });
-  }
-}
 
 beep();
   </script>
