@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" >
 
@@ -38,15 +39,15 @@ body {
   color: gray;
 }
 
-#theBarContainer{
-background-color: lightgray; 
+#theBarContainer {
+  background-color: lightgray;
 }
 
 #theBar {
   height: 5px;
   background-color: red;
   width: 100%;
-  transition : width 1s linear;
+  transition: width 1s linear;
 }
 
 .myTemplate {
@@ -110,7 +111,7 @@ div,span {
     </span>
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
     <span id="add_icon">
-      <a onclick="openDialog('addEntryDialog')" class="button">+</a>
+      <a onclick="openDialog('addEntryDialog');enableQrSearch();" class="button">+</a>
     </span>
   </center>
   <div>
@@ -248,6 +249,12 @@ div,span {
 </dialog>
 
 <dialog id="addEntryDialog">
+  
+  <button id="flip-button" type="button">flip</button>
+<video src="" id="videoViewer"></video>
+<div id="barcodeText"></div>
+  
+  
   <p>Add An Entry</p>
   <form method="dialog" onsubmit="addEntry(this)">
     <center>
@@ -341,9 +348,6 @@ div,span {
 <p></p>
 
 <div id="error"></div>
-
-<button id="flip-button" type="button">flip</button>
-<video src=""></video>
   <script src='https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js'></script>
 <script src='https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.4.4/qqrcode.js'></script>
 <script src='https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@gh-pages/qrcode.min.js'></script>
@@ -351,21 +355,18 @@ div,span {
 // EXTERNAL CODE
 // scrypt from https://www.jsdelivr.com/package/npm/scrypt-js
 // https://github.com/ricmoo/scrypt-js/
-//qr code
+// qr code
 // larger 340 kb requires canvas
-// https://cdnjs.com/libraries/qrcode/1.4.4  
-//smaller 34 kb requires div
+// https://cdnjs.com/libraries/qrcode/1.4.4
+// smaller 34 kb requires div
 // https://davidshimjs.github.io/qrcodejs/
 
-//TO DO:
+// TO DO:
 
 // https://developer.mozilla.org/en-US/docs/Web/API/Barcode_Detection_API
-
-//hide qr code?
-
-//read qr code?
-//scan qr code
-//copy qr code
+// read qr code from image
+// scan qr code from camera
+// https://developer.mozilla.org/en-US/docs/Web/API/Barcode_Detection_API
 
 //backup reminder
 //ADD web app code
@@ -424,13 +425,12 @@ async function main() {
     //if it fails bring up passwordDialog it will either:
     //1. wipe local storage and run main()
     //2. set password and run main()
-    //unencrypt Aegis JSON DB : AES CGM
+    //unencrypt JSON DB
     let dbJSON = await decryptDb(password);
     if (dbJSON == "") {
       closeDialog("waitDialog");
       //pw failed so open passwordDialog
       openDialog("passwordDialog");
-      //throw {name: "main",message: "Password is incorrect or maybe JSON Database is corrupt"};
       return;
     }
 
@@ -545,7 +545,7 @@ function editEntryDialog(id) {
 
     //build url otpauth://totp/ACME%20Co:john.doe@email.com?secret=HXDMVJECJJWSRB3HWIZR4IFUGFTMXBOZ&issuer=ACME%20Co&algorithm=SHA1&digits=6&period=30
     let url = `otpauth://totp/${issuer}:${name}?issuer=${issuer}&name=${name}&secret=${secret}&algorithm=${algorithm}&digits=${digits}&period=${period}&note=${note}`;
-    
+
     //build html tempalte with data
     let modifiedTemplate = template("editEntryTemplate", {
       entryId: "" + id,
@@ -569,22 +569,20 @@ function editEntryDialog(id) {
     });
     */
     new QRCode(document.getElementById("qrCode"), url); //requires div
-    document.getElementById("qrCode").style.display="none"; //hide it right away
-    
+    document.getElementById("qrCode").style.display = "none"; //hide it right away
   } catch (err) {
     postError(err);
   }
 }
 
-function toggleQrCode(){
-  let x = document.querySelector("#qrCode")
+function toggleQrCode() {
+  let x = document.querySelector("#qrCode");
   if (x.style.display === "none") {
     x.style.display = "block";
   } else {
     x.style.display = "none";
   }
 }
-
 
 async function editEntry(id) {
   try {
@@ -635,6 +633,11 @@ async function addEntry(el) {
     let digits = 6;
     let uuid = self.crypto.randomUUID();
 
+    // if camera is on, turn it off
+    if(video.srcOblect != null){
+      stopStreamedVideo(video);
+    }
+    
     //build value object
     let entryTemplate = {
       type: "totp",
@@ -1169,6 +1172,29 @@ async function encrypt(iv, key, ciphertext) {
 
 // SUPPORT FUNCTIONS //
 
+function beep() {
+   // Source - https://stackoverflow.com/a/29641185
+// Posted by Houshalter, modified by community. See post 'Timeline' for change history
+// Retrieved 2026-02-27, License - CC BY-SA 4.0
+
+/*if you want to beep without using a wave file*/
+  try{
+var context = new AudioContext();
+var oscillator = context.createOscillator();
+oscillator.type = "sine";
+oscillator.frequency.value = 800;
+oscillator.connect(context.destination);
+oscillator.start();
+// Beep for 500 milliseconds
+setTimeout(function () {
+    oscillator.stop();
+}, 100);
+  }
+  catch(err){
+    postError(err);
+  }
+}
+
 function leaingZeros(step) {
   // step needs to be 16 characters
   do {
@@ -1334,35 +1360,87 @@ function template(templateid, data) {
 }
 
 function postError(err) {
+  console.error(err);
   errorArray.push({ Name: err.name, Message: err.message, Stack: err.stack });
   let errorString = JSON.stringify(errorArray, null, "\t");
   document.getElementById("error").innerHTML = "Errors:<br>" + errorString;
 }
 
-/*
+//enable video
 let front = false;
 document.getElementById("flip-button").onclick = () => {
   front = !front;
 };
 
 const constraints = {
-  video: { facingMode: front ? "user" : "environment" },
+  video: { facingMode: front ? "user" : "environment" }
 };
 
-navigator.mediaDevices
-  .getUserMedia(constraints)
-  .then((mediaStream) => {
-    const video = document.querySelector("video");
-    video.srcObject = mediaStream;
-    video.onloadedmetadata = () => {
-      video.play();
-    };
-  })
-  .catch((err) => {
-    // always check for errors at the end.
-    console.error(`${err.name}: ${err.message}`);
+const video = document.querySelector("#videoViewer");
+
+function turnOnVideo(video) {
+  navigator.mediaDevices
+    .getUserMedia(constraints)
+    .then((mediaStream) => {
+      //const video = document.querySelector("video");
+      video.srcObject = mediaStream;
+      video.onloadedmetadata = () => {
+        video.play();
+      };
+    })
+    .catch((err) => {
+    postError(err);
+    });
+}
+
+function stopStreamedVideo(videoElem) {
+  const stream = videoElem.srcObject;
+  const tracks = stream.getTracks();
+
+  tracks.forEach((track) => {
+    track.stop();
   });
-  */
+  videoElem.srcObject = null;
+}
+
+let barcodeDetector;
+
+function enableQrSearch(){
+    // check compatibility
+  if (!("BarcodeDetector" in globalThis)) {
+    console.log("Barcode Detector is not supported by this browser.");
+  } else {
+    // create new detector
+    document.querySelector("#addEntryURL").value = "";
+    turnOnVideo(video);
+    console.log("Barcode Detector supported!");
+    barcodeDetector = new BarcodeDetector({
+      formats: ["qr_code"]
+    });
+    
+    setInterval(getQrCode , 1000);
+  }  
+}
+
+function getQrCode() {  
+  if ("BarcodeDetector" in globalThis) {
+    barcodeDetector
+      .detect(video)
+      .then((barcodes) => {
+        barcodes.forEach((barcode) => {
+          //console.log(barcode.rawValue);
+          document.querySelector("#addEntryURL").value = barcode.rawValue;
+          beep();
+        });
+      })
+      .catch((err) => {
+        //console.error(err);
+      postError(err);
+      });
+  }
+}
+
+beep();
   </script>
 
   
