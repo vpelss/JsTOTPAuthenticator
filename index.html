@@ -248,7 +248,7 @@ div,span {
 </dialog>
 
 <dialog id="addEntryDialog">
- <div id="reader"></div>  
+  <div id="reader"></div>
   <p>Add An Entry</p>
   <form method="dialog" onsubmit="addEntry(this)">
     <center>
@@ -285,6 +285,10 @@ div,span {
     <form method="dialog" onsubmit="editEntry('${entryId}')">
       <center>
         <div>
+          <input type="button" value="Toggle QR Code" onclick="toggleQrCode();" title="For scanning to another authenticator app">
+          <div id="qrCode"></div>
+        </div>
+        <div>
           <label for="editEntryIssuer">Issuer</label>
           <input type="text" id="editEntryIssuer" placeholder="Issuer" autocomplete="off" value="${entryIssuer}">
         </div>
@@ -315,8 +319,6 @@ div,span {
           <label for="editEntryUrl">URL</label>
           <input type="text" id="editEntryUrl" placeholder="URL" autocomplete="off" value="${editEntryUrl}" class="secret">
         </div>
-        <a href="#" onclick="toggleQrCode();">Click to toggle QR code</a>
-        <div id="qrCode"></div>
       </center>
     </form>
   </div>
@@ -365,7 +367,6 @@ div,span {
 // 60 kb
 
 // TO DO:
-//css fix
 //show qr button at top
 //backup reminder
 //ADD web app code
@@ -534,15 +535,24 @@ function copyElementInnerHTMLToClipboard(id) {
   }
 }
 
+function toggleQrCode() {
+  let x = document.querySelector("#qrCode");
+  if (x.style.display === "none") {
+    x.style.display = "block";
+  } else {
+    x.style.display = "none";
+  }
+}
+
 function editEntryDialog(id) {
   try {
-    let issuer = dbGlobal.entries[id].issuer;
-    let name = dbGlobal.entries[id].name;
-    let algorithm = dbGlobal.entries[id].info.algo;
-    let digits = dbGlobal.entries[id].info.digits;
-    let period = dbGlobal.entries[id].info.period;
-    let secret = dbGlobal.entries[id].info.secret;
-    let note = dbGlobal.entries[id].info.note;
+    let issuer = dbGlobal.entries[id].issuer || "";
+    let name = dbGlobal.entries[id].name || "";
+    let algorithm = dbGlobal.entries[id].info.algo || "";
+    let digits = dbGlobal.entries[id].info.digits || "";
+    let period = dbGlobal.entries[id].info.period || "";
+    let secret = dbGlobal.entries[id].info.secret || "";
+    let note = dbGlobal.entries[id].info.note || "";
 
     //build url otpauth://totp/ACME%20Co:john.doe@email.com?secret=HXDMVJECJJWSRB3HWIZR4IFUGFTMXBOZ&issuer=ACME%20Co&algorithm=SHA1&digits=6&period=30
     let url = `otpauth://totp/${issuer}:${name}?issuer=${issuer}&name=${name}&secret=${secret}&algorithm=${algorithm}&digits=${digits}&period=${period}&note=${note}`;
@@ -573,15 +583,6 @@ function editEntryDialog(id) {
     document.getElementById("qrCode").style.display = "none"; //hide it right away
   } catch (err) {
     postError(err);
-  }
-}
-
-function toggleQrCode() {
-  let x = document.querySelector("#qrCode");
-  if (x.style.display === "none") {
-    x.style.display = "block";
-  } else {
-    x.style.display = "none";
   }
 }
 
@@ -796,11 +797,10 @@ async function addEntry(el) {
       groups: []
     };
 
-    let urlArray = new URL(url);
     //URL or manual
     if (url != "") {
-      //let paramsString = "q=URLUtils.searchParams&topic=api";
       // otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example&algorithm=SHA1 &digits=6&period=30
+             let urlArray = new URL(url);
       let searchParams = new URLSearchParams(urlArray.search);
       for (let [key, value] of searchParams) {
         let preVariable = entryTemplate;
@@ -814,10 +814,10 @@ async function addEntry(el) {
       }
       let r = 9;
     } else {
-      entryTemplate[issuer] = el.addEntryIssuer.value;
-      entryTemplate[name] = el.addEntryName.value;
-      entryTemplate[note] = el.addEntryNote.value;
-      entryTemplate.info[secret] = el.addEntrySecret.value;
+      entryTemplate.issuer = el.addEntryIssuer.value;
+      entryTemplate.name = el.addEntryName.value;
+      entryTemplate.note = el.addEntryNote.value;
+      entryTemplate.info.secret = el.addEntrySecret.value;
     }
 
     //create object if we need to
