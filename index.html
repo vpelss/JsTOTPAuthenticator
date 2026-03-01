@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" >
 
@@ -121,9 +122,16 @@ div,span {
 </div>
 
 <div_main_page id="main_page_component">
-  <div id="entriesDiv">
-    <center><b>Waiting to load encrypted Aegis database...</b></center>
-  </div>
+  <center>
+     <br>
+    <div>
+      <span><input type="text" id="searchText" placeholder="Search" style="width: 90%" onkeyup="buildEntriesDOM()"></span><span><a onclick="document.getElementById('searchText').value='';buildEntriesDOM();" class="button">x</a></span>
+    </div>
+    
+    <div id="entriesDiv">
+      <center><b>Waiting to load encrypted Aegis database...</b></center>
+    </div>
+  </center>
 </div_main_page>
 
 <div_menu_page id="menu_page_component" hidden>
@@ -151,7 +159,7 @@ div,span {
       <a href="#" id="changePassword" class="button" onclick="openDialog('changePasswordDialog')">Change Password</a>
     </div>
     <div>
-      <button id="install">Install as PWA</button>
+      <button id="installPWA">Install as PWA</button>
     </div>
     <div>
       Links below will open in your default browser.
@@ -171,17 +179,14 @@ div,span {
 <template id="theTemplate">
   <div id="${entryId}" class="myTemplate">
     <div class="leftTemplate">
-
       <div>
         <div id="entryIssuer${entryId}">Issuer</div>
         <div id="entryName${entryId}">Name</div>
       </div>
-
       <div>
         <span id="entryCode${entryId}" class="codeClass" onclick="copyElementInnerHTMLToClipboard('entryCode${entryId}')">Code</span>
         <span id="entryCodeNext${entryId}" class="codeClassNext" onclick="copyElementInnerHTMLToClipboard('entryCodeNext${entryId}')">CodeNext</span>
       </div>
-
     </div>
 
     <div class="rightTemplate">
@@ -345,12 +350,12 @@ div,span {
 // qr code creator
 // https://cdnjs.com/libraries/qrcode/1.4.4
 // 340 kb requires canvas
-// https://davidshimjs.github.io/qrcodejs/
+// using : https://davidshimjs.github.io/qrcodejs/
 // 34 kb requires div
 // scan qr code from camera
 // https://developer.mozilla.org/en-US/docs/Web/API/Barcode_Detection_API
-// ?? poor support
-// https://github.com/mebjas/html5-qrcode
+// ?? poor browser support
+// using : https://github.com/mebjas/html5-qrcode
 // https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js
 // 366 kb
 // https://github.com/nimiq/qr-scanner
@@ -358,12 +363,12 @@ div,span {
 // 60 kb
 
 // TO DO:
+// search?
+//sort on name
 //backup reminder
-//ADD web app code
-//browser support alert?
+//browser support check with alert
 // the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
 // timed logout?
-// search?
 
 "use strict";
 
@@ -385,7 +390,6 @@ main();
 async function main() {
   try {
     //fresh start
-    //closeDialog("waitDialog");
     openDialog("waitDialog");
     clearInterval(myInterval);
     closeMenu();
@@ -414,7 +418,7 @@ async function main() {
     }
 
     //assume pw is "" and try to decrypt
-    //if it fails bring up passwordDialog it will either:
+    //if it fails bring up passwordDialog it will give options to either:
     //1. wipe local storage and run main()
     //2. set password and run main()
     //unencrypt JSON DB
@@ -429,6 +433,17 @@ async function main() {
     dbGlobal = JSON.parse(dbJSON);
     dbGlobal.entries = dbGlobal.entries;
     //let test = await encryptDb(password);
+
+    //sort them based on issuer + name
+    dbGlobal.entries.sort(function (a, b) {
+      let aa = "" + a.issuer + a.name;
+      let bb = "" + b.issuer + b.name;
+      if (aa < bb) {
+        return -1;
+      } else {
+        return 1;
+      }
+    });
 
     // dbGlobal.entries = localStorageObject.entries;
     dbJSON = ""; //data no longer needed
@@ -486,9 +501,10 @@ async function eachSecond() {
     // calculate and output code for each entry and place on template
     let entriesCount = 0;
     for (let entry of dbGlobal.entries) {
+      //search may not have added some divs... so validate div first
+      if(document.getElementById("entryName" + entriesCount) != null){
       let name = entry.name;
       let issuer = entry.issuer;
-
       let algo = entry.info.algo;
       let digits = entry.info.digits;
       let period = entry.info.period;
@@ -503,7 +519,8 @@ async function eachSecond() {
       document.getElementById("entryIssuer" + entriesCount).innerHTML = issuer;
       document.getElementById("entryCode" + entriesCount).innerHTML = totp;
       document.getElementById("entryCodeNext" + entriesCount).innerHTML = totp2;
-      entriesCount += 1;
+      } 
+      entriesCount += 1; //always do this
     }
   } catch (err) {
     postError(err);
@@ -742,8 +759,8 @@ function html5QrCodeStop() {
   try {
     //let elReader = document.getElementById("reader");
     //if (elReader.checkVisibility()) {
-      let elStop = document.getElementById("html5-qrcode-button-camera-stop");
-      elStop.click();
+    let elStop = document.getElementById("html5-qrcode-button-camera-stop");
+    elStop.click();
     //}
   } catch (err) {
     postError(err);
@@ -763,8 +780,8 @@ async function addEntry(el) {
     let uuid = self.crypto.randomUUID();
 
     // if camera is on, turn it off
-   // if (video.srcOblect != null) {
-     // stopStreamedVideo(video);
+    // if (video.srcOblect != null) {
+    // stopStreamedVideo(video);
     //}
     //html5QrCodeStop();
     //document.getElementById("reader").innerHTML = "";
@@ -790,7 +807,7 @@ async function addEntry(el) {
     //URL or manual
     if (url != "") {
       // otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example&algorithm=SHA1 &digits=6&period=30
-             let urlArray = new URL(url);
+      let urlArray = new URL(url);
       let searchParams = new URLSearchParams(urlArray.search);
       for (let [key, value] of searchParams) {
         let preVariable = entryTemplate;
@@ -916,9 +933,9 @@ function openDialog(id) {
 }
 
 function closeDialog(id) {
-  if(id == "addEntryDialog"){
+  if (id == "addEntryDialog") {
     html5QrCodeStop();
-      }
+  }
   let el = document.querySelector("#" + id);
   el.close();
 }
@@ -1354,20 +1371,31 @@ function buildEntriesDOM() {
   try {
     let entriesCount = 0;
     let entriesDiv = document.querySelector("#entriesDiv");
-    entriesDiv.innerHTML = "";
+    let outputString = "";
+    let searchText = document.querySelector("#searchText").value.trim();
+
     dbGlobal.entries.forEach(function (entry) {
-      //replace template values
-      // https://stackoverflow.com/questions/377961/efficient-javascript-string-replacement
-      //https://stackoverflow.com/questions/68970312/how-do-i-resolve-a-javascript-template-literal-variable-within-a-string-within-a
-      let modifiedTemplate = template("theTemplate", {
-        entryId: "" + entriesCount
-      });
-      //add to #entriesDiv
-      const toAppend = document.createElement("div");
-      toAppend.innerHTML = modifiedTemplate;
-      entriesDiv.append(toAppend);
-      entriesCount += 1;
+      let issuerPlusName = "" + entry.issuer + entry.name;
+      //if( (searchText != "") || (searchText != "") )
+      let r = issuerPlusName.indexOf(searchText);
+    if((searchText == "") || (issuerPlusName.indexOf(searchText) >= 0))
+     {
+      
+        //replace template values if searchText == "" or searchText is in 
+        // https://stackoverflow.com/questions/377961/efficient-javascript-string-replacement
+        //https://stackoverflow.com/questions/68970312/how-do-i-resolve-a-javascript-template-literal-variable-within-a-string-within-a
+        let modifiedTemplate = template("theTemplate", {
+          entryId: "" + entriesCount
+        });
+        //add to #entriesDiv
+        //const toAppend = document.createElement("div");
+        //toAppend.innerHTML = modifiedTemplate;
+        //entriesDiv.append(toAppend);
+        outputString = outputString + modifiedTemplate;
+     }
+      entriesCount += 1; //always do this       
     });
+    entriesDiv.innerHTML = outputString;
   } catch (err) {
     postError(err);
   }
@@ -1498,47 +1526,47 @@ function postError(err) {
   document.getElementById("error").innerHTML = "Errors:<br>" + errorString;
 }
 
+function wrapPWA() {
+  //button to install PWA : https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/How_to/Trigger_install_prompt
+  const installButton = document.getElementById("installPWA");
+  let installPrompt = null;
 
-function wrapPWA(){
-//button to install PWA : https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/How_to/Trigger_install_prompt
-
-let installPrompt = null;
-const installButton = document.getElementById("install");
-
-window.addEventListener("beforeinstallprompt", (event) => {
-  event.preventDefault();
-  installPrompt = event;
-  installButton.removeAttribute("hidden");
-});
-
-installButton.addEventListener("click", async () => {
-  if (!installPrompt) {
-    return;
-  }
-  const result = await installPrompt.prompt();
-  console.log(`Install prompt was: ${result.outcome}`);
-  disableInAppInstallPrompt();
-});
-
-function disableInAppInstallPrompt() {
-  installPrompt = null;
-  installButton.setAttribute("hidden", "");
-}
-
-window.addEventListener("appinstalled", () => {
-  disableInAppInstallPrompt();
-});
-
-window.addEventListener("beforeinstallprompt", async (event) => {
-  const relatedApps = await navigator.getInstalledRelatedApps();
-
-  // Search for a specific installed platform-specific app
-  const psApp = relatedApps.find((app) => app.id === "/AuthenticatorAnywhere/");
-  if (psApp) {
+  window.addEventListener("beforeinstallprompt", (event) => {
     event.preventDefault();
-    // Update UI as appropriate
+    installPrompt = event;
+    installButton.removeAttribute("hidden");
+  });
+
+  installButton.addEventListener("click", async () => {
+    if (!installPrompt) {
+      return;
+    }
+    const result = await installPrompt.prompt();
+    console.log(`Install prompt was: ${result.outcome}`);
+    disableInAppInstallPrompt();
+  });
+
+  function disableInAppInstallPrompt() {
+    installPrompt = null;
+    installButton.setAttribute("hidden", "");
   }
-});
+
+  window.addEventListener("appinstalled", () => {
+    disableInAppInstallPrompt();
+  });
+
+  window.addEventListener("beforeinstallprompt", async (event) => {
+    const relatedApps = await navigator.getInstalledRelatedApps();
+
+    // Search for a specific installed platform-specific app
+    const psApp = relatedApps.find(
+      (app) => app.id === "/AuthenticatorAnywhere/"
+    );
+    if (psApp) {
+      event.preventDefault();
+      // Update UI as appropriate
+    }
+  });
 }
   </script>
 
