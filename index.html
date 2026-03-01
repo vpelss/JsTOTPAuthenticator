@@ -128,7 +128,6 @@ div,span {
 </div_main_page>
 
 <div_menu_page id="menu_page_component" hidden>
-
   <form>
     <center>
       <div>Import / Export encrypted JSON database</div>
@@ -152,29 +151,22 @@ div,span {
     <div>
       <a href="#" id="changePassword" class="button" onclick="openDialog('changePasswordDialog')">Change Password</a>
     </div>
-
     <div>
-      <a href="#" id="install" class="button">Install as PWA</a>
+      <button id="install">Install as PWA</button>
     </div>
-
     <div>
       Links below will open in your default browser.
     </div>
-
     <div>
       <a href="https://github.com/vpelss/AuthenticatorAnywhere/blob/main/README.md" class="button u-full-width" target="_blank">Help/Read Me</a>
     </div>
-
     <div>
       <a href="https://github.com/vpelss/JsTOTPAuthenticator" target="_blank" class="button u-full-width">Github</a>
     </div>
-
     <div>
       <a href="https://github.com/vpelss/JsTOTPAuthenticator/blob/main/LICENSE" target="_blank" class="button">Licence</a>
     </div>
-
   </center>
-
 </div_menu_page>
 
 <template id="theTemplate">
@@ -367,7 +359,6 @@ div,span {
 // 60 kb
 
 // TO DO:
-//show qr button at top
 //backup reminder
 //ADD web app code
 //browser support alert?
@@ -1508,7 +1499,46 @@ function postError(err) {
   document.getElementById("error").innerHTML = "Errors:<br>" + errorString;
 }
 
-beep();
+//button to install PWA : https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/How_to/Trigger_install_prompt
+
+let installPrompt = null;
+const installButton = document.getElementById("install");
+
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  installPrompt = event;
+  installButton.removeAttribute("hidden");
+});
+
+installButton.addEventListener("click", async () => {
+  if (!installPrompt) {
+    return;
+  }
+  const result = await installPrompt.prompt();
+  console.log(`Install prompt was: ${result.outcome}`);
+  disableInAppInstallPrompt();
+});
+
+function disableInAppInstallPrompt() {
+  installPrompt = null;
+  installButton.setAttribute("hidden", "");
+}
+
+window.addEventListener("appinstalled", () => {
+  disableInAppInstallPrompt();
+});
+
+window.addEventListener("beforeinstallprompt", async (event) => {
+  const relatedApps = await navigator.getInstalledRelatedApps();
+
+  // Search for a specific installed platform-specific app
+  const psApp = relatedApps.find((app) => app.id === "/Forever_Passwords/");
+
+  if (psApp) {
+    event.preventDefault();
+    // Update UI as appropriate
+  }
+});
   </script>
 
   
