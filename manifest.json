@@ -1,7 +1,6 @@
 {
   "short_name": "AA",
-  "name": "AuthenticatorAnywhere
-",
+  "name": "AuthenticatorAnywhere",
   "icons": [
     {
       "src": "./512.svg",
