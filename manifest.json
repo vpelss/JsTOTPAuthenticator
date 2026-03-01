@@ -1,6 +1,7 @@
 {
-  "short_name": "JsAuth",
-  "name": "JsTOTPAuthenticator",
+  "short_name": "AA",
+  "name": "AuthenticatorAnywhere
+",
   "icons": [
     {
       "src": "./512.svg",
@@ -19,7 +20,7 @@
   "display": "minimal-ui",
   "scope": "/",
   "theme_color": "#3367D6",
-  "description": "JsTOTPAuthenticator : A Javascript TOTP authenticator web app",
+  "description": "AuthenticatorAnywhere : A Javascript TOTP authenticator web app",
   "screenshots": [
     {
       "src": "./192.png",
