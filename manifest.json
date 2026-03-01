@@ -19,7 +19,7 @@
   "display": "minimal-ui",
   "scope": "/",
   "theme_color": "#3367D6",
-  "description": "JsTOTPAuthenticator : A fully portable Aegis compatible authenticator",
+  "description": "JsTOTPAuthenticator : A Javascript TOTP authenticator web app",
   "screenshots": [
     {
       "src": "./192.png",
