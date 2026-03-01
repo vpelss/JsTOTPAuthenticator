@@ -1532,7 +1532,7 @@ window.addEventListener("beforeinstallprompt", async (event) => {
   const relatedApps = await navigator.getInstalledRelatedApps();
 
   // Search for a specific installed platform-specific app
-  const psApp = relatedApps.find((app) => app.id === "/Forever_Passwords/");
+  const psApp = relatedApps.find((app) => app.id === "/AuthenticatorAnywhere/");
 
   if (psApp) {
     event.preventDefault();
