@@ -14,10 +14,10 @@
     }
   ],
   "id": "/JsTOTPAuthenticator/",
-  "start_url": "/",
+  "start_url": "https://vpelss.github.io/AuthenticatorAnywhere/",
   "background_color": "#3367D6",
   "display": "minimal-ui",
-  "scope": "/AuthenticatorAnywhere/",
+  "scope": "https://vpelss.github.io/AuthenticatorAnywhere/",
   "theme_color": "#3367D6",
   "description": "AuthenticatorAnywhere : A Javascript TOTP authenticator web app",
   "screenshots": [
