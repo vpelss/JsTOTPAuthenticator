@@ -17,7 +17,7 @@
   "start_url": "/",
   "background_color": "#3367D6",
   "display": "minimal-ui",
-  "scope": "https://vpelss.github.io/AuthenticatorAnywhere/",
+  "scope": "/AuthenticatorAnywhere/",
   "theme_color": "#3367D6",
   "description": "AuthenticatorAnywhere : A Javascript TOTP authenticator web app",
   "screenshots": [
