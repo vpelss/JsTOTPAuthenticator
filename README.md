@@ -12,10 +12,9 @@ It runs entirely in your browser using Javascript.
 
 It also shows the next upcomming code. An nice old man feature!
 
-Run at: 
+Run at https://vpelss.github.io/AuthenticatorAnywhere/
 
-- https://vpelss.github.io/AuthenticatorAnywhere/
-- https://codepen.io/vpelss/pen/EayojzL
+Modify the code at https://codepen.io/vpelss/pen/EayojzL
 
 # Use
 
