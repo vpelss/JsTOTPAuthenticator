@@ -14,7 +14,7 @@
     }
   ],
   "id": "/JsTOTPAuthenticator/",
-  "start_url": "./",
+  "start_url": "./aa",
   "background_color": "#3367D6",
   "display": "minimal-ui",
   "scope": "/",
