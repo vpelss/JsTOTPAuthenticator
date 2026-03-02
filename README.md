@@ -14,9 +14,11 @@ It also shows the next upcomming code. An nice old man feature!
 
 More features are listed here: https://www.emogic.com/tech-notes/authenticator-anywhere/
 
-**Run at https://vpelss.github.io/AuthenticatorAnywhere/**
-
 Modify the code at https://codepen.io/vpelss/pen/EayojzL
+
+# Run It
+
+https://vpelss.github.io/AuthenticatorAnywhere/
 
 # Use
 
