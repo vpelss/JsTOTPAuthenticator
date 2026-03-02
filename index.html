@@ -50,8 +50,16 @@ body {
   transition: width 1s linear;
 }
 
+#headerTitle{
+  ffffont-size: .8rem;
+}
+
+#searchText{
+width: 80%;
+}
+
 .myTemplate {
-  display: table;
+  display: grid;
   width: 100%;
   border: solid;
   border-width: 1px;
@@ -60,11 +68,13 @@ body {
 }
 
 .leftTemplate {
-  display: table-cell;
+  grid-column: 1;
+  text-align: left;
+  overflow: auto;
 }
 
 .rightTemplate {
-  display: table-cell;
+  grid-column: 2;
   text-align: right;
 }
 
@@ -100,34 +110,30 @@ div,span {
   <div id="header">
   <center>
     <span id="menu_icon">
-      <a onclick="openMenu();" class="button">&#x2261;</a>
+      <button onclick="openMenu();">&#x2261;</button>
     </span>
     <span id="x_icon" hidden>
-      <a onclick="closeMenu()" class="button">X</a>
+      <button onclick="closeMenu()">X</button>
     </span>
-    &nbsp;&nbsp;&nbsp;
-    <span>
-      AuthenticatorAnywhere
-    </span>
-    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <span id="headerTitle">AuthenticatorAnywhere</span>
     <span id="add_icon">
-      <a onclick="openDialog('addEntryDialog');html5QrCode();" class="button">+</a>
+      <button onclick="openDialog('addEntryDialog');html5QrCode();">+</button>
     </span>
   </center>
   <div>
     <div id="theBarContainer">
-      <div id=theBar></div>
+      <div id="theBar"></div>
     </div>
   </div>
 </div>
 
 <div_main_page id="main_page_component">
   <center>
-     <br>
+    <br>
     <div>
-      <span><input type="text" id="searchText" placeholder="Search" style="width: 90%" onkeyup="buildEntriesDOM()"></span><span><a onclick="document.getElementById('searchText').value='';buildEntriesDOM();" class="button">x</a></span>
+      <span><input type="text" id="searchText" placeholder="Search" onkeyup="buildEntriesDOM()"></span><span><a onclick="document.getElementById('searchText').value='';buildEntriesDOM();" class="button">x</a></span>
     </div>
-    
+
     <div id="entriesDiv">
       <center><b>Waiting to load encrypted Aegis database...</b></center>
     </div>
@@ -176,30 +182,27 @@ div,span {
   </center>
 </div_menu_page>
 
-<template id="theTemplate">
+<ttemplate id="theTemplate">
   <div id="${entryId}" class="myTemplate">
+
     <div class="leftTemplate">
-      <div>
-        <div id="entryIssuer${entryId}">Issuer</div>
-        <div id="entryName${entryId}">Name</div>
-      </div>
-      <div>
-        <span id="entryCode${entryId}" class="codeClass" onclick="copyElementInnerHTMLToClipboard('entryCode${entryId}')">Code</span>
-        <span id="entryCodeNext${entryId}" class="codeClassNext" onclick="copyElementInnerHTMLToClipboard('entryCodeNext${entryId}')">CodeNext</span>
-      </div>
+      <div id="entryIssuer${entryId}">Issuer</div>
+      <div id="entryName${entryId}">Name</div>
+      <span id="entryCode${entryId}" class="codeClass" onclick="copyElementInnerHTMLToClipboard('entryCode${entryId}')">Code</span>
+      <span id="entryCodeNext${entryId}" class="codeClassNext" onclick="copyElementInnerHTMLToClipboard('entryCodeNext${entryId}')">CodeNext</span>
     </div>
 
     <div class="rightTemplate">
-      <a id="copyIcon${entryId}" href="#" class="button" onclick="copyElementInnerHTMLToClipboard('entryCode${entryId}')">
-        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#ffffff">
+      <button id="copyIcon${entryId}" onclick="copyElementInnerHTMLToClipboard('entryCode${entryId}')">
+        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="1rem" fill="#ffffff">
           <path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z" />
         </svg>
-      </a>
-      <div id="editIcon${entryId}"><a href="#" class="button" onclick="editEntryDialog('${entryId}');">&#x2261;</a>
-      </div>
+      </button>
+      <br>
+      <button id="editIcon${entryId}" onclick="editEntryDialog('${entryId}');">&#x2261;</button>
     </div>
   </div>
-</template>
+</ttemplate>
 
 <dialog id="passwordDialog">
   <p>Enter or Set a password for the Database</p>
@@ -363,8 +366,9 @@ div,span {
 // 60 kb
 
 // TO DO:
-// search?
-//sort on name
+//on close dialog have  optopn routine.... 
+//css too long
+//restart app button
 //backup reminder
 //browser support check with alert
 // the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
@@ -1376,10 +1380,14 @@ function buildEntriesDOM() {
     let entriesCount = 0;
     let entriesDiv = document.querySelector("#entriesDiv");
     let outputString = "";
-    let searchText = document.querySelector("#searchText").value.trim().toLowerCase();
+    let searchText = document
+      .querySelector("#searchText")
+      .value.trim()
+      .toLowerCase();
 
     dbGlobal.entries.forEach(function (entry) {
-      let issuerPlusName = "" + entry.issuer.toLowerCase() + entry.name.toLowerCase();
+      let issuerPlusName =
+        "" + entry.issuer.toLowerCase() + entry.name.toLowerCase();
       if (searchText == "" || issuerPlusName.indexOf(searchText) >= 0) {
         // https://stackoverflow.com/questions/377961/efficient-javascript-string-replacement
         //https://stackoverflow.com/questions/68970312/how-do-i-resolve-a-javascript-template-literal-variable-within-a-string-within-a
