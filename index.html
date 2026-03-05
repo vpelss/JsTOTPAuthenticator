@@ -384,6 +384,17 @@ body {
 <script src='https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@gh-pages/qrcode.min.js'></script>
 <script src='https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'></script>
     <script id="rendered-js" >
+// TO DO:
+//close in js???
+//biometrics? CTAP2
+//https://stackoverflow.blog/2022/11/16/biometric-authentication-for-web-devs/
+//https://webauthn.guide/
+//backup reminder
+//browser support check with alert
+// the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
+// timed logout?
+
+/*
 // EXTERNAL CODE
 //svg images from https://fonts.google.com/
 // scrypt from https://www.jsdelivr.com/package/npm/scrypt-js
@@ -402,25 +413,18 @@ body {
 // https://github.com/nimiq/qr-scanner
 // https://nimiq.github.io/qr-scanner/qr-scanner.umd.min.js
 // 60 kb
-
-// TO DO:
-//blank submit possible
-//close
-//biometrics?
-//disable swipe down refresh
-//on close dialog have  optopn routine....
-//restart app button
-//backup reminder
-//browser support check with alert
-// the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
-// timed logout?
+*/
 
 "use strict";
 
 let password = ""; //it can be "", but harangue to set a password
-let myInterval;
-let localStorageName = "JsTOTPAuthenticator";
-let localStorageObject = {};
+let myInterval; //update every second
+let localStorageName = "AuthenticatorAnywhere";
+if (localStorage.getItem("JsTOTPAuthenticator") !== null) {
+  // was JsTOTPAuthenticator, so allow backwards compatability
+  localStorageName = "JsTOTPAuthenticator";
+}
+let localStorageObject = {}; // salt, tagx, nonce, db encrypted
 let dbGlobal = {}; //entries, groups, ect
 let errorArray = [];
 let oldStepInt = 0;
@@ -430,6 +434,7 @@ const TE = new TextEncoder();
 const TD = new TextDecoder();
 
 // START MAIN LOOP //
+
 wrapPWA();
 main();
 
@@ -473,12 +478,34 @@ async function main() {
       closeDialog("waitDialog");
       //pw failed so open passwordDialog
       openDialog("passwordDialog");
-      return;
+      return; // quit and await dialog input
     }
 
+    let r;
+    let bioOptions = {
+        publicKey: {
+          rp: { id: "dcfcodepen.io", name: "AuthenticatorAnywhere" },
+          user: {
+            id: "f2bd8bf7-2145-4a5a-910f-8fdc9ef421d3",
+            name: "krusty@example.com",
+            displayName: "Krusty The Clown"
+          },
+          challenge: "...",
+          pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+          authenticatorSelection: {}
+          //...
+        }
+      };
+      if (window.PublicKeyCredential) {
+        // do your webauthn stuff
+        //r = navigator.credentials.create(bioOptions);
+        //navigator.credentials.get(bioOptions);
+      } else {
+        // wah-wah, back to passwords for you
+      }
+    
     dbGlobal = JSON.parse(dbJSON);
     dbGlobal.entries = dbGlobal.entries;
-    //let test = await encryptDb(password);
 
     //sort them based on issuer + name
     dbGlobal.entries.sort(function (a, b) {
@@ -1310,14 +1337,18 @@ function leaingZeros(step) {
 
 function isValidlocalStorageObject() {
   try {
-    if (
-      JSON.stringify(localStorageObject) == "{}" ||
-      typeof localStorageObject.db == "undefined"
-    ) {
-      return false;
-    } else {
-      return true;
-    }
+    //check most obj fields for existance
+    if( typeof localStorageObject.header == "undefined"){return false;}
+    if( typeof localStorageObject.header.slots == "undefined"){return false;}
+    if( typeof localStorageObject.header.slots[0].key == "undefined"){return false;}
+    if( typeof localStorageObject.header.slots[0].key_params == "undefined"){return false;}
+    if( typeof localStorageObject.header.slots[0].salt == "undefined"){return false;}
+    if( typeof localStorageObject.header.params == "undefined"){return false;}
+    if( typeof localStorageObject.header.params.nonce == "undefined"){return false;}
+    if( typeof localStorageObject.header.params.tag == "undefined"){return false;}
+    if( typeof localStorageObject.db == "undefined"){return false;}
+    // we ran the gauntlet
+    return true; 
   } catch (err) {
     postError(err);
   }
