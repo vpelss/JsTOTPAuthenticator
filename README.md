@@ -34,6 +34,10 @@ Should you need to set or change your password, click the menu and click 'Change
 - Back up your database and keep it off site
 - Close AutheticatorAnywhere when you are done
 
+# What is TOTP Authentication?
+
+https://www.youtube.com/watch?v=7sI2PJaMCAk
+
 # Code explanation : TOTP
 
 For those trying to write thier own TOTP code, I tried to follow the RFCs:
