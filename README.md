@@ -32,7 +32,7 @@ Should you need to set or change your password, click the menu and click 'Change
 
 - Use a strong password
 - Back up your database and keep it off site
-
+- Close AutheticatorAnywhere wen you are done
 
 # Code explanation : TOTP
 
