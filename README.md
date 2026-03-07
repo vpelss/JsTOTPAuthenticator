@@ -18,6 +18,8 @@ Modify the code at https://codepen.io/vpelss/pen/EayojzL
 
 # Run It
 
+<a href="http://stackoverflow.com" target="_blank">Go</a>
+
 https://vpelss.github.io/AuthenticatorAnywhere/
 
 # Use
