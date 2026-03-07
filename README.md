@@ -62,11 +62,11 @@ Notes:
 
 - https://datatracker.ietf.org/doc/html/rfc4648#section-6
  
-- I am using window.crypto.subtle.digest for my SHA1 code as most older browsers will likely be dead or dying
+- I am using window.crypto.subtle.digest for my SHA1 code, but there are libraries if you need to support old browsers
 
 - For Uint8Array concatination I used https://evanhahn.com/the-best-way-to-concatenate-uint8arrays/
 
-- after completing all my code based on rfc6238 I found out that modern browsers have window.crypto.subtle.sign("HMAC", cryptoKey, msg) , so now my many lines of code can be replaced by 3 lines. Ha on me! Well at least I learned a few things.
+- after completing all my code based on rfc6238 I found out that modern browsers have window.crypto.subtle.sign("HMAC", cryptoKey, msg) , so now my many lines of code can be replaced by 3 lines. Ha on me! My code is left in the code's comments.
 
 # Code explanation : Unencrypting and Encrypting the json database
 
