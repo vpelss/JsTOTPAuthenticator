@@ -28,6 +28,12 @@ If you have no backed up data, click the plus and enter your Authenticator data 
 
 Should you need to set or change your password, click the menu and click 'Change Password' after you have unecryped the databse.
 
+# Tips
+
+- Use a strong password
+- Back up your database and keep it off site
+
+
 # Code explanation : TOTP
 
 For those trying to write thier own TOTP code, I tried to follow the RFCs:
