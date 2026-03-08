@@ -33,7 +33,7 @@ Should you need to set or change your password, click the menu and click 'Change
 - Use a strong password
 - Back up your database and keep it off site
 - Close AutheticatorAnywhere when you are done
-- do not keep password in a password manager. If password manager is compromised, then your second line of defense fails too
+- Do not keep password in a password manager. If password manager is compromised, then your second line of defense fails too
 
 # What is TOTP Authentication?
 
