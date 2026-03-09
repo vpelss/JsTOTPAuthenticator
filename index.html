@@ -245,7 +245,6 @@ body {
   <p>Enter or Set a password for the Database</p>
   <form method="post" action="javascript:void(0);" onsubmit="tryPassword(document.querySelector('#password').value);document.querySelector('#password').value='';">
     <center>
-      <div><input type="username"></div>
       <div>
         <label for="password">
           <input type="input" id="password" placeholder="Password" class="secret" autocomplete="off">
@@ -451,8 +450,8 @@ const dbEmptyMessage = `<center>
 
 // START MAIN LOOP //
 
-wrapPWA();
-main();
+wrapPWA(); //Progressive Web App code
+main(); // decrypt database and start setIntreval function
 
 async function main() {
   try {
@@ -478,7 +477,7 @@ async function main() {
     localStorageObject = getLocalStorage(); //load database if any
     //test to see if json is valid Aegis format.
     if (!isValidlocalStorageObject()) {
-      entriesDiv.innerHTML =dbEmptyMessage;
+      entriesDiv.innerHTML = dbEmptyMessage;
       closeDialog("waitDialog");
       return;
     }
@@ -529,61 +528,53 @@ async function main() {
 async function eachSecond() {
   try {
     if (dbGlobal.entries.length == 0) {
+      //db is empty
       entriesDiv.innerHTML = dbEmptyMessage;
+      return;
     }
-    let unixTime = Date.now() / 1000; //in seconds
-    let stepNow = unixTime / 30;
+    let unixTime = Date.now() / 1000; // unixTime is in seconds
+    let stepNow = unixTime / 30; //what TOTP step are we on?
     let stepInt = Math.floor(stepNow); //this changes when == to stepNow. so bar should be at 100%
-    let step = stepInt.toString(16); //step MUST be in string HEX
-    //show countdown
-    // let percentDone = Math.floor( 100 * (stepNow - stepInt + (1/30)) ) ; //need to add one tick 1/30 to progress bar so we can reach 100%
+    let step = stepInt.toString(16); //step MUST be in string HEX for the hmac function
+    step = leaingZeros(step); // step needs to be 16 characters for hmac function
+    //calc next one too
+    let stepInt2 = stepInt + 1;
+    let step2 = stepInt2.toString(16); //step MUST be in string HEX for the hmac function
+    step2 = leaingZeros(step2); // step needs to be 16 characters for hmac function
+
+    //show countdown on the bar
     let percentDone = Math.floor(100 * (stepNow - stepInt));
     let barWidth = 100 - percentDone;
     if (stepInt != oldStepInt) {
-      //percentDone will never coincide with our setInterval. so make barr 100 on change
+      //percentDone time will never coincide with our setInterval time as it started at a random offset time. so make the bar 100 on step change
       barWidth = 100;
       oldStepInt = stepInt;
     }
-
     let bar = document.querySelector("#theBar");
     bar.style.width = "" + barWidth + "%";
 
-    // step needs to be 16 characters
-    step = leaingZeros(step);
-
-    //calc next one too
-    let stepInt2 = stepInt + 1;
-    let step2 = stepInt2.toString(16); //step MUST be in string HEX
-    // step needs to be 16 characters
-    step2 = leaingZeros(step2);
-
-    // calculate and output code for each entry and place on template
-    let entriesCount = 0;
+    // calculate and output code for each entry and place on the entry in entriesDiv
+    let entriesCount = -1;
     for (let entry of dbGlobal.entries) {
-      //search may not have added some divs... so validate div first
-      if (document.getElementById("entryName" + entriesCount) != null) {
-        let name = entry.name;
-        let issuer = entry.issuer;
-        let algo = entry.info.algo;
-        let digits = entry.info.digits;
-        let period = entry.info.period;
-        let seedBase32 = entry.info.secret;
-        let seed = decodeBase32toHex(seedBase32.toUpperCase()); //base32Str to HexStr
-
-        let totp = await hmac(seed, step, digits, algo);
-        let totp2 = await hmac(seed, step2, digits, algo);
-
-        //document.getElementById("" + entriesCount).value = totp; //we are setting a value in a div. that can't be good
-        document.getElementById("entryName" + entriesCount).innerHTML = name;
-        document.getElementById(
-          "entryIssuer" + entriesCount
-        ).innerHTML = issuer;
-        document.getElementById("entryCode" + entriesCount).innerHTML = totp;
-        document.getElementById(
-          "entryCodeNext" + entriesCount
-        ).innerHTML = totp2;
-      }
       entriesCount += 1; //always do this
+      if (document.getElementById("entryName" + entriesCount) == null) {
+        continue;
+      } //search filter may be filtering some divs... so see if div exists first
+      let name = entry.name;
+      let issuer = entry.issuer;
+      let algo = entry.info.algo;
+      let digits = entry.info.digits;
+      let period = entry.info.period;
+      let seedBase32 = entry.info.secret;
+      let seed = decodeBase32toHex(seedBase32.toUpperCase()); //base32Str to HexStr
+
+      let totp = await hmac(seed, step, digits, algo);
+      let totp2 = await hmac(seed, step2, digits, algo);
+
+      document.getElementById("entryName" + entriesCount).innerHTML = name;
+      document.getElementById("entryIssuer" + entriesCount).innerHTML = issuer;
+      document.getElementById("entryCode" + entriesCount).innerHTML = totp;
+      document.getElementById("entryCodeNext" + entriesCount).innerHTML = totp2;
     }
   } catch (err) {
     postError(err);
@@ -594,7 +585,7 @@ async function eachSecond() {
 
 function copyElementInnerHTMLToClipboard(id) {
   try {
-    let code = document.getElementById(id).innerHTML; //we stored a value in a div for simplicity
+    let code = document.getElementById(id).innerHTML; 
     copytoclipboard2(code);
     openDialog("copiedDialog");
     setTimeout(function () {
