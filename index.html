@@ -140,6 +140,10 @@ body {
       <button onclick="openDialog('addEntryDialog');html5QrCode();">+</button>
     </span>
   </center>
+      <div>
+      <span><input type="text" id="searchText" placeholder="Search" onkeyup="buildEntriesDOM()"></span><span><a onclick="document.getElementById('searchText').value='';buildEntriesDOM();" class="button">x</a></span>
+    </div>
+  
   <div>
     <div id="theBarContainer">
       <div id="theBar"></div>
@@ -149,11 +153,6 @@ body {
 
 <div_main_page id="main_page_component">
   <center>
-    <br>
-    <div>
-      <span><input type="text" id="searchText" placeholder="Search" onkeyup="buildEntriesDOM()"></span><span><a onclick="document.getElementById('searchText').value='';buildEntriesDOM();" class="button">x</a></span>
-    </div>
-
     <div id="entriesDiv">
       <center><b>Waiting to load encrypted Aegis database...</b></center>
     </div>
@@ -607,6 +606,7 @@ function toggleQrCode() {
 
 function editEntryDialog(id) {
   try {
+    //get data to fill it in
     let issuer = dbGlobal.entries[id].issuer || "";
     let name = dbGlobal.entries[id].name || "";
     let algorithm = dbGlobal.entries[id].info.algo || "SHA1";
@@ -615,7 +615,6 @@ function editEntryDialog(id) {
     let secret = dbGlobal.entries[id].info.secret || "";
     let note = dbGlobal.entries[id].info.note || "";
 
-    //build url otpauth://totp/ACME%20Co:john.doe@email.com?secret=HXDMVJECJJWSRB3HWIZR4IFUGFTMXBOZ&issuer=ACME%20Co&algorithm=SHA1&digits=6&period=30
     let url = `otpauth://totp/${issuer}:${name}?issuer=${issuer}&name=${name}&secret=${secret}&algorithm=${algorithm}&digits=${digits}&period=${period}&note=${note}`;
 
     //do we have enough data to continue>
@@ -624,7 +623,7 @@ function editEntryDialog(id) {
       return;
     }
 
-    //build html tempDialog with data. our code knows all the ids and we can easily fill in all the input values
+    //build html modifiedTemplate with data using #editEntryTemplate
     let modifiedTemplate = template("editEntryTemplate", {
       entryId: "" + id,
       entryIssuer: issuer,
@@ -637,8 +636,8 @@ function editEntryDialog(id) {
     el.innerHTML = modifiedTemplate;
     openDialog("tempDialog");
 
-    //create qr code and set display : none
-    new QRCode(document.getElementById("qrCode"), url); //requires div
+    //create qr code and hide it. #qrCode is on #tempDialog
+    new QRCode(document.getElementById("qrCode"), url); //#qrCode is a div
     document.getElementById("qrCode").style.display = "none"; //hide it right away
   } catch (err) {
     postError(err);
@@ -647,18 +646,20 @@ function editEntryDialog(id) {
 
 async function editEntry(id) {
   try {
-    // tempDialog will contain the form
+    // #tempDialog will contain the form
     let el = document.querySelector("#tempDialog").querySelector("form");
     let entryName = el.editEntryName.value;
     let entryIssuer = el.editEntryIssuer.value;
     let entryNote = el.editEntryNote.value;
     let entrySecret = el.editEntryInfoSecret.value;
 
+    //update the comp in memory
     dbGlobal.entries[id].name = entryName;
     dbGlobal.entries[id].issuer = entryIssuer;
     dbGlobal.entries[id].note = entryNote;
     dbGlobal.entries[id].info.secret = entrySecret;
 
+    //encrypt ans save to localstorage
     await encryptDb(password);
     setLocalStorage(localStorageObject);
     main();
@@ -669,8 +670,7 @@ async function editEntry(id) {
 
 async function deleteEntry(id) {
   try {
-    //are you sure?
-    if (confirm("This will delete this Entry. Are you sure?")) {
+    if (confirm("This will delete this Entry. Are you sure?")) {  //are you sure?
       dbGlobal.entries.splice(id, 1);
       await encryptDb(password);
       setLocalStorage(localStorageObject);
