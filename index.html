@@ -382,6 +382,7 @@ body {
 <script src='https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'></script>
     <script id="rendered-js" >
 // TO DO:
+//fix copyToClipboard
 //https://github.com/dvas0004/web-auth/blob/master/src/webauthn.js
 //https://blog.davidvassallo.me/2019/01/25/exploring-the-webauthn-api-a-bare-bones-js-app/
 //https://mprimi.github.io/portable-secret/
@@ -477,7 +478,7 @@ async function main() {
 
     //assume pw is "" or already set and try to decrypt
     let dbJSON = await decryptDb(password);
-    if (dbJSON == "") {
+    if (!dbJSON) {
       //pw failed so open passwordDialog
       closeDialog("waitDialog");
       openDialog("passwordDialog");
@@ -579,7 +580,7 @@ async function eachSecond() {
 function copyElementInnerHTMLToClipboard(id) {
   try {
     let code = document.getElementById(id).innerHTML;
-    copytoclipboard2(code);
+    copyToClipboard(code);
     openDialog("copiedDialog");
     setTimeout(function () {
       closeDialog("copiedDialog");
@@ -653,7 +654,10 @@ async function editEntry(id) {
     dbGlobal.entries[id].info.secret = entrySecret;
 
     //encrypt dbGlobal and save localStorageObject to localstorage
-    await encryptDb(password);
+    let result = await encryptDb(password);
+    if (!result) {
+      throw "encryptDb faiiled";
+    }
     setLocalStorage(localStorageObject);
     main();
   } catch (err) {
@@ -666,7 +670,10 @@ async function deleteEntry(id) {
     if (confirm("This will delete this Entry. Are you sure?")) {
       //are you sure?
       dbGlobal.entries.splice(id, 1);
-      await encryptDb(password);
+      let result = await encryptDb(password);
+      if (!result) {
+        throw "encryptDb faiiled";
+      }
       setLocalStorage(localStorageObject);
       closeDialog("tempDialog");
       main();
@@ -806,7 +813,10 @@ async function addEntry(el) {
     }
 
     dbGlobal.entries.push(entryTemplate); //add entry to dbGlobal
-    await encryptDb(password);
+    let result = await encryptDb(password);
+    if (!result) {
+      throw "encryptDb faiiled";
+    }
     setLocalStorage(localStorageObject);
     main();
   } catch (err) {
@@ -834,7 +844,10 @@ async function changePassword(el) {
       }
       password = pw1;
       closeDialog("changePasswordDialog");
-      await encryptDb(password);
+      let result = await encryptDb(password);
+      if (!result) {
+        throw "encryptDb faiiled";
+      }
       setLocalStorage(localStorageObject);
       el[0].value = "";
       el[1].value = "";
@@ -860,9 +873,9 @@ function wipeDatabase() {
 }
 
 function tryPassword() {
-  let el= document.getElementById('password');
+  let el = document.getElementById("password");
   password = el.value;
-  el.value='';
+  el.value = "";
   closeDialog("passwordDialog");
   main();
 }
@@ -874,8 +887,8 @@ function openDialog(id) {
 
 function closeDialog(id) {
   //extranious
- // if (id == "addEntryDialog") {
-   // html5QrCodeStop();
+  // if (id == "addEntryDialog") {
+  // html5QrCodeStop();
   //}
   let el = document.getElementById(id);
   el.close();
@@ -930,8 +943,8 @@ function setLocalStorageFromTextbox() {
 function exportAll() {
   try {
     localStorageObject = getLocalStorage();
-    copytoclipboard2(JSON.stringify(localStorageObject, null, "\t"));
-    alert("Your current Aegis JSON encrypted database is on the clipboard!");
+    copyToClipboard(JSON.stringify(localStorageObject, null, "\t"));
+    alert("Your current encrypted database is on the clipboard!");
   } catch (err) {
     postError(err);
   }
@@ -1034,12 +1047,12 @@ async function hmac(
 
 async function decryptDb(password) {
   try {
-     // based on https://github.com/Sammy-T/avdu/blob/master/vault/decrypt.go
-     // use password to decrypt masterKey from the vault 
+    // based on https://github.com/Sammy-T/avdu/blob/master/vault/decrypt.go
+    // use password to decrypt masterKey from the vault
     // use masterKey bytes to decrypt the database
-    
+
     let pw = password.normalize("NFKC");
-    pw = TE.encode(password);  //convert to Uint8Array
+    pw = TE.encode(password); //convert to Uint8Array
     // go salt, err := hex.DecodeString(slot.Salt)
     let saltString = localStorageObject.header.slots[0].salt;
     let salt = Uint8Array.fromHex(saltString);
@@ -1077,6 +1090,9 @@ async function decryptDb(password) {
     // go aesgcm, err := cipher.NewGCM(block)
     //go masterKey, err = aesgcm.Open(nil, nonce, keyData, nil)
     let masterKey = await decrypt(nonce, hashedPassword, keyData);
+    if (!masterKey) {
+      throw "decrypt failed";
+    }
 
     //now use masterKey to decrypt dbData
     //this is the second nonce
@@ -1100,13 +1116,16 @@ async function decryptDb(password) {
     // go aesgcm, err := cipher.NewGCM(block)
     // go content, err := aesgcm.Open(nil, nonce, database, nil)
     let plaintext = await decrypt(nonce, masterKey, database);
+    if (!plaintext) {
+      throw "decrypt failed";
+    }
 
     let unencrypted = TD.decode(plaintext);
     return unencrypted;
   } catch (err) {
-    //dont bother outer code will log error
+    //dont bother. it will fail on first try and we need it to return the failure so we can ask for a password
+    return false;
     //postError(err);
-    return ""; //indicates fail
   }
 }
 
@@ -1127,19 +1146,21 @@ async function decrypt(iv, key, ciphertext) {
     );
     return decrypted;
   } catch (err) {
-    //dont bother outer code will log error
+    //let calling routine there has been an error
+    return false;
     //postError(err);
-    return;
   }
 }
 
 async function encryptDb(password) {
   try {
+    //stop working so hard
     openDialog("waitDialog");
     clearInterval(myInterval);
 
-    // workimg backwards from decryptDB
+    // code derived from workimg backwards from decryptDB : commened code if from decryptDB, so leave it
 
+    //make a masterKey and encrypt database with it
     //create a 12 byte nonce
     let nonce = new Uint8Array(12);
     self.crypto.getRandomValues(nonce);
@@ -1155,6 +1176,9 @@ async function encryptDb(password) {
     let plaintext = TE.encode(tempdb);
     //encrypt dbGlobal using nonce and masterKey
     let database = await encrypt(nonce, masterKey, plaintext);
+    if (!database) {
+      throw "encrypt() failed on database";
+    }
     // database is an ArrayBuffer, not Uint8Array, so fix it
     database = new Uint8Array(database);
 
@@ -1173,6 +1197,7 @@ async function encryptDb(password) {
     //tagString = localStorageObject.header.params.tag;
     localStorageObject.header.params.tag = tagString;
 
+    //now encrypy masterKey with our password
     let pw = password.normalize("NFKC");
     pw = TE.encode(password);
     //let saltString = localStorageObject.header.slots[0].salt;
@@ -1196,6 +1221,9 @@ async function encryptDb(password) {
     localStorageObject.header.slots[0].key_params.nonce = nonceString;
     //let masterKey = await decrypt(nonce, keyScrypt, keyData);
     let masterKeyEncrypted = await encrypt(nonce, hashedPassword, masterKey);
+    if (!masterKeyEncrypted) {
+      throw "encrypt() failed on masterKeyEncrypted";
+    }
     //masterKeyEncrypted is 16 bytes bigger than masterKey so tag is that last 16 bytes and so masterKey the remaining first part
     //let masterKeyEncrypted = concatenateUint8arrays([slotKey, tag]);
     masterKeyEncrypted = new Uint8Array(masterKeyEncrypted);
@@ -1213,11 +1241,11 @@ async function encryptDb(password) {
 
     //let encrypted = TD.decode(db);
     let encrypted = db;
-    return encrypted;
+    return true; //no encrypted needs to be returned. we have already updated localStorageObject in this function. Just pass on our success
   } catch (err) {
-    //dont bother outer code will log error
+    //pass on our shame so calling function can respond appropriately
+    return false;
     //postError(err);
-    return;
   }
 }
 
@@ -1238,9 +1266,8 @@ async function encrypt(iv, key, ciphertext) {
     );
     return encrypted;
   } catch (err) {
-    //dont bother outer code will log error
-    //postError(err);
-    return;
+    //let calling function know there was an error
+    return false;
   }
 }
 
@@ -1250,7 +1277,7 @@ function isValidHttpUrl(string) {
   let url;
   try {
     url = new URL(string);
-  } catch (_) {
+  } catch (err) {
     return false;
   }
   return true;
@@ -1289,7 +1316,7 @@ function leaingZeros(step) {
 
 function isValidlocalStorageObject() {
   try {
-    //check most obj fields for existance
+    //check most localStorageObject fields for existance
     if (typeof localStorageObject.header == "undefined") {
       return false;
     }
@@ -1327,29 +1354,26 @@ function isValidlocalStorageObject() {
 function buildEntriesDOM() {
   try {
     let entriesCount = 0;
-    let entriesDiv = document.querySelector("#entriesDiv");
+    let entriesDiv = document.getElementById("entriesDiv");
     let outputString = "";
     let searchText = document
-      .querySelector("#searchText")
+      .getElementById("searchText")
       .value.trim()
       .toLowerCase();
 
     dbGlobal.entries.forEach(function (entry) {
+      //start search filter
       let issuerPlusName =
         "" + entry.issuer.toLowerCase() + entry.name.toLowerCase();
+      //only show search terms if there are any
       if (searchText == "" || issuerPlusName.indexOf(searchText) >= 0) {
-        // https://stackoverflow.com/questions/377961/efficient-javascript-string-replacement
-        //https://stackoverflow.com/questions/68970312/how-do-i-resolve-a-javascript-template-literal-variable-within-a-string-within-a
+        //replace ${} values in template
         let modifiedTemplate = template("theTemplate", {
           entryId: "" + entriesCount
         });
-        //add to #entriesDiv
-        //const toAppend = document.createElement("div");
-        //toAppend.innerHTML = modifiedTemplate;
-        //entriesDiv.append(toAppend);
         outputString = outputString + modifiedTemplate;
       }
-      entriesCount += 1; //always do this
+      entriesCount += 1; //always do this to enumerate entries correctly
     });
     entriesDiv.innerHTML = outputString;
   } catch (err) {
@@ -1369,11 +1393,12 @@ function setLocalStorage(localStorageObject) {
 }
 
 function getLocalStorage() {
-  //returns object from json string
+  //returns an object created from the localStorage json string
   //return empty object {} if undefined
   let jsonObject;
   try {
     if (typeof localStorage[localStorageName] == "undefined") {
+      //this is not an error case, just a fresh start
       jsonObject = {};
     } else {
       let jsonString = localStorage[localStorageName];
@@ -1382,6 +1407,7 @@ function getLocalStorage() {
   } catch (err) {
     //postError(err);
     postError({ name: "getLocalStorage", message: "Malformed JSON Data" });
+    jsonObject = {};
   } finally {
     return jsonObject;
   }
@@ -1390,15 +1416,14 @@ function getLocalStorage() {
 function supportsHtml5Storage() {
   try {
     return "localStorage" in window && window.localStorage !== null;
-    //return false;
   } catch (err) {
     postError(err);
-    //return false;
   }
 }
 
-function copytoclipboard2(text) {
+function copyToClipboard(text) {
   try {
+    //we need to create a text are that we can copy from because js is stupid
     let textarea = document.createElement("TEXTAREA");
     document.body.appendChild(textarea);
     textarea.innerHTML = text;
@@ -1462,6 +1487,8 @@ function concatenateUint8arrays(uint8arrays) {
 }
 
 function template(templateid, data) {
+  // https://stackoverflow.com/questions/377961/efficient-javascript-string-replacement
+  //https://stackoverflow.com/questions/68970312/how-do-i-resolve-a-javascript-template-literal-variable-within-a-string-within-a
   try {
     return document.getElementById(templateid).innerHTML.replace(
       ///%(\w*)%/g, // or /{(\w*)}/g for "{this} instead of %this%"
