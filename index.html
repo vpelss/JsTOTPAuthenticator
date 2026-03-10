@@ -140,10 +140,10 @@ body {
       <button onclick="openDialog('addEntryDialog');html5QrCode();">+</button>
     </span>
   </center>
-      <div>
-      <span><input type="text" id="searchText" placeholder="Search" onkeyup="buildEntriesDOM()"></span><span><a onclick="document.getElementById('searchText').value='';buildEntriesDOM();" class="button">x</a></span>
-    </div>
-  
+  <div>
+    <span><input type="text" id="searchText" placeholder="Search" onkeyup="buildEntriesDOM()"></span><span><a onclick="document.getElementById('searchText').value='';buildEntriesDOM();" class="button">x</a></span>
+  </div>
+
   <div>
     <div id="theBarContainer">
       <div id="theBar"></div>
@@ -151,35 +151,30 @@ body {
   </div>
 </div>
 
-<div_main_page id="main_page_component">
+<div id="main_page_component">
   <center>
     <div id="entriesDiv">
       <center><b>Waiting to load encrypted Aegis database...</b></center>
     </div>
   </center>
-</div_main_page>
+</div>
 
-<div_menu_page id="menu_page_component" hidden>
-  <form>
-    <center>
+<div id="menu_page_component" hidden>
+      <center>
       <div>Import / Export encrypted JSON database</div>
       <div>
-        <input type="button" value="Import encrypted JSON database text" onclick="if(confirm('This will overwrite your current Aegis JSON encrypted database. Are you sure?')){setLocalStorageFromTextbox();}">
+        <button onclick="if(confirm('This will overwrite your current Aegis JSON encrypted database. Are you sure?')){setLocalStorageFromTextbox();}">Import encrypted database</button>
       </div>
       <div>
-        <input type="button" value="Export encrypted JSON database text" onclick="getLocalStorageToTextbox();">
+        <button onclick="getLocalStorageToTextbox()">Export encrypted database</button>
       </div>
       <div>
-        <input type="button" value="Export encrypted JSON database text to Clipboard" onclick="exportAll();">
+        <button onclick="exportAll()">Export encrypted database to Clipboard</button>
       </div>
       <div>
         <textarea id="JSONSave" rows="3" cols="50" placeholder="Encrypted JSON database text goes here. Save this text in a safe location. Use it as a backup or to import it on another device." title="You can import/export your current  encrypted JSON database. This is helful to move it to another computer or to create  it as a backup." class="u-full-width">
 </textarea>
       </div>
-    </center>
-  </form>
-
-  <center>
     <div>
       <a href="#" id="changePassword" class="button" onclick="openDialog('changePasswordDialog')">Change Password</a>
     </div>
@@ -199,7 +194,7 @@ body {
       <a href="https://github.com/vpelss/JsTOTPAuthenticator/blob/main/LICENSE" target="_blank" class="button">Licence</a>
     </div>
   </center>
-</div_menu_page>
+</div>
 
 <div id="footer">
   <div id="logoutRestart" onclick="window.location.reload()" title="Logout/Restart">
@@ -242,7 +237,7 @@ body {
 
 <dialog id="passwordDialog">
   <p>Enter or Set a password for the Database</p>
-  <form method="post" action="javascript:void(0);" onsubmit="tryPassword(document.querySelector('#password').value);document.querySelector('#password').value='';">
+  <form method="post" action="javascript:void(0);" onsubmit="tryPassword()">
     <center>
       <div>
         <label for="password">
@@ -287,7 +282,7 @@ body {
 <dialog id="addEntryDialog">
   <center>
     <p>Add An Entry</p>
-    <div id="reader"></div>
+    <div id="qrVideo"></div>
     <div>OR</div>
     <form method="dialog" onsubmit="addEntry(this)">
       <div>
@@ -438,7 +433,6 @@ let dbGlobal = {}; //entries, groups, ect
 let errorArray = [];
 let oldStepInt = 0;
 let entriesDiv = document.querySelector("#entriesDiv");
-let html5QrcodeScanner;
 const TE = new TextEncoder();
 const TD = new TextDecoder();
 const dbEmptyMessage = `<center>
@@ -584,7 +578,7 @@ async function eachSecond() {
 
 function copyElementInnerHTMLToClipboard(id) {
   try {
-    let code = document.getElementById(id).innerHTML; 
+    let code = document.getElementById(id).innerHTML;
     copytoclipboard2(code);
     openDialog("copiedDialog");
     setTimeout(function () {
@@ -632,8 +626,7 @@ function editEntryDialog(id) {
       entryInfoSecret: secret,
       editEntryUrl: url
     });
-    let el = document.querySelector("#tempDialog");
-    el.innerHTML = modifiedTemplate;
+    document.getElementById("tempDialog").innerHTML = modifiedTemplate;
     openDialog("tempDialog");
 
     //create qr code and hide it. #qrCode is on #tempDialog
@@ -647,19 +640,19 @@ function editEntryDialog(id) {
 async function editEntry(id) {
   try {
     // #tempDialog will contain the form
-    let el = document.querySelector("#tempDialog").querySelector("form");
+    let el = document.getElementById("tempDialog").querySelector("form");
     let entryName = el.editEntryName.value;
     let entryIssuer = el.editEntryIssuer.value;
     let entryNote = el.editEntryNote.value;
     let entrySecret = el.editEntryInfoSecret.value;
 
-    //update the comp in memory
+    //update the entry in dbGlobal
     dbGlobal.entries[id].name = entryName;
     dbGlobal.entries[id].issuer = entryIssuer;
     dbGlobal.entries[id].note = entryNote;
     dbGlobal.entries[id].info.secret = entrySecret;
 
-    //encrypt ans save to localstorage
+    //encrypt dbGlobal and save localStorageObject to localstorage
     await encryptDb(password);
     setLocalStorage(localStorageObject);
     main();
@@ -670,7 +663,8 @@ async function editEntry(id) {
 
 async function deleteEntry(id) {
   try {
-    if (confirm("This will delete this Entry. Are you sure?")) {  //are you sure?
+    if (confirm("This will delete this Entry. Are you sure?")) {
+      //are you sure?
       dbGlobal.entries.splice(id, 1);
       await encryptDb(password);
       setLocalStorage(localStorageObject);
@@ -685,27 +679,26 @@ async function deleteEntry(id) {
 function html5QrCode() {
   // https://github.com/mebjas/html5-qrcode
   // https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js
-
-  // stop scanning if reader element is going to brecome not visible
-  const qrReader = document.getElementById("reader");
-  qrReader.addEventListener("beforeunload", function () {
-    html5QrCodeStop;
-  });
-
+  let html5QrcodeScanner;
   let config = {
-    fps: 10,
+    fps: 5,
     //qrbox: { width: 100, height: 100 },
     rememberLastUsedCamera: true,
-    // Only support camera scan type.
+    // Only support camera scan type
     supportedScanTypes: [
       Html5QrcodeScanType.SCAN_TYPE_CAMERA,
       Html5QrcodeScanType.SCAN_TYPE_FILE
     ]
   };
+  document
+    .getElementById("qrVideo")
+    .addEventListener("beforeunload", function () {
+      html5QrCodeStop();
+    }); // we will want to stop scanning if the #reader element is goingin out of scope. it is cpu intensive
 
-  // reader needs to be a div id
+  // note: reader needs to be a div id
   html5QrcodeScanner = new Html5QrcodeScanner(
-    "reader",
+    "qrVideo",
     config,
     /* verbose= */ true
   );
@@ -717,11 +710,8 @@ function html5QrCode() {
 
 function html5QrCodeStop() {
   try {
-    //let elReader = document.getElementById("reader");
-    //if (elReader.checkVisibility()) {
-    let elStop = document.getElementById("html5-qrcode-button-camera-stop");
-    elStop.click();
-    //}
+    //there are no good methods to stop camera, so we need to virtually click the stop button.
+    document.getElementById("html5-qrcode-button-camera-stop").click();
   } catch (err) {
     postError(err);
   }
@@ -729,57 +719,43 @@ function html5QrCodeStop() {
 
 async function addEntry(el) {
   try {
+    //el is the form from #addEntryDialog
     let url = el.addEntryURL.value;
-    let issuer;
-    let name;
-    let secret;
-    let note;
-    let algo = "SHA1";
-    let period = 30;
-    let digits = 6;
+    //build an entry object with default values
     let uuid = self.crypto.randomUUID();
-
-    // if camera is on, turn it off
-    // if (video.srcOblect != null) {
-    // stopStreamedVideo(video);
-    //}
-    //html5QrCodeStop();
-    //document.getElementById("reader").innerHTML = "";
-
-    //build value object
     let entryTemplate = {
       type: "totp",
       uuid: uuid,
-      name: name,
-      issuer: issuer,
-      note: note,
+      name: "",
+      issuer: "",
+      note: "",
       favorite: false,
       icon: null,
       info: {
-        secret: secret,
+        secret: "",
         algo: "SHA1",
-        digits: digits,
-        period: period
+        digits: 6,
+        period: 30
       },
       groups: []
     };
 
     //URL or manual
-    if (url != "") {
+    if (isValidHttpUrl(url)) {
       // otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example&algorithm=SHA1 &digits=6&period=30
       let urlArray = new URL(url);
-      let searchParams = new URLSearchParams(urlArray.search);
+      let searchParams = new URLSearchParams(urlArray.search); //array of key=value pairs
       for (let [key, value] of searchParams) {
-        let preVariable = entryTemplate;
-        if (["secret", "algo", "digits", "period"].includes(key)) {
-          preVariable = entryTemplate.info;
-        }
         if (key == "algorithm") {
           key = "algo";
+          //let preVariable = entryTemplate;
+          if (["secret", "algo", "digits", "period"].includes(key)) {
+            entryTemplate.info[key] = value;
+          } else {
+            entryTemplate[key] = value;
+          }
         }
-        preVariable[key] = value;
       }
-      let r = 9;
     } else {
       entryTemplate.issuer = el.addEntryIssuer.value;
       entryTemplate.name = el.addEntryName.value;
@@ -787,15 +763,16 @@ async function addEntry(el) {
       entryTemplate.info.secret = el.addEntrySecret.value;
     }
 
-    //create object if we need to
+    //create object if it does not exist
     if (!isValidlocalStorageObject()) {
+      uuid = self.crypto.randomUUID();
       localStorageObject = {
         version: 1,
         header: {
           slots: [
             {
               type: 1,
-              uuid: "2b7ef3b1-419e-479c-a094-98e52e5bb523",
+              uuid: uuid,
               key: "",
               key_params: {
                 nonce: "0",
@@ -819,6 +796,7 @@ async function addEntry(el) {
     }
 
     if (JSON.stringify(dbGlobal) == "{}") {
+      //create dbGlobal if it does not exist
       dbGlobal = {
         version: 3,
         entries: [],
@@ -827,7 +805,7 @@ async function addEntry(el) {
       };
     }
 
-    dbGlobal.entries.push(entryTemplate);
+    dbGlobal.entries.push(entryTemplate); //add entry to dbGlobal
     await encryptDb(password);
     setLocalStorage(localStorageObject);
     main();
@@ -881,22 +859,25 @@ function wipeDatabase() {
   }
 }
 
-function tryPassword(pw) {
+function tryPassword() {
+  let el= document.getElementById('password');
+  password = el.value;
+  el.value='';
   closeDialog("passwordDialog");
-  password = pw;
   main();
 }
 
 function openDialog(id) {
-  let el = document.querySelector("#" + id);
+  let el = document.getElementById(id);
   el.showModal();
 }
 
 function closeDialog(id) {
-  if (id == "addEntryDialog") {
-    html5QrCodeStop();
-  }
-  let el = document.querySelector("#" + id);
+  //extranious
+ // if (id == "addEntryDialog") {
+   // html5QrCodeStop();
+  //}
+  let el = document.getElementById(id);
   el.close();
 }
 
@@ -924,46 +905,30 @@ function closeMenu() {
 
 function getLocalStorageToTextbox() {
   try {
-    errorArray = [];
     let jsonObject = getLocalStorage();
     let jsonString = JSON.stringify(jsonObject, null, "\t");
     document.getElementById("JSONSave").value = jsonString;
   } catch (err) {
-    //postError(err);
-    postError({
-      name: "getAegisJsonFromTextbox",
-      message: "Malformed JSON Data"
-    });
+    postError(err);
   }
 }
 
 function setLocalStorageFromTextbox() {
   try {
-    errorArray = [];
-    let jsonString = document.getElementById("JSONSave").value;
+    let elJSONSave = document.getElementById("JSONSave");
+    let jsonString = elJSONSave.value;
     localStorageObject = JSON.parse(jsonString); //also set obj
     dbGlobal = {}; //wipe old data
     setLocalStorage(localStorageObject);
-    document.getElementById("JSONSave").value = "";
+    elJSONSave.value = "";
     main(); //clear and rebuild
   } catch (err) {
-    //postError(err);
-    postError({
-      name: "setAegisJsonFromTextbox",
-      message: "Malformed JSON Data"
-    });
+    postError(err);
   }
 }
 
 function exportAll() {
   try {
-    if (
-      !confirm(
-        "This will export Aegis JSON encrypted database, and comments to clipboard. Are you sure?"
-      )
-    ) {
-      return false;
-    }
     localStorageObject = getLocalStorage();
     copytoclipboard2(JSON.stringify(localStorageObject, null, "\t"));
     alert("Your current Aegis JSON encrypted database is on the clipboard!");
@@ -981,8 +946,8 @@ async function hmac(
   hashFunctionString
 ) {
   // for references see: https://github.com/vpelss/JsTOTPAuthenticator
-  let totp;
   try {
+    let totp;
     let blockSize = 64;
     let k, msg, tempUint8Array, hashed;
 
@@ -991,7 +956,7 @@ async function hmac(
     k = Uint8Array.fromHex(keyHexString); //only accepts hex string lengths of even values and convertys to bytes. byte = 2 x hex
 
     /*
-    //HMAC: instructive
+    //HMAC: instructive : now replaced with crypto.subtle.sign
     //hmac_sha https://en.wikipedia.org/wiki/HMAC
 
     // create our Uint8Array key to the blockSize sized
@@ -1051,14 +1016,14 @@ async function hmac(
       (hashed[offset + 2] << 8) |
       hashed[offset + 3];
 
-    //take deciamal output of myBinary and reduce to returnDigits decimal characters
+    //take deciamal part of myBinary and convert it to returnDigits value
     // opt is the same as taking dp/myBinary taking the decimal and multiplying with dp
     let dp = 10 ** returnDigits;
     let otp = myBinary % dp;
 
     totp = otp.toString();
     while (totp.length < returnDigits) {
-      // make sure it is returnDigits long. pad to the left
+      // make sure it is returnDigits length. pad to the left
       totp = "0" + totp;
     }
     return totp;
@@ -1069,13 +1034,12 @@ async function hmac(
 
 async function decryptDb(password) {
   try {
+     // based on https://github.com/Sammy-T/avdu/blob/master/vault/decrypt.go
+     // use password to decrypt masterKey from the vault 
+    // use masterKey bytes to decrypt the database
+    
     let pw = password.normalize("NFKC");
-    pw = TE.encode(password);
-
-    // based on https://github.com/Sammy-T/avdu/blob/master/vault/decrypt.go
-    // FindMasterKey uses the password to decrypt the master key
-    // from the vault and returns the master key's bytes.
-
+    pw = TE.encode(password);  //convert to Uint8Array
     // go salt, err := hex.DecodeString(slot.Salt)
     let saltString = localStorageObject.header.slots[0].salt;
     let salt = Uint8Array.fromHex(saltString);
@@ -1087,10 +1051,9 @@ async function decryptDb(password) {
     let p = localStorageObject.header.slots[0].p;
     let dkLen = 32;
 
-    // scrypt is password based key derivation
+    //scrypt is password based key derivation
     //from https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js
     //https://github.com/ricmoo/scrypt-js?utm_source=cdnjs&utm_medium=cdnjs_link&utm_campaign=cdnjs_library#readme
-    //let keyScrypt = scrypt.syncScrypt(pw, salt, n, r, p, dkLen); //syncronous
     let hashedPassword = await scrypt.scrypt(pw, salt, n, r, p, dkLen); //asyncronous
 
     //go nonce, err := hex.DecodeString(slot.KeyParams.Nonce)
@@ -1114,8 +1077,9 @@ async function decryptDb(password) {
     // go aesgcm, err := cipher.NewGCM(block)
     //go masterKey, err = aesgcm.Open(nil, nonce, keyData, nil)
     let masterKey = await decrypt(nonce, hashedPassword, keyData);
-    //let test =  await encrypt(nonce, keyScrypt, masterKey);
 
+    //now use masterKey to decrypt dbData
+    //this is the second nonce
     // go nonce, err := hex.DecodeString(params.Nonce)
     nonceString = localStorageObject.header.params.nonce;
     nonceString = nonceString.normalize("NFKC");
@@ -1281,6 +1245,17 @@ async function encrypt(iv, key, ciphertext) {
 }
 
 // SUPPORT FUNCTIONS //
+
+function isValidHttpUrl(string) {
+  let url;
+  try {
+    url = new URL(string);
+  } catch (_) {
+    return false;
+  }
+  return true;
+  //return url.protocol === "http:" || url.protocol === "https:";
+}
 
 function beep() {
   // Source - https://stackoverflow.com/a/29641185
