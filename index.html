@@ -949,6 +949,280 @@ function exportAll() {
   }
 }
 
+// SUPPORT FUNCTIONS //
+
+function isValidHttpUrl(string) {
+  let url;
+  try {
+    url = new URL(string);
+  } catch (err) {
+    return false;
+  }
+  return true;
+  //return url.protocol === "http:" || url.protocol === "https:";
+}
+
+function beep() {
+  // Source - https://stackoverflow.com/a/29641185
+  // Posted by Houshalter, modified by community. See post 'Timeline' for change history
+  // Retrieved 2026-02-27, License - CC BY-SA 4.0
+
+  /*if you want to beep without using a wave file*/
+  try {
+    var context = new AudioContext();
+    var oscillator = context.createOscillator();
+    oscillator.type = "sine";
+    oscillator.frequency.value = 800;
+    oscillator.connect(context.destination);
+    oscillator.start();
+    // Beep for 500 milliseconds
+    setTimeout(function () {
+      oscillator.stop();
+    }, 100);
+  } catch (err) {
+    postError(err);
+  }
+}
+
+function leaingZeros(step) {
+  // step needs to be 16 characters
+  do {
+    step = "0" + step;
+  } while (step.length < 16);
+  return step;
+}
+
+function isValidlocalStorageObject() {
+  try {
+    //check most localStorageObject fields for existance
+    if (typeof localStorageObject.header == "undefined") {
+      return false;
+    }
+    if (typeof localStorageObject.header.slots == "undefined") {
+      return false;
+    }
+    if (typeof localStorageObject.header.slots[0].key == "undefined") {
+      return false;
+    }
+    if (typeof localStorageObject.header.slots[0].key_params == "undefined") {
+      return false;
+    }
+    if (typeof localStorageObject.header.slots[0].salt == "undefined") {
+      return false;
+    }
+    if (typeof localStorageObject.header.params == "undefined") {
+      return false;
+    }
+    if (typeof localStorageObject.header.params.nonce == "undefined") {
+      return false;
+    }
+    if (typeof localStorageObject.header.params.tag == "undefined") {
+      return false;
+    }
+    if (typeof localStorageObject.db == "undefined") {
+      return false;
+    }
+    // we ran the gauntlet
+    return true;
+  } catch (err) {
+    postError(err);
+  }
+}
+
+function buildEntriesDOM() {
+  try {
+    let entriesCount = 0;
+    let entriesDiv = document.getElementById("entriesDiv");
+    let outputString = "";
+    let searchText = document
+      .getElementById("searchText")
+      .value.trim()
+      .toLowerCase();
+
+    dbGlobal.entries.forEach(function (entry) {
+      //start search filter
+      let issuerPlusName =
+        "" + entry.issuer.toLowerCase() + entry.name.toLowerCase();
+      //only show search terms if there are any
+      if (searchText == "" || issuerPlusName.indexOf(searchText) >= 0) {
+        //replace ${} values in template
+        let modifiedTemplate = template("theTemplate", {
+          entryId: "" + entriesCount
+        });
+        outputString = outputString + modifiedTemplate;
+      }
+      entriesCount += 1; //always do this to enumerate entries correctly
+    });
+    entriesDiv.innerHTML = outputString;
+  } catch (err) {
+    postError(err);
+  }
+}
+
+function setLocalStorage(localStorageObject) {
+  //saves object as json string
+  try {
+    let jsonString = JSON.stringify(localStorageObject, null, "\t");
+    localStorage[localStorageName] = jsonString;
+  } catch (err) {
+    //postError(err);
+    postError({ name: "setLocalStorage", message: "Malformed JSON Data" });
+  }
+}
+
+function getLocalStorage() {
+  //returns an object created from the localStorage json string
+  //return empty object {} if undefined
+  let jsonObject;
+  try {
+    if (typeof localStorage[localStorageName] == "undefined") {
+      //this is not an error case, just a fresh start
+      jsonObject = {};
+    } else {
+      let jsonString = localStorage[localStorageName];
+      jsonObject = JSON.parse(jsonString);
+    }
+  } catch (err) {
+    //postError(err);
+    postError({ name: "getLocalStorage", message: "Malformed JSON Data" });
+    jsonObject = {};
+  } finally {
+    return jsonObject;
+  }
+}
+
+function supportsHtml5Storage() {
+  try {
+    return "localStorage" in window && window.localStorage !== null;
+  } catch (err) {
+    postError(err);
+  }
+}
+
+async function copyToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (error) {
+    postError(err);
+  }
+}
+
+function decodeBase32toHex(data) {
+  // modified https://medium.com/@at.kishor.k/demystifying-base32-an-in-depth-guide-to-this-encoding-standard-697b9426fc25
+  try {
+    const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    const HEX_ALPHABET = "0123456789ABCDEF";
+    data = data.replace(/=/g, ""); //remove padding
+    let binaryString = "";
+    for (let i = 0; i < data.length; i++) {
+      binaryString += BASE32_ALPHABET.indexOf(data[i])
+        .toString(2)
+        .padStart(5, "0");
+    }
+    let padding = binaryString.length % 8; //needs to be 8 as we want padding to account for bytes
+    if (padding !== 0) {
+      binaryString = binaryString.slice(0, -padding);
+    }
+    let decoded = "";
+    for (let i = 0; i < binaryString.length; i += 4) {
+      let decimalEquivilant = parseInt(binaryString.slice(i, i + 4), 2);
+      decoded += HEX_ALPHABET[decimalEquivilant];
+      //decoded += parseInt(binaryString.slice(i, i + 4), 2).toString(16).toUpperCase();
+    }
+    return decoded;
+  } catch (err) {
+    postError(err);
+  }
+}
+
+function concatenateUint8arrays(uint8arrays) {
+  // https://evanhahn.com/the-best-way-to-concatenate-uint8arrays/
+  try {
+    // Determine the length of the result.
+    const totalLength = uint8arrays.reduce(
+      (total, uint8array) => total + uint8array.byteLength,
+      0
+    );
+    // Allocate the result.
+    const result = new Uint8Array(totalLength);
+    // Copy each Uint8Array into the result.
+    let offset = 0;
+    uint8arrays.forEach((uint8array) => {
+      result.set(uint8array, offset);
+      offset += uint8array.byteLength;
+    });
+    return result;
+  } catch (err) {
+    postError(err);
+  }
+}
+
+function template(templateid, data) {
+  // https://stackoverflow.com/questions/377961/efficient-javascript-string-replacement
+  //https://stackoverflow.com/questions/68970312/how-do-i-resolve-a-javascript-template-literal-variable-within-a-string-within-a
+  try {
+    return document.getElementById(templateid).innerHTML.replace(
+      ///%(\w*)%/g, // or /{(\w*)}/g for "{this} instead of %this%"
+      /\${(\w*)}/g, // or  for "{this} instead of %this%"
+      function (m, key) {
+        return data.hasOwnProperty(key) ? data[key] : "";
+      }
+    );
+  } catch (err) {
+    postError(err);
+  }
+}
+
+function postError(err) {
+  console.error(err);
+  errorArray.push({ Name: err.name, Message: err.message, Stack: err.stack });
+  let errorString = JSON.stringify(errorArray, null, "\t");
+  document.getElementById("error").innerHTML = "Errors:<br>" + errorString;
+}
+
+function wrapPWA() {
+  //button to install PWA : https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/How_to/Trigger_install_prompt
+  const installButton = document.getElementById("installPWA");
+  let installPrompt = null;
+
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    installPrompt = event;
+    installButton.removeAttribute("hidden");
+  });
+
+  installButton.addEventListener("click", async () => {
+    if (!installPrompt) {
+      return;
+    }
+    const result = await installPrompt.prompt();
+    console.log(`Install prompt was: ${result.outcome}`);
+    disableInAppInstallPrompt();
+  });
+
+  function disableInAppInstallPrompt() {
+    installPrompt = null;
+    installButton.setAttribute("hidden", "");
+  }
+
+  window.addEventListener("appinstalled", () => {
+    disableInAppInstallPrompt();
+  });
+
+  window.addEventListener("beforeinstallprompt", async (event) => {
+    const relatedApps = await navigator.getInstalledRelatedApps();
+
+    // Search for a specific installed platform-specific app
+    const psApp = relatedApps.find(
+      (app) => app.id === "/AuthenticatorAnywhere/"
+    );
+    if (psApp) {
+      event.preventDefault();
+      // Update UI as appropriate
+    }
+  });
+}
+
 // ENCRYPTION DECRYPTION HMAC FUNCTIONS //
 
 async function hmac(
@@ -1268,281 +1542,7 @@ async function encrypt(iv, key, ciphertext) {
     //let calling function know there was an error
     return false;
   }
-}
-
-// SUPPORT FUNCTIONS //
-
-function isValidHttpUrl(string) {
-  let url;
-  try {
-    url = new URL(string);
-  } catch (err) {
-    return false;
-  }
-  return true;
-  //return url.protocol === "http:" || url.protocol === "https:";
-}
-
-function beep() {
-  // Source - https://stackoverflow.com/a/29641185
-  // Posted by Houshalter, modified by community. See post 'Timeline' for change history
-  // Retrieved 2026-02-27, License - CC BY-SA 4.0
-
-  /*if you want to beep without using a wave file*/
-  try {
-    var context = new AudioContext();
-    var oscillator = context.createOscillator();
-    oscillator.type = "sine";
-    oscillator.frequency.value = 800;
-    oscillator.connect(context.destination);
-    oscillator.start();
-    // Beep for 500 milliseconds
-    setTimeout(function () {
-      oscillator.stop();
-    }, 100);
-  } catch (err) {
-    postError(err);
-  }
-}
-
-function leaingZeros(step) {
-  // step needs to be 16 characters
-  do {
-    step = "0" + step;
-  } while (step.length < 16);
-  return step;
-}
-
-function isValidlocalStorageObject() {
-  try {
-    //check most localStorageObject fields for existance
-    if (typeof localStorageObject.header == "undefined") {
-      return false;
-    }
-    if (typeof localStorageObject.header.slots == "undefined") {
-      return false;
-    }
-    if (typeof localStorageObject.header.slots[0].key == "undefined") {
-      return false;
-    }
-    if (typeof localStorageObject.header.slots[0].key_params == "undefined") {
-      return false;
-    }
-    if (typeof localStorageObject.header.slots[0].salt == "undefined") {
-      return false;
-    }
-    if (typeof localStorageObject.header.params == "undefined") {
-      return false;
-    }
-    if (typeof localStorageObject.header.params.nonce == "undefined") {
-      return false;
-    }
-    if (typeof localStorageObject.header.params.tag == "undefined") {
-      return false;
-    }
-    if (typeof localStorageObject.db == "undefined") {
-      return false;
-    }
-    // we ran the gauntlet
-    return true;
-  } catch (err) {
-    postError(err);
-  }
-}
-
-function buildEntriesDOM() {
-  try {
-    let entriesCount = 0;
-    let entriesDiv = document.getElementById("entriesDiv");
-    let outputString = "";
-    let searchText = document
-      .getElementById("searchText")
-      .value.trim()
-      .toLowerCase();
-
-    dbGlobal.entries.forEach(function (entry) {
-      //start search filter
-      let issuerPlusName =
-        "" + entry.issuer.toLowerCase() + entry.name.toLowerCase();
-      //only show search terms if there are any
-      if (searchText == "" || issuerPlusName.indexOf(searchText) >= 0) {
-        //replace ${} values in template
-        let modifiedTemplate = template("theTemplate", {
-          entryId: "" + entriesCount
-        });
-        outputString = outputString + modifiedTemplate;
-      }
-      entriesCount += 1; //always do this to enumerate entries correctly
-    });
-    entriesDiv.innerHTML = outputString;
-  } catch (err) {
-    postError(err);
-  }
-}
-
-function setLocalStorage(localStorageObject) {
-  //saves object as json string
-  try {
-    let jsonString = JSON.stringify(localStorageObject, null, "\t");
-    localStorage[localStorageName] = jsonString;
-  } catch (err) {
-    //postError(err);
-    postError({ name: "setLocalStorage", message: "Malformed JSON Data" });
-  }
-}
-
-function getLocalStorage() {
-  //returns an object created from the localStorage json string
-  //return empty object {} if undefined
-  let jsonObject;
-  try {
-    if (typeof localStorage[localStorageName] == "undefined") {
-      //this is not an error case, just a fresh start
-      jsonObject = {};
-    } else {
-      let jsonString = localStorage[localStorageName];
-      jsonObject = JSON.parse(jsonString);
-    }
-  } catch (err) {
-    //postError(err);
-    postError({ name: "getLocalStorage", message: "Malformed JSON Data" });
-    jsonObject = {};
-  } finally {
-    return jsonObject;
-  }
-}
-
-function supportsHtml5Storage() {
-  try {
-    return "localStorage" in window && window.localStorage !== null;
-  } catch (err) {
-    postError(err);
-  }
-}
-
-async function copyToClipboard(text) {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch (error) {
-    postError(err);
-  }
-}
-
-function decodeBase32toHex(data) {
-  // modified https://medium.com/@at.kishor.k/demystifying-base32-an-in-depth-guide-to-this-encoding-standard-697b9426fc25
-  try {
-    const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-    const HEX_ALPHABET = "0123456789ABCDEF";
-    data = data.replace(/=/g, ""); //remove padding
-    let binaryString = "";
-    for (let i = 0; i < data.length; i++) {
-      binaryString += BASE32_ALPHABET.indexOf(data[i])
-        .toString(2)
-        .padStart(5, "0");
-    }
-    let padding = binaryString.length % 8; //needs to be 8 as we want padding to account for bytes
-    if (padding !== 0) {
-      binaryString = binaryString.slice(0, -padding);
-    }
-    let decoded = "";
-    for (let i = 0; i < binaryString.length; i += 4) {
-      let decimalEquivilant = parseInt(binaryString.slice(i, i + 4), 2);
-      decoded += HEX_ALPHABET[decimalEquivilant];
-      //decoded += parseInt(binaryString.slice(i, i + 4), 2).toString(16).toUpperCase();
-    }
-    return decoded;
-  } catch (err) {
-    postError(err);
-  }
-}
-
-function concatenateUint8arrays(uint8arrays) {
-  // https://evanhahn.com/the-best-way-to-concatenate-uint8arrays/
-  try {
-    // Determine the length of the result.
-    const totalLength = uint8arrays.reduce(
-      (total, uint8array) => total + uint8array.byteLength,
-      0
-    );
-    // Allocate the result.
-    const result = new Uint8Array(totalLength);
-    // Copy each Uint8Array into the result.
-    let offset = 0;
-    uint8arrays.forEach((uint8array) => {
-      result.set(uint8array, offset);
-      offset += uint8array.byteLength;
-    });
-    return result;
-  } catch (err) {
-    postError(err);
-  }
-}
-
-function template(templateid, data) {
-  // https://stackoverflow.com/questions/377961/efficient-javascript-string-replacement
-  //https://stackoverflow.com/questions/68970312/how-do-i-resolve-a-javascript-template-literal-variable-within-a-string-within-a
-  try {
-    return document.getElementById(templateid).innerHTML.replace(
-      ///%(\w*)%/g, // or /{(\w*)}/g for "{this} instead of %this%"
-      /\${(\w*)}/g, // or  for "{this} instead of %this%"
-      function (m, key) {
-        return data.hasOwnProperty(key) ? data[key] : "";
-      }
-    );
-  } catch (err) {
-    postError(err);
-  }
-}
-
-function postError(err) {
-  console.error(err);
-  errorArray.push({ Name: err.name, Message: err.message, Stack: err.stack });
-  let errorString = JSON.stringify(errorArray, null, "\t");
-  document.getElementById("error").innerHTML = "Errors:<br>" + errorString;
-}
-
-function wrapPWA() {
-  //button to install PWA : https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/How_to/Trigger_install_prompt
-  const installButton = document.getElementById("installPWA");
-  let installPrompt = null;
-
-  window.addEventListener("beforeinstallprompt", (event) => {
-    event.preventDefault();
-    installPrompt = event;
-    installButton.removeAttribute("hidden");
-  });
-
-  installButton.addEventListener("click", async () => {
-    if (!installPrompt) {
-      return;
-    }
-    const result = await installPrompt.prompt();
-    console.log(`Install prompt was: ${result.outcome}`);
-    disableInAppInstallPrompt();
-  });
-
-  function disableInAppInstallPrompt() {
-    installPrompt = null;
-    installButton.setAttribute("hidden", "");
-  }
-
-  window.addEventListener("appinstalled", () => {
-    disableInAppInstallPrompt();
-  });
-
-  window.addEventListener("beforeinstallprompt", async (event) => {
-    const relatedApps = await navigator.getInstalledRelatedApps();
-
-    // Search for a specific installed platform-specific app
-    const psApp = relatedApps.find(
-      (app) => app.id === "/AuthenticatorAnywhere/"
-    );
-    if (psApp) {
-      event.preventDefault();
-      // Update UI as appropriate
-    }
-  });
-}
+}// ENCRYPTION DECRYPTION HMAC FUNCTIONS //
 
 /*
 //qr native version
