@@ -382,7 +382,6 @@ body {
 <script src='https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'></script>
     <script id="rendered-js" >
 // TO DO:
-//fix copyToClipboard
 //https://github.com/dvas0004/web-auth/blob/master/src/webauthn.js
 //https://blog.davidvassallo.me/2019/01/25/exploring-the-webauthn-api-a-bare-bones-js-app/
 //https://mprimi.github.io/portable-secret/
@@ -1421,17 +1420,10 @@ function supportsHtml5Storage() {
   }
 }
 
-function copyToClipboard(text) {
+async function copyToClipboard(text) {
   try {
-    //we need to create a text are that we can copy from because js is stupid
-    let textarea = document.createElement("TEXTAREA");
-    document.body.appendChild(textarea);
-    textarea.innerHTML = text;
-    textarea.value = text;
-    textarea.select();
-    document.execCommand("copy", false, null);
-    textarea.remove();
-  } catch (err) {
+    await navigator.clipboard.writeText(text);
+  } catch (error) {
     postError(err);
   }
 }
