@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="en" >
 
@@ -120,6 +119,10 @@ body {
   /*fix / block password managers forcing fields to fill*/
   -webkit-text-security: none;
 }
+
+#fileInput{
+  display: none;
+}
 </style>
 
   
@@ -142,46 +145,50 @@ body {
     </span>
   </center>
   <div>
+    <span><input type="text" id="searchText" placeholder="Search" onkeyup="buildEntriesDOM()"></span><span><a onclick="document.getElementById('searchText').value='';buildEntriesDOM();" class="button">x</a></span>
+  </div>
+
+  <div>
     <div id="theBarContainer">
       <div id="theBar"></div>
     </div>
   </div>
 </div>
 
-<div_main_page id="main_page_component">
+<div id="main_page_component">
   <center>
-    <br>
-    <div>
-      <span><input type="text" id="searchText" placeholder="Search" onkeyup="buildEntriesDOM()"></span><span><a onclick="document.getElementById('searchText').value='';buildEntriesDOM();" class="button">x</a></span>
-    </div>
-
     <div id="entriesDiv">
       <center><b>Waiting to load encrypted Aegis database...</b></center>
     </div>
   </center>
-</div_main_page>
+</div>
 
-<div_menu_page id="menu_page_component" hidden>
-  <form>
-    <center>
-      <div>Import / Export encrypted JSON database</div>
-      <div>
-        <input type="button" value="Import encrypted JSON database text" onclick="if(confirm('This will overwrite your current Aegis JSON encrypted database. Are you sure?')){setLocalStorageFromTextbox();}">
-      </div>
-      <div>
-        <input type="button" value="Export encrypted JSON database text" onclick="getLocalStorageToTextbox();">
-      </div>
-      <div>
-        <input type="button" value="Export encrypted JSON database text to Clipboard" onclick="exportAll();">
-      </div>
-      <div>
-        <textarea id="JSONSave" rows="3" cols="50" placeholder="Encrypted JSON database text goes here. Save this text in a safe location. Use it as a backup or to import it on another device." title="You can import/export your current  encrypted JSON database. This is helful to move it to another computer or to create  it as a backup." class="u-full-width">
-</textarea>
-      </div>
-    </center>
-  </form>
-
+<div id="menu_page_component" hidden>
   <center>
+    <div>Import / Export encrypted JSON database : Textbox</div>
+    <div>
+      <button onclick="if(confirm('This will overwrite your current Aegis JSON encrypted database. Are you sure?')){setLocalStorageFromTextbox();}">Import encrypted database</button>
+    </div>
+    <div>
+      <button onclick="getLocalStorageToTextbox()">Export encrypted database</button>
+    </div>
+  
+    <div>
+      <textarea id="JSONSave" rows="3" cols="50" placeholder="Encrypted JSON database text goes here. Save this text in a safe location. Use it as a backup or to import it on another device." title="You can import/export your current  encrypted JSON database. This is helful to move it to another computer or to create  it as a backup." class="u-full-width">
+</textarea>
+    </div>
+      <div>
+      <button onclick="exportAll()">Export encrypted database to Clipboard</button>
+    </div>
+    
+    <div>
+      <label for="fileInput" class="button">Import From File</label>
+      <input type="file" id="fileInput" name="fileInput" class="button"  onchange="importFromFile()"/>
+    </div>
+      <div>
+      <label for="fileOutput" class="button">Export To File</label>
+      <input type="file" id="fileOutput" name="fileOutput" class="button" value="fh" onchange="exportToFile()"/>
+    </div>
     <div>
       <a href="#" id="changePassword" class="button" onclick="openDialog('changePasswordDialog')">Change Password</a>
     </div>
@@ -201,7 +208,7 @@ body {
       <a href="https://github.com/vpelss/JsTOTPAuthenticator/blob/main/LICENSE" target="_blank" class="button">Licence</a>
     </div>
   </center>
-</div_menu_page>
+</div>
 
 <div id="footer">
   <div id="logoutRestart" onclick="window.location.reload()" title="Logout/Restart">
@@ -209,10 +216,10 @@ body {
       <path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h280v80H200Zm440-160-55-58 102-102H360v-80h327L585-622l55-58 200 200-200 200Z" />
     </svg>
   </div>
-  <div id="refreshApp" onclick="main();"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000">
+  <div id="refreshApp" onclick="main();" title="Restart"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000">
       <path d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126.5T260-672l57 57q-38 34-57.5 79T240-440q0 88 56 155.5T440-202v80Zm80 0v-80q87-16 143.5-83T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 56-44 44h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z" />
     </svg></div>
-  <div id="powerOff" onclick="window.close()" title="Close Tab/App">
+  <div id="powerOff" onclick="window.close()" title="Close Tab/App. It may not work">
     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000">
       <path d="M324-111.5Q251-143 197-197t-85.5-127Q80-397 80-480t31.5-156Q143-709 197-763t127-85.5Q397-880 480-880t156 31.5Q709-817 763-763t85.5 127Q880-563 880-480t-31.5 156Q817-251 763-197t-127 85.5Q563-80 480-80t-156-31.5ZM707-253q93-93 93-227t-93-227q-93-93-227-93t-227 93q-93 93-93 227t93 227q93 93 227 93t227-93Zm-57-57q70-70 70-170 0-51-19-94.5T650-650l-57 57q22 22 34.5 51t12.5 62q0 66-47 113t-113 47q-66 0-113-47t-47-113q0-33 12.5-62t34.5-51l-57-57q-32 32-51 75.5T240-480q0 100 70 170t170 70q100 0 170-70ZM440-480h80v-240h-80v240Zm40 0Z" />
     </svg>
@@ -244,11 +251,11 @@ body {
 
 <dialog id="passwordDialog">
   <p>Enter or Set a password for the Database</p>
-  <form method="post" action="javascript:void(0);" onsubmit="tryPassword(document.querySelector('#password').value);document.querySelector('#password').value='';">
+  <form method="post" action="javascript:void(0);" onsubmit="tryPassword()">
     <center>
       <div>
         <label for="password">
-          <input type="input" id="password" placeholder="Password" class="secret" autocomplete="current-password">
+          <input type="input" id="password" placeholder="Password" class="secret" autocomplete="off">
         </label>
       </div>
       <div>
@@ -270,10 +277,10 @@ body {
     <center>
       <div></div>
       <div>
-        <input type="input" id="newPassword1" placeholder="New Password" autocomplete="new-password" class="secret">
+        <input type="input" id="newPassword1" placeholder="New Password" autocomplete="off" class="secret">
       </div>
       <div>
-        <input type="input" id="newPassword2" placeholder="New Password again" autocomplete="on" class="secret">
+        <input type="input" id="newPassword2" placeholder="New Password again" autocomplete="off" class="secret">
       </div>
       <div>
         <input type="submit" value="Submit">
@@ -289,7 +296,7 @@ body {
 <dialog id="addEntryDialog">
   <center>
     <p>Add An Entry</p>
-    <div id="reader"></div>
+    <div id="qrVideo"></div>
     <div>OR</div>
     <form method="dialog" onsubmit="addEntry(this)">
       <div>
@@ -389,11 +396,20 @@ body {
 <script src='https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'></script>
     <script id="rendered-js" >
 // TO DO:
-//close in js???
+
+//save to file?
+
+//https://github.com/dvas0004/web-auth/blob/master/src/webauthn.js
+//https://blog.davidvassallo.me/2019/01/25/exploring-the-webauthn-api-a-bare-bones-js-app/
+//https://mprimi.github.io/portable-secret/
 //js trigger password manaagers : https://hidde.blog/making-password-managers-play-ball-with-your-login-form/
 //biometrics? CTAP2
 //https://stackoverflow.blog/2022/11/16/biometric-authentication-for-web-devs/
 //https://webauthn.guide/
+
+//pw not global?
+//closures?
+
 //backup reminder
 //browser support check with alert
 // the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
@@ -433,15 +449,19 @@ let localStorageObject = {}; // salt, tagx, nonce, db encrypted
 let dbGlobal = {}; //entries, groups, ect
 let errorArray = [];
 let oldStepInt = 0;
-let entriesDiv = document.querySelector("#entriesDiv");
-let html5QrcodeScanner;
+let entriesDiv = document.getElementById("entriesDiv");
 const TE = new TextEncoder();
 const TD = new TextDecoder();
+const dbEmptyMessage = `<center>
+      <b>No entries or database found. Import an encrypted JSON database with the &#x2261; icon or start adding entries with the + icon
+      <p></p>
+      <a href="https://github.com/vpelss/AuthenticatorAnywhere/blob/main/README.md" target="_blank" class="button">Help Me</a>
+      </b></center><p>&nbsp;</p>`;
 
 // START MAIN LOOP //
 
-wrapPWA();
-main();
+wrapPWA(); //Progressive Web App code
+main(); // decrypt database and start setIntreval function
 
 async function main() {
   try {
@@ -463,56 +483,28 @@ async function main() {
         message: "HTML5 Storage is not supported in this browser"
       };
     }
-    //is there  local storage and is it JSON? yes continue : no stop
-    localStorageObject = getLocalStorage(); //load database
-    //test to see if json is valid Aegis format. I am only weak testing for localStorageObject.db
+
+    localStorageObject = getLocalStorage(); //load database if any
+    //test to see if json is valid Aegis format.
     if (!isValidlocalStorageObject()) {
-      entriesDiv.innerHTML =
-        "<center><b>No database found. Import an encrypted JSON database with &#x2261; or start adding entries with the +</b></center>";
+      entriesDiv.innerHTML = dbEmptyMessage;
       closeDialog("waitDialog");
       return;
     }
 
-    //assume pw is "" and try to decrypt
-    //if it fails bring up passwordDialog it will give options to either:
-    //1. wipe local storage and run main()
-    //2. set password and run main()
-    //unencrypt JSON DB
+    //assume pw is "" or already set and try to decrypt
     let dbJSON = await decryptDb(password);
-    if (dbJSON == "") {
-      closeDialog("waitDialog");
+    if (!dbJSON) {
       //pw failed so open passwordDialog
+      closeDialog("waitDialog");
       openDialog("passwordDialog");
       return; // quit and await dialog input
     }
-
-    let r;
-    let bioOptions = {
-        publicKey: {
-          rp: { id: "dcfcodepen.io", name: "AuthenticatorAnywhere" },
-          user: {
-            id: "f2bd8bf7-2145-4a5a-910f-8fdc9ef421d3",
-            name: "krusty@example.com",
-            displayName: "Krusty The Clown"
-          },
-          challenge: "...",
-          pubKeyCredParams: [{ type: "public-key", alg: -7 }],
-          authenticatorSelection: {}
-          //...
-        }
-      };
-      if (window.PublicKeyCredential) {
-        // do your webauthn stuff
-        //r = navigator.credentials.create(bioOptions);
-        //navigator.credentials.get(bioOptions);
-      } else {
-        // wah-wah, back to passwords for you
-      }
-    
     dbGlobal = JSON.parse(dbJSON);
+    dbJSON = ""; //data no longer needed
     dbGlobal.entries = dbGlobal.entries;
 
-    //sort them based on issuer + name
+    //sort entries array based on issuer + name
     dbGlobal.entries.sort(function (a, b) {
       let aa = "" + a.issuer + a.name;
       let bb = "" + b.issuer + b.name;
@@ -523,12 +515,10 @@ async function main() {
       }
     });
 
-    // dbGlobal.entries = localStorageObject.entries;
-    dbJSON = ""; //data no longer needed
-    buildEntriesDOM(); //this has to be here as we need to wait for the promise
+    buildEntriesDOM();
 
-    //harangue those with a blank password
     if (password == "") {
+      //harangue those with a blank password
       if (
         confirm(
           "You currently have a blank password. This means anyone can access your Authentication codes. This is unwise. Do you wish to set a password"
@@ -548,61 +538,53 @@ async function main() {
 async function eachSecond() {
   try {
     if (dbGlobal.entries.length == 0) {
-      return "No entries yet";
+      //db is empty
+      entriesDiv.innerHTML = dbEmptyMessage;
+      return;
     }
-    let unixTime = Date.now() / 1000; //in seconds
-    let stepNow = unixTime / 30;
+    let unixTime = Date.now() / 1000; // unixTime is in seconds
+    let stepNow = unixTime / 30; //what TOTP step are we on?
     let stepInt = Math.floor(stepNow); //this changes when == to stepNow. so bar should be at 100%
-    let step = stepInt.toString(16); //step MUST be in string HEX
-    //show countdown
-    // let percentDone = Math.floor( 100 * (stepNow - stepInt + (1/30)) ) ; //need to add one tick 1/30 to progress bar so we can reach 100%
+    let step = stepInt.toString(16); //step MUST be in string HEX for the hmac function
+    step = leaingZeros(step); // step needs to be 16 characters for hmac function
+    //calc next one too
+    let stepInt2 = stepInt + 1;
+    let step2 = stepInt2.toString(16); //step MUST be in string HEX for the hmac function
+    step2 = leaingZeros(step2); // step needs to be 16 characters for hmac function
+
+    //show countdown on the bar
     let percentDone = Math.floor(100 * (stepNow - stepInt));
     let barWidth = 100 - percentDone;
     if (stepInt != oldStepInt) {
-      //percentDone will never coincide with our setInterval. so make barr 100 on change
+      //percentDone time will never coincide with our setInterval time as it started at a random offset time. so make the bar 100 on step change
       barWidth = 100;
       oldStepInt = stepInt;
     }
-
     let bar = document.querySelector("#theBar");
     bar.style.width = "" + barWidth + "%";
 
-    // step needs to be 16 characters
-    step = leaingZeros(step);
-
-    //calc next one too
-    let stepInt2 = stepInt + 1;
-    let step2 = stepInt2.toString(16); //step MUST be in string HEX
-    // step needs to be 16 characters
-    step2 = leaingZeros(step2);
-
-    // calculate and output code for each entry and place on template
-    let entriesCount = 0;
+    // calculate and output code for each entry and place on the entry in entriesDiv
+    let entriesCount = -1;
     for (let entry of dbGlobal.entries) {
-      //search may not have added some divs... so validate div first
-      if (document.getElementById("entryName" + entriesCount) != null) {
-        let name = entry.name;
-        let issuer = entry.issuer;
-        let algo = entry.info.algo;
-        let digits = entry.info.digits;
-        let period = entry.info.period;
-        let seedBase32 = entry.info.secret;
-        let seed = decodeBase32toHex(seedBase32.toUpperCase()); //base32Str to HexStr
-
-        let totp = await hmac(seed, step, digits, algo);
-        let totp2 = await hmac(seed, step2, digits, algo);
-
-        //document.getElementById("" + entriesCount).value = totp; //we are setting a value in a div. that can't be good
-        document.getElementById("entryName" + entriesCount).innerHTML = name;
-        document.getElementById(
-          "entryIssuer" + entriesCount
-        ).innerHTML = issuer;
-        document.getElementById("entryCode" + entriesCount).innerHTML = totp;
-        document.getElementById(
-          "entryCodeNext" + entriesCount
-        ).innerHTML = totp2;
-      }
       entriesCount += 1; //always do this
+      if (document.getElementById("entryName" + entriesCount) == null) {
+        continue;
+      } //search filter may be filtering some divs... so see if div exists first
+      let name = entry.name;
+      let issuer = entry.issuer;
+      let algo = entry.info.algo;
+      let digits = entry.info.digits;
+      let period = entry.info.period;
+      let seedBase32 = entry.info.secret;
+      let seed = decodeBase32toHex(seedBase32.toUpperCase()); //base32Str to HexStr
+
+      let totp = await hmac(seed, step, digits, algo);
+      let totp2 = await hmac(seed, step2, digits, algo);
+
+      document.getElementById("entryName" + entriesCount).innerHTML = name;
+      document.getElementById("entryIssuer" + entriesCount).innerHTML = issuer;
+      document.getElementById("entryCode" + entriesCount).innerHTML = totp;
+      document.getElementById("entryCodeNext" + entriesCount).innerHTML = totp2;
     }
   } catch (err) {
     postError(err);
@@ -613,8 +595,8 @@ async function eachSecond() {
 
 function copyElementInnerHTMLToClipboard(id) {
   try {
-    let code = document.getElementById(id).innerHTML; //we stored a value in a div for simplicity
-    copytoclipboard2(code);
+    let code = document.getElementById(id).innerHTML;
+    copyToClipboard(code);
     openDialog("copiedDialog");
     setTimeout(function () {
       closeDialog("copiedDialog");
@@ -635,6 +617,7 @@ function toggleQrCode() {
 
 function editEntryDialog(id) {
   try {
+    //get data to fill it in
     let issuer = dbGlobal.entries[id].issuer || "";
     let name = dbGlobal.entries[id].name || "";
     let algorithm = dbGlobal.entries[id].info.algo || "SHA1";
@@ -643,7 +626,6 @@ function editEntryDialog(id) {
     let secret = dbGlobal.entries[id].info.secret || "";
     let note = dbGlobal.entries[id].info.note || "";
 
-    //build url otpauth://totp/ACME%20Co:john.doe@email.com?secret=HXDMVJECJJWSRB3HWIZR4IFUGFTMXBOZ&issuer=ACME%20Co&algorithm=SHA1&digits=6&period=30
     let url = `otpauth://totp/${issuer}:${name}?issuer=${issuer}&name=${name}&secret=${secret}&algorithm=${algorithm}&digits=${digits}&period=${period}&note=${note}`;
 
     //do we have enough data to continue>
@@ -652,7 +634,7 @@ function editEntryDialog(id) {
       return;
     }
 
-    //build html tempDialog with data. our code knows all the ids and we can easily fill in all the input values
+    //build html modifiedTemplate with data using #editEntryTemplate
     let modifiedTemplate = template("editEntryTemplate", {
       entryId: "" + id,
       entryIssuer: issuer,
@@ -661,12 +643,11 @@ function editEntryDialog(id) {
       entryInfoSecret: secret,
       editEntryUrl: url
     });
-    let el = document.querySelector("#tempDialog");
-    el.innerHTML = modifiedTemplate;
+    document.getElementById("tempDialog").innerHTML = modifiedTemplate;
     openDialog("tempDialog");
 
-    //create qr code and set display : none
-    new QRCode(document.getElementById("qrCode"), url); //requires div
+    //create qr code and hide it. #qrCode is on #tempDialog
+    new QRCode(document.getElementById("qrCode"), url); //#qrCode is a div
     document.getElementById("qrCode").style.display = "none"; //hide it right away
   } catch (err) {
     postError(err);
@@ -675,19 +656,24 @@ function editEntryDialog(id) {
 
 async function editEntry(id) {
   try {
-    // tempDialog will contain the form
-    let el = document.querySelector("#tempDialog").querySelector("form");
+    // #tempDialog will contain the form
+    let el = document.getElementById("tempDialog").querySelector("form");
     let entryName = el.editEntryName.value;
     let entryIssuer = el.editEntryIssuer.value;
     let entryNote = el.editEntryNote.value;
     let entrySecret = el.editEntryInfoSecret.value;
 
+    //update the entry in dbGlobal
     dbGlobal.entries[id].name = entryName;
     dbGlobal.entries[id].issuer = entryIssuer;
     dbGlobal.entries[id].note = entryNote;
     dbGlobal.entries[id].info.secret = entrySecret;
 
-    await encryptDb(password);
+    //encrypt dbGlobal and save localStorageObject to localstorage
+    let result = await encryptDb(password);
+    if (!result) {
+      throw "encryptDb faiiled";
+    }
     setLocalStorage(localStorageObject);
     main();
   } catch (err) {
@@ -697,10 +683,13 @@ async function editEntry(id) {
 
 async function deleteEntry(id) {
   try {
-    //are you sure?
     if (confirm("This will delete this Entry. Are you sure?")) {
+      //are you sure?
       dbGlobal.entries.splice(id, 1);
-      await encryptDb(password);
+      let result = await encryptDb(password);
+      if (!result) {
+        throw "encryptDb faiiled";
+      }
       setLocalStorage(localStorageObject);
       closeDialog("tempDialog");
       main();
@@ -713,27 +702,26 @@ async function deleteEntry(id) {
 function html5QrCode() {
   // https://github.com/mebjas/html5-qrcode
   // https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js
-
-  // stop scanning if reader element is going to brecome not visible
-  const qrReader = document.getElementById("reader");
-  qrReader.addEventListener("beforeunload", function () {
-    html5QrCodeStop;
-  });
-
+  let html5QrcodeScanner;
   let config = {
-    fps: 10,
+    fps: 5,
     //qrbox: { width: 100, height: 100 },
     rememberLastUsedCamera: true,
-    // Only support camera scan type.
+    // Only support camera scan type
     supportedScanTypes: [
       Html5QrcodeScanType.SCAN_TYPE_CAMERA,
       Html5QrcodeScanType.SCAN_TYPE_FILE
     ]
   };
+  document
+    .getElementById("qrVideo")
+    .addEventListener("beforeunload", function () {
+      html5QrCodeStop();
+    }); // we will want to stop scanning if the #reader element is goingin out of scope. it is cpu intensive
 
-  // reader needs to be a div id
+  // note: reader needs to be a div id
   html5QrcodeScanner = new Html5QrcodeScanner(
-    "reader",
+    "qrVideo",
     config,
     /* verbose= */ true
   );
@@ -745,11 +733,8 @@ function html5QrCode() {
 
 function html5QrCodeStop() {
   try {
-    //let elReader = document.getElementById("reader");
-    //if (elReader.checkVisibility()) {
-    let elStop = document.getElementById("html5-qrcode-button-camera-stop");
-    elStop.click();
-    //}
+    //there are no good methods to stop camera, so we need to virtually click the stop button.
+    document.getElementById("html5-qrcode-button-camera-stop").click();
   } catch (err) {
     postError(err);
   }
@@ -757,57 +742,43 @@ function html5QrCodeStop() {
 
 async function addEntry(el) {
   try {
+    //el is the form from #addEntryDialog
     let url = el.addEntryURL.value;
-    let issuer;
-    let name;
-    let secret;
-    let note;
-    let algo = "SHA1";
-    let period = 30;
-    let digits = 6;
+    //build an entry object with default values
     let uuid = self.crypto.randomUUID();
-
-    // if camera is on, turn it off
-    // if (video.srcOblect != null) {
-    // stopStreamedVideo(video);
-    //}
-    //html5QrCodeStop();
-    //document.getElementById("reader").innerHTML = "";
-
-    //build value object
     let entryTemplate = {
       type: "totp",
       uuid: uuid,
-      name: name,
-      issuer: issuer,
-      note: note,
+      name: "",
+      issuer: "",
+      note: "",
       favorite: false,
       icon: null,
       info: {
-        secret: secret,
+        secret: "",
         algo: "SHA1",
-        digits: digits,
-        period: period
+        digits: 6,
+        period: 30
       },
       groups: []
     };
 
     //URL or manual
-    if (url != "") {
+    if (isValidHttpUrl(url)) {
       // otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example&algorithm=SHA1 &digits=6&period=30
       let urlArray = new URL(url);
-      let searchParams = new URLSearchParams(urlArray.search);
+      let searchParams = new URLSearchParams(urlArray.search); //array of key=value pairs
       for (let [key, value] of searchParams) {
-        let preVariable = entryTemplate;
-        if (["secret", "algo", "digits", "period"].includes(key)) {
-          preVariable = entryTemplate.info;
-        }
         if (key == "algorithm") {
           key = "algo";
+          //let preVariable = entryTemplate;
+          if (["secret", "algo", "digits", "period"].includes(key)) {
+            entryTemplate.info[key] = value;
+          } else {
+            entryTemplate[key] = value;
+          }
         }
-        preVariable[key] = value;
       }
-      let r = 9;
     } else {
       entryTemplate.issuer = el.addEntryIssuer.value;
       entryTemplate.name = el.addEntryName.value;
@@ -815,15 +786,16 @@ async function addEntry(el) {
       entryTemplate.info.secret = el.addEntrySecret.value;
     }
 
-    //create object if we need to
+    //create object if it does not exist
     if (!isValidlocalStorageObject()) {
+      uuid = self.crypto.randomUUID();
       localStorageObject = {
         version: 1,
         header: {
           slots: [
             {
               type: 1,
-              uuid: "2b7ef3b1-419e-479c-a094-98e52e5bb523",
+              uuid: uuid,
               key: "",
               key_params: {
                 nonce: "0",
@@ -847,6 +819,7 @@ async function addEntry(el) {
     }
 
     if (JSON.stringify(dbGlobal) == "{}") {
+      //create dbGlobal if it does not exist
       dbGlobal = {
         version: 3,
         entries: [],
@@ -855,8 +828,11 @@ async function addEntry(el) {
       };
     }
 
-    dbGlobal.entries.push(entryTemplate);
-    await encryptDb(password);
+    dbGlobal.entries.push(entryTemplate); //add entry to dbGlobal
+    let result = await encryptDb(password);
+    if (!result) {
+      throw "encryptDb faiiled";
+    }
     setLocalStorage(localStorageObject);
     main();
   } catch (err) {
@@ -884,7 +860,10 @@ async function changePassword(el) {
       }
       password = pw1;
       closeDialog("changePasswordDialog");
-      await encryptDb(password);
+      let result = await encryptDb(password);
+      if (!result) {
+        throw "encryptDb faiiled";
+      }
       setLocalStorage(localStorageObject);
       el[0].value = "";
       el[1].value = "";
@@ -909,22 +888,21 @@ function wipeDatabase() {
   }
 }
 
-function tryPassword(pw) {
+function tryPassword() {
+  let el = document.getElementById("password");
+  password = el.value;
+  el.value = "";
   closeDialog("passwordDialog");
-  password = pw;
   main();
 }
 
 function openDialog(id) {
-  let el = document.querySelector("#" + id);
+  let el = document.getElementById(id);
   el.showModal();
 }
 
 function closeDialog(id) {
-  if (id == "addEntryDialog") {
-    html5QrCodeStop();
-  }
-  let el = document.querySelector("#" + id);
+  let el = document.getElementById(id);
   el.close();
 }
 
@@ -952,363 +930,123 @@ function closeMenu() {
 
 function getLocalStorageToTextbox() {
   try {
-    errorArray = [];
     let jsonObject = getLocalStorage();
     let jsonString = JSON.stringify(jsonObject, null, "\t");
     document.getElementById("JSONSave").value = jsonString;
   } catch (err) {
-    //postError(err);
-    postError({
-      name: "getAegisJsonFromTextbox",
-      message: "Malformed JSON Data"
-    });
+    postError(err);
   }
 }
 
 function setLocalStorageFromTextbox() {
   try {
-    errorArray = [];
-    let jsonString = document.getElementById("JSONSave").value;
+    let elJSONSave = document.getElementById("JSONSave");
+    let jsonString = elJSONSave.value;
     localStorageObject = JSON.parse(jsonString); //also set obj
     dbGlobal = {}; //wipe old data
     setLocalStorage(localStorageObject);
-    document.getElementById("JSONSave").value = "";
+    elJSONSave.value = "";
     main(); //clear and rebuild
   } catch (err) {
-    //postError(err);
-    postError({
-      name: "setAegisJsonFromTextbox",
-      message: "Malformed JSON Data"
-    });
+    postError(err);
+  }
+}
+
+async function importFromFile() {
+  try {
+        let fileInput = document.getElementById("fileInput");
+    let file = fileInput.files[0];
+    let tempDialog = document.getElementById("tempDialog");
+    tempDialog.innerHTML = "Importing Databse " + file.name;
+    openDialog("tempDialog");
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      // Read the file
+      try {
+        let jsonString = reader.result;
+        localStorageObject = JSON.parse(jsonString); //also set obj
+        dbGlobal = {}; //wipe old data
+        setLocalStorage(localStorageObject);
+        tempDialog.innerHTML = "Imported Database " + file.name + " Saved";
+        setTimeout(function () {
+          closeDialog("tempDialog");
+        }, 1500);
+        main(); //clear and rebuild
+      } catch (err) {
+        postError(err);
+        closeDialog("tempDialog");
+      }
+    };
+    reader.onerror = () => {
+      postMessage("Error reading the file. Please try again.", "error");
+    };
+    reader.readAsText(file);
+  } catch (err) {
+    postError(err);
+    closeDialog("tempDialog");
+  }
+}
+
+async function exportToFile() {
+  try {
+    let fileInput = document.getElementById("fileInput");
+//fileInput.addEventListener("change", importFromFile);
+    let file = fileInput.files[0];
+    let tempDialog = document.getElementById("tempDialog");
+    tempDialog.innerHTML = "Importing Databse " + file.name;
+    openDialog("tempDialog");
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      // Read the file
+      try {
+        let jsonString = reader.result;
+        localStorageObject = JSON.parse(jsonString); //also set obj
+        dbGlobal = {}; //wipe old data
+        setLocalStorage(localStorageObject);
+        tempDialog.innerHTML = "Imported Database " + file.name + " Saved";
+        setTimeout(function () {
+          closeDialog("tempDialog");
+        }, 1500);
+        main(); //clear and rebuild
+      } catch (err) {
+        postError(err);
+        closeDialog("tempDialog");
+      }
+    };
+    reader.onerror = () => {
+      postMessage("Error reading the file. Please try again.", "error");
+    };
+    reader.readAsText(file);
+  } catch (err) {
+    postError(err);
+    closeDialog("tempDialog");
   }
 }
 
 function exportAll() {
   try {
-    if (
-      !confirm(
-        "This will export Aegis JSON encrypted database, and comments to clipboard. Are you sure?"
-      )
-    ) {
-      return false;
-    }
     localStorageObject = getLocalStorage();
-    copytoclipboard2(JSON.stringify(localStorageObject, null, "\t"));
-    alert("Your current Aegis JSON encrypted database is on the clipboard!");
+    copyToClipboard(JSON.stringify(localStorageObject, null, "\t"));
+    alert("Your current encrypted database is on the clipboard!");
   } catch (err) {
     postError(err);
-  }
-}
-
-// ENCRYPTION DECRYPTION HMAC FUNCTIONS //
-
-async function hmac(
-  keyHexString,
-  stepHexString16Bytes,
-  returnDigits,
-  hashFunctionString
-) {
-  // for references see: https://github.com/vpelss/JsTOTPAuthenticator
-  let totp;
-  try {
-    let blockSize = 64;
-    let k, msg, tempUint8Array, hashed;
-
-    //all our input key strings should only have hex characters [0 .. F]
-    msg = Uint8Array.fromHex(stepHexString16Bytes);
-    k = Uint8Array.fromHex(keyHexString); //only accepts hex string lengths of even values and convertys to bytes. byte = 2 x hex
-
-    /*
-    //HMAC: instructive
-    //hmac_sha https://en.wikipedia.org/wiki/HMAC
-
-    // create our Uint8Array key to the blockSize sized
-    if (k.length > blockSize) {
-      tempUint8Array = new Uint8Array(blockSize); //set to block size
-      hashed = await window.crypto.subtle.digest("SHA-1", k); // hash the message
-      tempUint8Array.set(new Uint8Array(hashed));
-      k = tempUint8Array;
-    } // Keys longer than blockSize are shortened by hashing them
-    // Keys shorter than blockSize are padded to blockSize by padding with zeros on the right
-    if (k.length < blockSize) {
-      tempUint8Array = new Uint8Array(blockSize); //set to block size
-      tempUint8Array.set(k);
-      k = tempUint8Array;
-    }
-    // k should now be blockSize
-
-    // create ipad and opad https://datatracker.ietf.org/doc/html/rfc2104#section-2
-    let okey = new Uint8Array(k);
-    okey.forEach(function (myByte, myIndex, myArray) {
-      myArray[myIndex] = myArray[myIndex] ^ 0x5c;
-    }); //key xor 0x5c
-    let ikey = new Uint8Array(k);
-    ikey.forEach(function (myByte, myIndex, myArray) {
-      myArray[myIndex] = myArray[myIndex] ^ 0x36;
-    }); //key xor 0x36
-
-    // now do hash(o_key_pad concatenate hash(i_key_pad concatenate msg))
-
-    tempUint8Array = concatenateUint8arrays([ikey, msg]); // i_key_pad + msg
-    hashed = await window.crypto.subtle.digest("SHA-1", tempUint8Array);
-    tempUint8Array = new Uint8Array(hashed); // hash(i_key_pad concatenate msg)
-
-    tempUint8Array = concatenateUint8arrays([okey, tempUint8Array]); //o_key_pad ∥ hash(i_key_pad + msg)
-    hashed = await window.crypto.subtle.digest("SHA-1", tempUint8Array);
-    hashed = new Uint8Array(hashed); // hash(o_key_pad concatenate hash(i_key_pad concatenate msg))
-   */
-
-    //HMAC: simpler, but not instructive
-    let cryptoKey = await window.crypto.subtle.importKey(
-      "raw",
-      k,
-      { name: "HMAC", hash: { name: "SHA-1" } },
-      1,
-      ["sign", "verify"]
-    );
-    hashed = await window.crypto.subtle.sign("HMAC", cryptoKey, msg);
-    hashed = new Uint8Array(hashed);
-
-    //https://datatracker.ietf.org/doc/html/rfc4226#section-5.3
-    let offset = hashed[hashed.length - 1] & 0xf; //last 4 bits of hashed
-
-    //take 4 bytes at offset (minus the first bit) and use bits to create a decimal #
-    let myBinary =
-      ((hashed[offset] & 0x7f) << 24) | // not signed
-      (hashed[offset + 1] << 16) |
-      (hashed[offset + 2] << 8) |
-      hashed[offset + 3];
-
-    //take deciamal output of myBinary and reduce to returnDigits decimal characters
-    // opt is the same as taking dp/myBinary taking the decimal and multiplying with dp
-    let dp = 10 ** returnDigits;
-    let otp = myBinary % dp;
-
-    totp = otp.toString();
-    while (totp.length < returnDigits) {
-      // make sure it is returnDigits long. pad to the left
-      totp = "0" + totp;
-    }
-    return totp;
-  } catch (err) {
-    postError(err);
-  }
-}
-
-async function decryptDb(password) {
-  try {
-    let pw = password.normalize("NFKC");
-    pw = TE.encode(password);
-
-    // based on https://github.com/Sammy-T/avdu/blob/master/vault/decrypt.go
-    // FindMasterKey uses the password to decrypt the master key
-    // from the vault and returns the master key's bytes.
-
-    // go salt, err := hex.DecodeString(slot.Salt)
-    let saltString = localStorageObject.header.slots[0].salt;
-    let salt = Uint8Array.fromHex(saltString);
-
-    // Create a key using the slot values and provided password
-    // go key, err = scrypt.Key([]byte(pwd), salt, slot.N, slot.R, slot.P, 32)
-    let n = localStorageObject.header.slots[0].n;
-    let r = localStorageObject.header.slots[0].r;
-    let p = localStorageObject.header.slots[0].p;
-    let dkLen = 32;
-
-    // scrypt is password based key derivation
-    //from https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js
-    //https://github.com/ricmoo/scrypt-js?utm_source=cdnjs&utm_medium=cdnjs_link&utm_campaign=cdnjs_library#readme
-    //let keyScrypt = scrypt.syncScrypt(pw, salt, n, r, p, dkLen); //syncronous
-    let hashedPassword = await scrypt.scrypt(pw, salt, n, r, p, dkLen); //asyncronous
-
-    //go nonce, err := hex.DecodeString(slot.KeyParams.Nonce)
-    let nonceString = localStorageObject.header.slots[0].key_params.nonce;
-    nonceString = nonceString.normalize("NFKC");
-    let nonce = Uint8Array.fromHex(nonceString);
-
-    // go	tag, err := hex.DecodeString(slot.KeyParams.Tag)
-    let tagString = localStorageObject.header.slots[0].key_params.tag;
-    let tag = Uint8Array.fromHex(tagString);
-
-    // go slotKey, err := hex.DecodeString(slot.Key)
-    let slotKeyString = localStorageObject.header.slots[0].key;
-    let slotKey = Uint8Array.fromHex(slotKeyString);
-
-    // go var keyData []byte = append(slotKey, tag...)
-    let keyData = concatenateUint8arrays([slotKey, tag]);
-
-    // Attempt to decrypt the master key
-    // go	block, err := aes.NewCipher(key)
-    // go aesgcm, err := cipher.NewGCM(block)
-    //go masterKey, err = aesgcm.Open(nil, nonce, keyData, nil)
-    let masterKey = await decrypt(nonce, hashedPassword, keyData);
-    //let test =  await encrypt(nonce, keyScrypt, masterKey);
-
-    // go nonce, err := hex.DecodeString(params.Nonce)
-    nonceString = localStorageObject.header.params.nonce;
-    nonceString = nonceString.normalize("NFKC");
-    nonce = Uint8Array.fromHex(nonceString);
-
-    // go tag, err := hex.DecodeString(params.Tag)
-    tagString = localStorageObject.header.params.tag;
-    tag = Uint8Array.fromHex(tagString);
-
-    //go dbData, err := base64.StdEncoding.DecodeString(db)
-    let db = localStorageObject.db;
-    let dbData = Uint8Array.fromBase64(db);
-
-    //go var database []byte = append(dbData, tag...)
-    let database = concatenateUint8arrays([dbData, tag]);
-
-    // go block, err := aes.NewCipher(masterKey)
-    // go aesgcm, err := cipher.NewGCM(block)
-    // go content, err := aesgcm.Open(nil, nonce, database, nil)
-    let plaintext = await decrypt(nonce, masterKey, database);
-
-    let unencrypted = TD.decode(plaintext);
-    return unencrypted;
-  } catch (err) {
-    //dont bother outer code will log error
-    //postError(err);
-    return ""; //indicates fail
-  }
-}
-
-async function decrypt(iv, key, ciphertext) {
-  let decrypted;
-  try {
-    let block = await window.crypto.subtle.importKey(
-      "raw",
-      key,
-      { name: "AES-GCM" },
-      1,
-      ["encrypt", "decrypt"]
-    );
-    decrypted = await window.crypto.subtle.decrypt(
-      { name: "AES-GCM", iv },
-      block,
-      ciphertext
-    );
-    return decrypted;
-  } catch (err) {
-    //dont bother outer code will log error
-    //postError(err);
-    return;
-  }
-}
-
-async function encryptDb(password) {
-  try {
-    openDialog("waitDialog");
-    clearInterval(myInterval);
-
-    // workimg backwards from decryptDB
-
-    //create a 12 byte nonce
-    let nonce = new Uint8Array(12);
-    self.crypto.getRandomValues(nonce);
-    //nonce = Uint8Array.fromHex(nonceString);
-    let nonceString = nonce.toHex();
-    //nonceString = localStorageObject.header.params.nonce;
-    localStorageObject.header.params.nonce = nonceString;
-    //create a 32 bit masterKey
-    let masterKey = new Uint8Array(32);
-    self.crypto.getRandomValues(masterKey);
-    //convert dbGlobal to content Uint8Array
-    let tempdb = JSON.stringify(dbGlobal, null, "\t"); //we don't need the formatting
-    let plaintext = TE.encode(tempdb);
-    //encrypt dbGlobal using nonce and masterKey
-    let database = await encrypt(nonce, masterKey, plaintext);
-    // database is an ArrayBuffer, not Uint8Array, so fix it
-    database = new Uint8Array(database);
-
-    //separate db and tag from encrypted database
-    //db is 16 bytes larger, the last 16 byte tag is removed and stored as the tag
-    //  let database = concatenateUint8arrays([dbData, tag]);
-    let length = database.length;
-    let dbData = database.slice(0, length - 16);
-    //let dbData = Uint8Array.fromBase64(db);
-    let db = dbData.toBase64();
-    //let db = localStorageObject.db;
-    localStorageObject.db = db;
-    //tag = Uint8Array.fromHex(tagString);
-    let tag = database.slice(length - 16, length);
-    let tagString = tag.toHex();
-    //tagString = localStorageObject.header.params.tag;
-    localStorageObject.header.params.tag = tagString;
-
-    let pw = password.normalize("NFKC");
-    pw = TE.encode(password);
-    //let saltString = localStorageObject.header.slots[0].salt;
-    //let salt = Uint8Array.fromHex(saltString);
-    let salt = new Uint8Array(32); //32 byte salt , 64 hex characters
-    self.crypto.getRandomValues(salt);
-    let saltString = salt.toHex();
-    localStorageObject.header.slots[0].salt = saltString;
-
-    let n = localStorageObject.header.slots[0].n;
-    let r = localStorageObject.header.slots[0].r;
-    let p = localStorageObject.header.slots[0].p;
-    let dkLen = 32;
-    let hashedPassword = await scrypt.scrypt(pw, salt, n, r, p, dkLen); //asyncronous
-
-    //let nonceString = localStorageObject.header.slots[0].key_params.nonce;
-    //nonceString = nonceString.normalize("NFKC");
-    //let nonce = Uint8Array.fromHex(nonceString);
-    self.crypto.getRandomValues(nonce); //new masterKey nonce
-    nonceString = nonce.toHex();
-    localStorageObject.header.slots[0].key_params.nonce = nonceString;
-    //let masterKey = await decrypt(nonce, keyScrypt, keyData);
-    let masterKeyEncrypted = await encrypt(nonce, hashedPassword, masterKey);
-    //masterKeyEncrypted is 16 bytes bigger than masterKey so tag is that last 16 bytes and so masterKey the remaining first part
-    //let masterKeyEncrypted = concatenateUint8arrays([slotKey, tag]);
-    masterKeyEncrypted = new Uint8Array(masterKeyEncrypted);
-    length = masterKeyEncrypted.length;
-    let slotKey = masterKeyEncrypted.slice(0, length - 16);
-    //let slotKey = Uint8Array.fromHex(slotKeyString);
-    let slotKeyString = slotKey.toHex();
-    //let slotKeyString = localStorageObject.header.slots[0].key;
-    localStorageObject.header.slots[0].key = slotKeyString;
-    tag = masterKeyEncrypted.slice(length - 16, length);
-    //let tag = Uint8Array.fromHex(tagString);
-    tagString = tag.toHex();
-    //let tagString = localStorageObject.header.slots[0].key_params.tag;
-    localStorageObject.header.slots[0].key_params.tag = tagString;
-
-    //let encrypted = TD.decode(db);
-    let encrypted = db;
-    return encrypted;
-  } catch (err) {
-    //dont bother outer code will log error
-    //postError(err);
-    return;
-  }
-}
-
-async function encrypt(iv, key, ciphertext) {
-  let encrypted;
-  try {
-    let block = await window.crypto.subtle.importKey(
-      "raw",
-      key,
-      { name: "AES-GCM" },
-      1,
-      ["encrypt", "decrypt"]
-    );
-    encrypted = await window.crypto.subtle.encrypt(
-      { name: "AES-GCM", iv },
-      block,
-      ciphertext
-    );
-    return encrypted;
-  } catch (err) {
-    //dont bother outer code will log error
-    //postError(err);
-    return;
   }
 }
 
 // SUPPORT FUNCTIONS //
+
+function isValidHttpUrl(string) {
+  let url;
+  try {
+    url = new URL(string);
+  } catch (err) {
+    return false;
+  }
+  return true;
+  //return url.protocol === "http:" || url.protocol === "https:";
+}
 
 function beep() {
   // Source - https://stackoverflow.com/a/29641185
@@ -1342,18 +1080,36 @@ function leaingZeros(step) {
 
 function isValidlocalStorageObject() {
   try {
-    //check most obj fields for existance
-    if( typeof localStorageObject.header == "undefined"){return false;}
-    if( typeof localStorageObject.header.slots == "undefined"){return false;}
-    if( typeof localStorageObject.header.slots[0].key == "undefined"){return false;}
-    if( typeof localStorageObject.header.slots[0].key_params == "undefined"){return false;}
-    if( typeof localStorageObject.header.slots[0].salt == "undefined"){return false;}
-    if( typeof localStorageObject.header.params == "undefined"){return false;}
-    if( typeof localStorageObject.header.params.nonce == "undefined"){return false;}
-    if( typeof localStorageObject.header.params.tag == "undefined"){return false;}
-    if( typeof localStorageObject.db == "undefined"){return false;}
+    //check most localStorageObject fields for existance
+    if (typeof localStorageObject.header == "undefined") {
+      return false;
+    }
+    if (typeof localStorageObject.header.slots == "undefined") {
+      return false;
+    }
+    if (typeof localStorageObject.header.slots[0].key == "undefined") {
+      return false;
+    }
+    if (typeof localStorageObject.header.slots[0].key_params == "undefined") {
+      return false;
+    }
+    if (typeof localStorageObject.header.slots[0].salt == "undefined") {
+      return false;
+    }
+    if (typeof localStorageObject.header.params == "undefined") {
+      return false;
+    }
+    if (typeof localStorageObject.header.params.nonce == "undefined") {
+      return false;
+    }
+    if (typeof localStorageObject.header.params.tag == "undefined") {
+      return false;
+    }
+    if (typeof localStorageObject.db == "undefined") {
+      return false;
+    }
     // we ran the gauntlet
-    return true; 
+    return true;
   } catch (err) {
     postError(err);
   }
@@ -1362,29 +1118,26 @@ function isValidlocalStorageObject() {
 function buildEntriesDOM() {
   try {
     let entriesCount = 0;
-    let entriesDiv = document.querySelector("#entriesDiv");
+    let entriesDiv = document.getElementById("entriesDiv");
     let outputString = "";
     let searchText = document
-      .querySelector("#searchText")
+      .getElementById("searchText")
       .value.trim()
       .toLowerCase();
 
     dbGlobal.entries.forEach(function (entry) {
+      //start search filter
       let issuerPlusName =
         "" + entry.issuer.toLowerCase() + entry.name.toLowerCase();
+      //only show search terms if there are any
       if (searchText == "" || issuerPlusName.indexOf(searchText) >= 0) {
-        // https://stackoverflow.com/questions/377961/efficient-javascript-string-replacement
-        //https://stackoverflow.com/questions/68970312/how-do-i-resolve-a-javascript-template-literal-variable-within-a-string-within-a
+        //replace ${} values in template
         let modifiedTemplate = template("theTemplate", {
           entryId: "" + entriesCount
         });
-        //add to #entriesDiv
-        //const toAppend = document.createElement("div");
-        //toAppend.innerHTML = modifiedTemplate;
-        //entriesDiv.append(toAppend);
         outputString = outputString + modifiedTemplate;
       }
-      entriesCount += 1; //always do this
+      entriesCount += 1; //always do this to enumerate entries correctly
     });
     entriesDiv.innerHTML = outputString;
   } catch (err) {
@@ -1404,11 +1157,12 @@ function setLocalStorage(localStorageObject) {
 }
 
 function getLocalStorage() {
-  //returns object from json string
+  //returns an object created from the localStorage json string
   //return empty object {} if undefined
   let jsonObject;
   try {
     if (typeof localStorage[localStorageName] == "undefined") {
+      //this is not an error case, just a fresh start
       jsonObject = {};
     } else {
       let jsonString = localStorage[localStorageName];
@@ -1417,6 +1171,7 @@ function getLocalStorage() {
   } catch (err) {
     //postError(err);
     postError({ name: "getLocalStorage", message: "Malformed JSON Data" });
+    jsonObject = {};
   } finally {
     return jsonObject;
   }
@@ -1425,23 +1180,15 @@ function getLocalStorage() {
 function supportsHtml5Storage() {
   try {
     return "localStorage" in window && window.localStorage !== null;
-    //return false;
   } catch (err) {
     postError(err);
-    //return false;
   }
 }
 
-function copytoclipboard2(text) {
+async function copyToClipboard(text) {
   try {
-    let textarea = document.createElement("TEXTAREA");
-    document.body.appendChild(textarea);
-    textarea.innerHTML = text;
-    textarea.value = text;
-    textarea.select();
-    document.execCommand("copy", false, null);
-    textarea.remove();
-  } catch (err) {
+    await navigator.clipboard.writeText(text);
+  } catch (error) {
     postError(err);
   }
 }
@@ -1497,6 +1244,8 @@ function concatenateUint8arrays(uint8arrays) {
 }
 
 function template(templateid, data) {
+  // https://stackoverflow.com/questions/377961/efficient-javascript-string-replacement
+  //https://stackoverflow.com/questions/68970312/how-do-i-resolve-a-javascript-template-literal-variable-within-a-string-within-a
   try {
     return document.getElementById(templateid).innerHTML.replace(
       ///%(\w*)%/g, // or /{(\w*)}/g for "{this} instead of %this%"
@@ -1559,6 +1308,327 @@ function wrapPWA() {
     }
   });
 }
+
+// ENCRYPTION DECRYPTION HMAC FUNCTIONS //
+
+async function hmac(
+  keyHexString,
+  stepHexString16Bytes,
+  returnDigits,
+  hashFunctionString
+) {
+  // for references see: https://github.com/vpelss/JsTOTPAuthenticator
+  try {
+    let totp;
+    let blockSize = 64;
+    let k, msg, tempUint8Array, hashed;
+
+    //all our input key strings should only have hex characters [0 .. F]
+    msg = Uint8Array.fromHex(stepHexString16Bytes);
+    k = Uint8Array.fromHex(keyHexString); //only accepts hex string lengths of even values and convertys to bytes. byte = 2 x hex
+
+    /*
+    //HMAC: instructive : now replaced with crypto.subtle.sign
+    //hmac_sha https://en.wikipedia.org/wiki/HMAC
+
+    // create our Uint8Array key to the blockSize sized
+    if (k.length > blockSize) {
+      tempUint8Array = new Uint8Array(blockSize); //set to block size
+      hashed = await window.crypto.subtle.digest("SHA-1", k); // hash the message
+      tempUint8Array.set(new Uint8Array(hashed));
+      k = tempUint8Array;
+    } // Keys longer than blockSize are shortened by hashing them
+    // Keys shorter than blockSize are padded to blockSize by padding with zeros on the right
+    if (k.length < blockSize) {
+      tempUint8Array = new Uint8Array(blockSize); //set to block size
+      tempUint8Array.set(k);
+      k = tempUint8Array;
+    }
+    // k should now be blockSize
+
+    // create ipad and opad https://datatracker.ietf.org/doc/html/rfc2104#section-2
+    let okey = new Uint8Array(k);
+    okey.forEach(function (myByte, myIndex, myArray) {
+      myArray[myIndex] = myArray[myIndex] ^ 0x5c;
+    }); //key xor 0x5c
+    let ikey = new Uint8Array(k);
+    ikey.forEach(function (myByte, myIndex, myArray) {
+      myArray[myIndex] = myArray[myIndex] ^ 0x36;
+    }); //key xor 0x36
+
+    // now do hash(o_key_pad concatenate hash(i_key_pad concatenate msg))
+
+    tempUint8Array = concatenateUint8arrays([ikey, msg]); // i_key_pad + msg
+    hashed = await window.crypto.subtle.digest("SHA-1", tempUint8Array);
+    tempUint8Array = new Uint8Array(hashed); // hash(i_key_pad concatenate msg)
+
+    tempUint8Array = concatenateUint8arrays([okey, tempUint8Array]); //o_key_pad ∥ hash(i_key_pad + msg)
+    hashed = await window.crypto.subtle.digest("SHA-1", tempUint8Array);
+    hashed = new Uint8Array(hashed); // hash(o_key_pad concatenate hash(i_key_pad concatenate msg))
+   */
+
+    //HMAC: simpler, but not instructive
+    let cryptoKey = await window.crypto.subtle.importKey(
+      "raw",
+      k,
+      { name: "HMAC", hash: { name: "SHA-1" } },
+      1,
+      ["sign", "verify"]
+    );
+    hashed = await window.crypto.subtle.sign("HMAC", cryptoKey, msg);
+    hashed = new Uint8Array(hashed);
+
+    //https://datatracker.ietf.org/doc/html/rfc4226#section-5.3
+    let offset = hashed[hashed.length - 1] & 0xf; //last 4 bits of hashed
+
+    //take 4 bytes at offset (minus the first bit) and use bits to create a decimal #
+    let myBinary =
+      ((hashed[offset] & 0x7f) << 24) | // not signed
+      (hashed[offset + 1] << 16) |
+      (hashed[offset + 2] << 8) |
+      hashed[offset + 3];
+
+    //take deciamal part of myBinary and convert it to returnDigits value
+    // opt is the same as taking dp/myBinary taking the decimal and multiplying with dp
+    let dp = 10 ** returnDigits;
+    let otp = myBinary % dp;
+
+    totp = otp.toString();
+    while (totp.length < returnDigits) {
+      // make sure it is returnDigits length. pad to the left
+      totp = "0" + totp;
+    }
+    return totp;
+  } catch (err) {
+    postError(err);
+  }
+}
+
+async function decryptDb(password) {
+  try {
+    // based on https://github.com/Sammy-T/avdu/blob/master/vault/decrypt.go
+    // use password to decrypt masterKey from the vault
+    // use masterKey bytes to decrypt the database
+
+    let pw = password.normalize("NFKC");
+    pw = TE.encode(password); //convert to Uint8Array
+    // go salt, err := hex.DecodeString(slot.Salt)
+    let saltString = localStorageObject.header.slots[0].salt;
+    let salt = Uint8Array.fromHex(saltString);
+
+    // Create a key using the slot values and provided password
+    // go key, err = scrypt.Key([]byte(pwd), salt, slot.N, slot.R, slot.P, 32)
+    let n = localStorageObject.header.slots[0].n;
+    let r = localStorageObject.header.slots[0].r;
+    let p = localStorageObject.header.slots[0].p;
+    let dkLen = 32;
+
+    //scrypt is password based key derivation
+    //from https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js
+    //https://github.com/ricmoo/scrypt-js?utm_source=cdnjs&utm_medium=cdnjs_link&utm_campaign=cdnjs_library#readme
+    let hashedPassword = await scrypt.scrypt(pw, salt, n, r, p, dkLen); //asyncronous
+
+    //go nonce, err := hex.DecodeString(slot.KeyParams.Nonce)
+    let nonceString = localStorageObject.header.slots[0].key_params.nonce;
+    nonceString = nonceString.normalize("NFKC");
+    let nonce = Uint8Array.fromHex(nonceString);
+
+    // go	tag, err := hex.DecodeString(slot.KeyParams.Tag)
+    let tagString = localStorageObject.header.slots[0].key_params.tag;
+    let tag = Uint8Array.fromHex(tagString);
+
+    // go slotKey, err := hex.DecodeString(slot.Key)
+    let slotKeyString = localStorageObject.header.slots[0].key;
+    let slotKey = Uint8Array.fromHex(slotKeyString);
+
+    // go var keyData []byte = append(slotKey, tag...)
+    let keyData = concatenateUint8arrays([slotKey, tag]);
+
+    // Attempt to decrypt the master key
+    // go	block, err := aes.NewCipher(key)
+    // go aesgcm, err := cipher.NewGCM(block)
+    //go masterKey, err = aesgcm.Open(nil, nonce, keyData, nil)
+    let masterKey = await decrypt(nonce, hashedPassword, keyData);
+    if (!masterKey) {
+      throw "decrypt failed";
+    }
+
+    //now use masterKey to decrypt dbData
+    //this is the second nonce
+    // go nonce, err := hex.DecodeString(params.Nonce)
+    nonceString = localStorageObject.header.params.nonce;
+    nonceString = nonceString.normalize("NFKC");
+    nonce = Uint8Array.fromHex(nonceString);
+
+    // go tag, err := hex.DecodeString(params.Tag)
+    tagString = localStorageObject.header.params.tag;
+    tag = Uint8Array.fromHex(tagString);
+
+    //go dbData, err := base64.StdEncoding.DecodeString(db)
+    let db = localStorageObject.db;
+    let dbData = Uint8Array.fromBase64(db);
+
+    //go var database []byte = append(dbData, tag...)
+    let database = concatenateUint8arrays([dbData, tag]);
+
+    // go block, err := aes.NewCipher(masterKey)
+    // go aesgcm, err := cipher.NewGCM(block)
+    // go content, err := aesgcm.Open(nil, nonce, database, nil)
+    let plaintext = await decrypt(nonce, masterKey, database);
+    if (!plaintext) {
+      throw "decrypt failed";
+    }
+
+    let unencrypted = TD.decode(plaintext);
+    return unencrypted;
+  } catch (err) {
+    //dont bother. it will fail on first try and we need it to return the failure so we can ask for a password
+    return false;
+    //postError(err);
+  }
+}
+
+async function decrypt(iv, key, ciphertext) {
+  let decrypted;
+  try {
+    let block = await window.crypto.subtle.importKey(
+      "raw",
+      key,
+      { name: "AES-GCM" },
+      1,
+      ["encrypt", "decrypt"]
+    );
+    decrypted = await window.crypto.subtle.decrypt(
+      { name: "AES-GCM", iv },
+      block,
+      ciphertext
+    );
+    return decrypted;
+  } catch (err) {
+    //let calling routine there has been an error
+    return false;
+    //postError(err);
+  }
+}
+
+async function encryptDb(password) {
+  try {
+    //stop working so hard
+    openDialog("waitDialog");
+    clearInterval(myInterval);
+
+    // code derived from workimg backwards from decryptDB : commened code if from decryptDB, so leave it
+
+    //make a masterKey and encrypt database with it
+    //create a 12 byte nonce
+    let nonce = new Uint8Array(12);
+    self.crypto.getRandomValues(nonce);
+    //nonce = Uint8Array.fromHex(nonceString);
+    let nonceString = nonce.toHex();
+    //nonceString = localStorageObject.header.params.nonce;
+    localStorageObject.header.params.nonce = nonceString;
+    //create a 32 bit masterKey
+    let masterKey = new Uint8Array(32);
+    self.crypto.getRandomValues(masterKey);
+    //convert dbGlobal to content Uint8Array
+    let tempdb = JSON.stringify(dbGlobal, null, "\t"); //we don't need the formatting
+    let plaintext = TE.encode(tempdb);
+    //encrypt dbGlobal using nonce and masterKey
+    let database = await encrypt(nonce, masterKey, plaintext);
+    if (!database) {
+      throw "encrypt() failed on database";
+    }
+    // database is an ArrayBuffer, not Uint8Array, so fix it
+    database = new Uint8Array(database);
+
+    //separate db and tag from encrypted database
+    //db is 16 bytes larger, the last 16 byte tag is removed and stored as the tag
+    //  let database = concatenateUint8arrays([dbData, tag]);
+    let length = database.length;
+    let dbData = database.slice(0, length - 16);
+    //let dbData = Uint8Array.fromBase64(db);
+    let db = dbData.toBase64();
+    //let db = localStorageObject.db;
+    localStorageObject.db = db;
+    //tag = Uint8Array.fromHex(tagString);
+    let tag = database.slice(length - 16, length);
+    let tagString = tag.toHex();
+    //tagString = localStorageObject.header.params.tag;
+    localStorageObject.header.params.tag = tagString;
+
+    //now encrypy masterKey with our password
+    let pw = password.normalize("NFKC");
+    pw = TE.encode(password);
+    //let saltString = localStorageObject.header.slots[0].salt;
+    //let salt = Uint8Array.fromHex(saltString);
+    let salt = new Uint8Array(32); //32 byte salt , 64 hex characters
+    self.crypto.getRandomValues(salt);
+    let saltString = salt.toHex();
+    localStorageObject.header.slots[0].salt = saltString;
+
+    let n = localStorageObject.header.slots[0].n;
+    let r = localStorageObject.header.slots[0].r;
+    let p = localStorageObject.header.slots[0].p;
+    let dkLen = 32;
+    let hashedPassword = await scrypt.scrypt(pw, salt, n, r, p, dkLen); //asyncronous
+
+    //let nonceString = localStorageObject.header.slots[0].key_params.nonce;
+    //nonceString = nonceString.normalize("NFKC");
+    //let nonce = Uint8Array.fromHex(nonceString);
+    self.crypto.getRandomValues(nonce); //new masterKey nonce
+    nonceString = nonce.toHex();
+    localStorageObject.header.slots[0].key_params.nonce = nonceString;
+    //let masterKey = await decrypt(nonce, keyScrypt, keyData);
+    let masterKeyEncrypted = await encrypt(nonce, hashedPassword, masterKey);
+    if (!masterKeyEncrypted) {
+      throw "encrypt() failed on masterKeyEncrypted";
+    }
+    //masterKeyEncrypted is 16 bytes bigger than masterKey so tag is that last 16 bytes and so masterKey the remaining first part
+    //let masterKeyEncrypted = concatenateUint8arrays([slotKey, tag]);
+    masterKeyEncrypted = new Uint8Array(masterKeyEncrypted);
+    length = masterKeyEncrypted.length;
+    let slotKey = masterKeyEncrypted.slice(0, length - 16);
+    //let slotKey = Uint8Array.fromHex(slotKeyString);
+    let slotKeyString = slotKey.toHex();
+    //let slotKeyString = localStorageObject.header.slots[0].key;
+    localStorageObject.header.slots[0].key = slotKeyString;
+    tag = masterKeyEncrypted.slice(length - 16, length);
+    //let tag = Uint8Array.fromHex(tagString);
+    tagString = tag.toHex();
+    //let tagString = localStorageObject.header.slots[0].key_params.tag;
+    localStorageObject.header.slots[0].key_params.tag = tagString;
+
+    //let encrypted = TD.decode(db);
+    let encrypted = db;
+    return true; //no encrypted needs to be returned. we have already updated localStorageObject in this function. Just pass on our success
+  } catch (err) {
+    //pass on our shame so calling function can respond appropriately
+    return false;
+    //postError(err);
+  }
+}
+
+async function encrypt(iv, key, ciphertext) {
+  let encrypted;
+  try {
+    let block = await window.crypto.subtle.importKey(
+      "raw",
+      key,
+      { name: "AES-GCM" },
+      1,
+      ["encrypt", "decrypt"]
+    );
+    encrypted = await window.crypto.subtle.encrypt(
+      { name: "AES-GCM", iv },
+      block,
+      ciphertext
+    );
+    return encrypted;
+  } catch (err) {
+    //let calling function know there was an error
+    return false;
+  }
+} // ENCRYPTION DECRYPTION HMAC FUNCTIONS //
 
 /*
 //qr native version
