@@ -167,10 +167,10 @@ body {
   <center>
     <div>Import / Export encrypted JSON database : Textbox</div>
     <div>
-      <button onclick="if(confirm('This will overwrite your current Aegis JSON encrypted database. Are you sure?')){setLocalStorageFromTextbox();}">Import encrypted database</button>
+      <button onclick="if(confirm('This will overwrite your current Aegis JSON encrypted database. Are you sure?')){localStorageFromTextbox();}">Import encrypted database</button>
     </div>
     <div>
-      <button onclick="getLocalStorageToTextbox()">Export encrypted database</button>
+      <button onclick="localStorageToTextbox()">Export encrypted database</button>
     </div>
   
     <div>
@@ -178,7 +178,7 @@ body {
 </textarea>
     </div>
       <div>
-      <button onclick="exportAll()">Export encrypted database to Clipboard</button>
+      <button onclick="exportToClipboard()">Export encrypted database to Clipboard</button>
     </div>
     
     <div>
@@ -186,8 +186,7 @@ body {
       <input type="file" id="fileInput" name="fileInput" class="button"  onchange="importFromFile()"/>
     </div>
       <div>
-      <label for="fileOutput" class="button">Export To File</label>
-      <input type="file" id="fileOutput" name="fileOutput" class="button" value="fh" onchange="exportToFile()"/>
+      <a download="myDbName.txt" id="fileOutput" class="button" onclick="exportToFile();">Export To File</a>
     </div>
     <div>
       <a href="#" id="changePassword" class="button" onclick="openDialog('changePasswordDialog')">Change Password</a>
@@ -928,7 +927,7 @@ function closeMenu() {
   }
 }
 
-function getLocalStorageToTextbox() {
+function localStorageToTextbox() {
   try {
     let jsonObject = getLocalStorage();
     let jsonString = JSON.stringify(jsonObject, null, "\t");
@@ -938,7 +937,7 @@ function getLocalStorageToTextbox() {
   }
 }
 
-function setLocalStorageFromTextbox() {
+function localStorageFromTextbox() {
   try {
     let elJSONSave = document.getElementById("JSONSave");
     let jsonString = elJSONSave.value;
@@ -954,7 +953,7 @@ function setLocalStorageFromTextbox() {
 
 async function importFromFile() {
   try {
-        let fileInput = document.getElementById("fileInput");
+    let fileInput = document.getElementById("fileInput");
     let file = fileInput.files[0];
     let tempDialog = document.getElementById("tempDialog");
     tempDialog.innerHTML = "Importing Databse " + file.name;
@@ -989,43 +988,28 @@ async function importFromFile() {
 }
 
 async function exportToFile() {
+  //https://stackoverflow.com/questions/23413704/client-side-data-saving-to-hard-drive
+  //https://codepen.io/vpelss/pen/ZYpLOQj
   try {
-    let fileInput = document.getElementById("fileInput");
-//fileInput.addEventListener("change", importFromFile);
-    let file = fileInput.files[0];
     let tempDialog = document.getElementById("tempDialog");
-    tempDialog.innerHTML = "Importing Databse " + file.name;
-    openDialog("tempDialog");
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      // Read the file
-      try {
-        let jsonString = reader.result;
-        localStorageObject = JSON.parse(jsonString); //also set obj
-        dbGlobal = {}; //wipe old data
-        setLocalStorage(localStorageObject);
-        tempDialog.innerHTML = "Imported Database " + file.name + " Saved";
-        setTimeout(function () {
-          closeDialog("tempDialog");
-        }, 1500);
-        main(); //clear and rebuild
-      } catch (err) {
-        postError(err);
-        closeDialog("tempDialog");
-      }
-    };
-    reader.onerror = () => {
-      postMessage("Error reading the file. Please try again.", "error");
-    };
-    reader.readAsText(file);
+    tempDialog.innerHTML = "Saving Databse";
+    //openDialog("tempDialog");
+    let jsonObject = getLocalStorage();
+    let jsonString = JSON.stringify(jsonObject, null, "\t");
+    let el = document.getElementById("fileOutput"); //it needs download="myDbName.txt"
+    el.href = "data:text/plain;base64," + btoa(jsonString);
+    //el.href="data:text/plain;charset=US-ASCII," + jsonString;
+    tempDialog.innerHTML = "Database Saved";
+    setTimeout(function () {
+      closeDialog("tempDialog");
+    }, 1500);
   } catch (err) {
     postError(err);
     closeDialog("tempDialog");
   }
 }
 
-function exportAll() {
+function exportToClipboard() {
   try {
     localStorageObject = getLocalStorage();
     copyToClipboard(JSON.stringify(localStorageObject, null, "\t"));
