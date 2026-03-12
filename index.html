@@ -119,6 +119,10 @@ body {
   /*fix / block password managers forcing fields to fill*/
   -webkit-text-security: none;
 }
+
+#fileInput{
+  display: none;
+}
 </style>
 
   
@@ -160,21 +164,29 @@ body {
 </div>
 
 <div id="menu_page_component" hidden>
-      <center>
-      <div>Import / Export encrypted JSON database</div>
-      <div>
-        <button onclick="if(confirm('This will overwrite your current Aegis JSON encrypted database. Are you sure?')){setLocalStorageFromTextbox();}">Import encrypted database</button>
-      </div>
-      <div>
-        <button onclick="getLocalStorageToTextbox()">Export encrypted database</button>
-      </div>
-      <div>
-        <button onclick="exportAll()">Export encrypted database to Clipboard</button>
-      </div>
-      <div>
-        <textarea id="JSONSave" rows="3" cols="50" placeholder="Encrypted JSON database text goes here. Save this text in a safe location. Use it as a backup or to import it on another device." title="You can import/export your current  encrypted JSON database. This is helful to move it to another computer or to create  it as a backup." class="u-full-width">
+  <center>
+    <div>Import / Export encrypted JSON database : Textbox</div>
+    <div>
+      <button onclick="if(confirm('This will overwrite your current Aegis JSON encrypted database. Are you sure?')){localStorageFromTextbox();}">Import encrypted database</button>
+    </div>
+    <div>
+      <button onclick="localStorageToTextbox()">Export encrypted database</button>
+    </div>
+  
+    <div>
+      <textarea id="JSONSave" rows="3" cols="50" placeholder="Encrypted JSON database text goes here. Save this text in a safe location. Use it as a backup or to import it on another device." title="You can import/export your current  encrypted JSON database. This is helful to move it to another computer or to create  it as a backup." class="u-full-width">
 </textarea>
-      </div>
+    </div>
+      <div>
+      <button onclick="exportToClipboard()">Export encrypted database to Clipboard</button>
+    </div>
+    <div>
+      <label for="fileInput" class="button">Import From File</label>
+      <input type="file" id="fileInput" name="fileInput" class="button"  onchange="importFromFile()"/>
+    </div>
+      <div>
+      <a download="aaDB.txt" id="fileOutput" class="button" onclick="exportToFile();">Export To File</a>
+    </div>
     <div>
       <a href="#" id="changePassword" class="button" onclick="openDialog('changePasswordDialog')">Change Password</a>
     </div>
@@ -432,7 +444,7 @@ let localStorageObject = {}; // salt, tagx, nonce, db encrypted
 let dbGlobal = {}; //entries, groups, ect
 let errorArray = [];
 let oldStepInt = 0;
-let entriesDiv = document.querySelector("#entriesDiv");
+let entriesDiv = document.getElementById("entriesDiv");
 const TE = new TextEncoder();
 const TD = new TextDecoder();
 const dbEmptyMessage = `<center>
@@ -885,10 +897,6 @@ function openDialog(id) {
 }
 
 function closeDialog(id) {
-  //extranious
-  // if (id == "addEntryDialog") {
-  // html5QrCodeStop();
-  //}
   let el = document.getElementById(id);
   el.close();
 }
@@ -915,7 +923,7 @@ function closeMenu() {
   }
 }
 
-function getLocalStorageToTextbox() {
+function localStorageToTextbox() {
   try {
     let jsonObject = getLocalStorage();
     let jsonString = JSON.stringify(jsonObject, null, "\t");
@@ -925,7 +933,7 @@ function getLocalStorageToTextbox() {
   }
 }
 
-function setLocalStorageFromTextbox() {
+function localStorageFromTextbox() {
   try {
     let elJSONSave = document.getElementById("JSONSave");
     let jsonString = elJSONSave.value;
@@ -939,7 +947,65 @@ function setLocalStorageFromTextbox() {
   }
 }
 
-function exportAll() {
+async function importFromFile() {
+  try {
+    let fileInput = document.getElementById("fileInput");
+    let file = fileInput.files[0];
+    let tempDialog = document.getElementById("tempDialog");
+    tempDialog.innerHTML = "Importing Databse " + file.name;
+    openDialog("tempDialog");
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      // Read the file
+      try {
+        let jsonString = reader.result;
+        localStorageObject = JSON.parse(jsonString); //also set obj
+        dbGlobal = {}; //wipe old data
+        setLocalStorage(localStorageObject);
+        tempDialog.innerHTML = "Imported Database " + file.name + " Saved";
+        setTimeout(function () {
+          closeDialog("tempDialog");
+        }, 1500);
+        main(); //clear and rebuild
+      } catch (err) {
+        postError(err);
+        closeDialog("tempDialog");
+      }
+    };
+    reader.onerror = () => {
+      postMessage("Error reading the file. Please try again.", "error");
+    };
+    reader.readAsText(file);
+  } catch (err) {
+    postError(err);
+    closeDialog("tempDialog");
+  }
+}
+
+async function exportToFile() {
+  //https://codepen.io/vpelss/pen/ZYpLOQj
+  //using <a> download attribute
+  try {
+    let tempDialog = document.getElementById("tempDialog");
+    tempDialog.innerHTML = "Saving Databse";
+    //openDialog("tempDialog");
+    let jsonObject = getLocalStorage();
+    let jsonString = JSON.stringify(jsonObject, null, "\t");
+    let el = document.getElementById("fileOutput"); //it needs download="myDbName.txt"
+    el.href = "data:text/plain;base64," + btoa(jsonString);
+    //el.href="data:text/plain;charset=US-ASCII," + jsonString;
+    tempDialog.innerHTML = "Database Saved";
+    setTimeout(function () {
+      closeDialog("tempDialog");
+    }, 1500);
+  } catch (err) {
+    postError(err);
+    closeDialog("tempDialog");
+  }
+}
+
+function exportToClipboard() {
   try {
     localStorageObject = getLocalStorage();
     copyToClipboard(JSON.stringify(localStorageObject, null, "\t"));
@@ -1542,7 +1608,7 @@ async function encrypt(iv, key, ciphertext) {
     //let calling function know there was an error
     return false;
   }
-}// ENCRYPTION DECRYPTION HMAC FUNCTIONS //
+} // ENCRYPTION DECRYPTION HMAC FUNCTIONS //
 
 /*
 //qr native version
