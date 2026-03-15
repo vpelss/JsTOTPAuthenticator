@@ -397,7 +397,6 @@ body {
 // TO DO:
 
 //backup reminder
-//browser support check with alert qr :  pwa : url parse :
 // timed logout?
 
 //pw not global?
@@ -465,7 +464,7 @@ const dbEmptyMessage = `<center>
 // START MAIN LOOP //
 
 if (!testBrowser()) {
-  console.log( "Some browser funtions not supported");
+  console.log("Some browser funtions not supported");
   //throw "Some browser funtions not supported";
 }
 wrapPWA(); //Progressive Web App code
@@ -1277,7 +1276,7 @@ function wrapPWA() {
 
 function testBrowser() {
   try {
-    //test for localStorage
+    //test for various functionality and alert. Note that we don't halt. It still may work without all functionailty.
     if (!("localStorage" in window && window.localStorage !== null)) {
       throw {
         name: "Error",
@@ -1308,36 +1307,40 @@ function testBrowser() {
       throw {
         name: "Error",
         message: "HTML5 is not supported in this browser"
-      }; 
+      };
     }
-    
-     if (typeof navigator.clipboard.writeText == "undefined") {
+    if (typeof navigator.clipboard.writeText == "undefined") {
       throw {
         name: "Error",
-        message: "navigator.clipboard.writeText is not supported in this browser"
+        message:
+          "navigator.clipboard.writeText is not supported in this browser"
       };
-     }
-      
-        if (typeof FileReader == "undefined") {
+    }
+    if (typeof FileReader == "undefined") {
       throw {
         name: "Error",
         message: "FileReader is not supported in this browser"
       };
-          }
-            //pwa
-            if (typeof navigator.getInstalledRelatedApps == "undefined") {
+    }
+    //pwa
+    if (typeof navigator.getInstalledRelatedApps == "undefined") {
       throw {
         name: "Error",
-        message: "navigator.getInstalledRelatedApps is not supported in this browser"
-      };  
-            }
-       
-    
-    
+        message:
+          "navigator.getInstalledRelatedApps is not supported in this browser"
+      };
+    }
+    if (typeof URL == "undefined") {
+      throw {
+        name: "Error",
+        message: "URL is not supported in this browser"
+      };
+    }
   } catch (err) {
     postError(err);
     alert(
-      "Incompatible browser. Suggest newest Chrome, Edge, Safari\n\n" + err
+      "Incompatible browser. If you are seeing this error, please consider using the newest Chrome, Edge, Safari. You may encounter limited or no functionality if you continue. \n\n" +
+        err
     );
     return false;
   }
