@@ -14,6 +14,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <link rel="manifest" href="./manifest.json"> 
+
   
   <link rel='stylesheet' href='https://cdn.simplecss.org/simple.css'>
   
@@ -394,41 +395,49 @@ body {
 <script src='https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'></script>
     <script id="rendered-js" >
 // TO DO:
+
+//backup reminder
+//browser support check with alert qr :  pwa : url parse :
+// timed logout?
+
+//pw not global?
+//closures?
+// the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
+
+//biometrics? CTAP2
 //https://github.com/dvas0004/web-auth/blob/master/src/webauthn.js
 //https://blog.davidvassallo.me/2019/01/25/exploring-the-webauthn-api-a-bare-bones-js-app/
 //https://mprimi.github.io/portable-secret/
 //js trigger password manaagers : https://hidde.blog/making-password-managers-play-ball-with-your-login-form/
-//biometrics? CTAP2
 //https://stackoverflow.blog/2022/11/16/biometric-authentication-for-web-devs/
 //https://webauthn.guide/
-
-//pw not global?
-//closures?
-
-//backup reminder
-//browser support check with alert
-// the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
-// timed logout?
 
 /*
 // EXTERNAL CODE
 //svg images from https://fonts.google.com/
+
 // scrypt from https://www.jsdelivr.com/package/npm/scrypt-js
 // https://github.com/ricmoo/scrypt-js/
+
 // qr code creator
-// https://cdnjs.com/libraries/qrcode/1.4.4
-// 340 kb requires canvas
-// using : https://davidshimjs.github.io/qrcodejs/
-// 34 kb requires div
+// USING : https://davidshimjs.github.io/qrcodejs : 34 kb requires div
+// https://cdnjs.com/libraries/qrcode/1.4.4 : 340 kb requires canvas
+
 // scan qr code from camera
-// https://developer.mozilla.org/en-US/docs/Web/API/Barcode_Detection_API
-// ?? poor browser support
-// using : https://github.com/mebjas/html5-qrcode
+// USING : https://github.com/mebjas/html5-qrcode
 // https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js
 // 366 kb
 // https://github.com/nimiq/qr-scanner
 // https://nimiq.github.io/qr-scanner/qr-scanner.umd.min.js
 // 60 kb
+// https://developer.mozilla.org/en-US/docs/Web/API/Barcode_Detection_API
+// ?? poor browser support
+
+concatenate Uint8arrays : https://evanhahn.com/the-best-way-to-concatenate-uint8arrays/
+
+template() :  // https://stackoverflow.com/questions/377961/efficient-javascript-string-replacement
+
+beep() : // Source - https://stackoverflow.com/a/29641185
 */
 
 "use strict";
@@ -455,6 +464,10 @@ const dbEmptyMessage = `<center>
 
 // START MAIN LOOP //
 
+if (!testBrowser()) {
+  console.log( "Some browser funtions not supported");
+  //throw "Some browser funtions not supported";
+}
 wrapPWA(); //Progressive Web App code
 main(); // decrypt database and start setIntreval function
 
@@ -469,15 +482,6 @@ async function main() {
     document.getElementById("JSONSave").value = "";
     entriesDiv.innerHTML =
       "<center><b>Loading database and decrypting...</b></center>"; //this may be an imp0rt (dont fix this) situation
-
-    //does browser support local storage? yes continue : no stop
-    if (!supportsHtml5Storage()) {
-      closeDialog("waitDialog");
-      throw {
-        name: "Error",
-        message: "HTML5 Storage is not supported in this browser"
-      };
-    }
 
     localStorageObject = getLocalStorage(); //load database if any
     //test to see if json is valid Aegis format.
@@ -541,11 +545,11 @@ async function eachSecond() {
     let stepNow = unixTime / 30; //what TOTP step are we on?
     let stepInt = Math.floor(stepNow); //this changes when == to stepNow. so bar should be at 100%
     let step = stepInt.toString(16); //step MUST be in string HEX for the hmac function
-    step = leaingZeros(step); // step needs to be 16 characters for hmac function
+    step = step.padStart(16, "0"); // step needs to be 16 characters for hmac function
     //calc next one too
     let stepInt2 = stepInt + 1;
     let step2 = stepInt2.toString(16); //step MUST be in string HEX for the hmac function
-    step2 = leaingZeros(step2); // step needs to be 16 characters for hmac function
+    step2 = step2.padStart(16, "0"); // step needs to be 16 characters for hmac function
 
     //show countdown on the bar
     let percentDone = Math.floor(100 * (stepNow - stepInt));
@@ -1032,30 +1036,21 @@ function beep() {
   // Source - https://stackoverflow.com/a/29641185
   // Posted by Houshalter, modified by community. See post 'Timeline' for change history
   // Retrieved 2026-02-27, License - CC BY-SA 4.0
-
-  /*if you want to beep without using a wave file*/
   try {
+    //beep without using a wave file
     var context = new AudioContext();
     var oscillator = context.createOscillator();
     oscillator.type = "sine";
     oscillator.frequency.value = 800;
     oscillator.connect(context.destination);
     oscillator.start();
-    // Beep for 500 milliseconds
+    // Beep for 100 milliseconds
     setTimeout(function () {
       oscillator.stop();
     }, 100);
   } catch (err) {
     postError(err);
   }
-}
-
-function leaingZeros(step) {
-  // step needs to be 16 characters
-  do {
-    step = "0" + step;
-  } while (step.length < 16);
-  return step;
 }
 
 function isValidlocalStorageObject() {
@@ -1157,14 +1152,6 @@ function getLocalStorage() {
   }
 }
 
-function supportsHtml5Storage() {
-  try {
-    return "localStorage" in window && window.localStorage !== null;
-  } catch (err) {
-    postError(err);
-  }
-}
-
 async function copyToClipboard(text) {
   try {
     await navigator.clipboard.writeText(text);
@@ -1225,7 +1212,6 @@ function concatenateUint8arrays(uint8arrays) {
 
 function template(templateid, data) {
   // https://stackoverflow.com/questions/377961/efficient-javascript-string-replacement
-  //https://stackoverflow.com/questions/68970312/how-do-i-resolve-a-javascript-template-literal-variable-within-a-string-within-a
   try {
     return document.getElementById(templateid).innerHTML.replace(
       ///%(\w*)%/g, // or /{(\w*)}/g for "{this} instead of %this%"
@@ -1287,6 +1273,75 @@ function wrapPWA() {
       // Update UI as appropriate
     }
   });
+}
+
+function testBrowser() {
+  try {
+    //test for localStorage
+    if (!("localStorage" in window && window.localStorage !== null)) {
+      throw {
+        name: "Error",
+        message: "HTML5 Storage is not supported in this browser"
+      };
+    }
+    if (typeof AudioContext == "undefined") {
+      throw {
+        name: "Error",
+        message: "AudioContext is not supported in this browser"
+      };
+    }
+    if (typeof window.crypto.subtle == "undefined") {
+      throw {
+        name: "Error",
+        message: "window.crypto.subtle is not supported in this browser"
+      };
+    }
+    let myDialog = document.createElement("dialog");
+    if (typeof myDialog.showModal == "undefined") {
+      throw {
+        name: "Error",
+        message: "showModal() is not supported in this browser"
+      };
+    }
+    //html5
+    if (typeof navigator.geolocation == "undefined") {
+      throw {
+        name: "Error",
+        message: "HTML5 is not supported in this browser"
+      }; 
+    }
+    
+     if (typeof navigator.clipboard.writeText == "undefined") {
+      throw {
+        name: "Error",
+        message: "navigator.clipboard.writeText is not supported in this browser"
+      };
+     }
+      
+        if (typeof FileReader == "undefined") {
+      throw {
+        name: "Error",
+        message: "FileReader is not supported in this browser"
+      };
+          }
+            //pwa
+            if (typeof navigator.getInstalledRelatedApps == "undefined") {
+      throw {
+        name: "Error",
+        message: "navigator.getInstalledRelatedApps is not supported in this browser"
+      };  
+            }
+       
+    
+    
+  } catch (err) {
+    postError(err);
+    alert(
+      "Incompatible browser. Suggest newest Chrome, Edge, Safari\n\n" + err
+    );
+    return false;
+  }
+  return true;
 }
 
 // ENCRYPTION DECRYPTION HMAC FUNCTIONS //
@@ -1374,10 +1429,7 @@ async function hmac(
     let otp = myBinary % dp;
 
     totp = otp.toString();
-    while (totp.length < returnDigits) {
-      // make sure it is returnDigits length. pad to the left
-      totp = "0" + totp;
-    }
+    totp = totp.padStart(returnDigits, "0"); // make sure it is returnDigits length. pad to the left
     return totp;
   } catch (err) {
     postError(err);
@@ -1469,8 +1521,8 @@ async function decryptDb(password) {
 }
 
 async function decrypt(iv, key, ciphertext) {
-  let decrypted;
   try {
+    let decrypted;
     let block = await window.crypto.subtle.importKey(
       "raw",
       key,
@@ -1589,8 +1641,8 @@ async function encryptDb(password) {
 }
 
 async function encrypt(iv, key, ciphertext) {
-  let encrypted;
   try {
+    let encrypted;
     let block = await window.crypto.subtle.importKey(
       "raw",
       key,
