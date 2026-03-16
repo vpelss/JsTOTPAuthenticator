@@ -1,4 +1,5 @@
 {
+  "version": "1.0.0",
   "short_name": "AA",
   "name": "AuthenticatorAnywhere",
   "icons": [
