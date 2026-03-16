@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "short_name": "AA",
   "name": "AuthenticatorAnywhere",
-  "description": "A Web Authenicator App that you can use on any modern browser (Chrome, Edge, Safari) and on any desktop or mobile device",
+  "description": "A Web Authenticator App that you can use on any modern browser (Chrome, Edge, Safari) and on any desktop or mobile device",
   "icons": [
     {
       "src": "./512.svg",
