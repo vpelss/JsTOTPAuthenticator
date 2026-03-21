@@ -1,157 +1,28 @@
-
 <!DOCTYPE html>
-<html lang="en" >
+<html lang="en">
 
-<head>
-  <meta charset="UTF-8">
-  
-  
-  
-
-  <title>AuthenticatorAnywhere</title>
-
-    <link rel="canonical" href="https://codepen.io/vpelss/pen/EayojzL">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <head>
+    <meta charset="UTF-8">
+    <title>AuthenticatorAnywhere</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <link rel="manifest" href="./manifest.json"> 
+<link rel='stylesheet' href='https://cdn.simplecss.org/simple.css'><link rel="stylesheet" href="./style.css">
 
-  
-  <link rel='stylesheet' href='https://cdn.simplecss.org/simple.css'>
-  
-<style>
-335631body {
-  margin: 2px;
-}
-
-/* turns off idiotic swipe down to refresh , pull-to-refresh */
-html,
-body {
-  overscroll-behavior: none !important;
-}
-
-#header {
-  position: sticky;
-  top: 0;
-  background-color: white;
-  width: 100%;
-}
-
-.codeClass {
-  font-size: 2rem;
-}
-
-.codeClassNext {
-  font-size: 1rem;
-  color: lightgray;
-}
-
-#theBarContainer {
-  background-color: lightgray;
-}
-
-#theBar {
-  height: 5px;
-  background-color: red;
-  width: 100%;
-  transition: width 1s linear;
-}
-
-#headerTitle {
-  ffffont-size: 0.8rem;
-}
-
-#searchText {
-  width: 80%;
-}
-
-.myTemplate {
-  display: grid;
-  width: 100%;
-  border: solid;
-  border-width: 1px;
-  margin: 5px;
-  padding: 5px;
-}
-
-.leftTemplate {
-  grid-column: 1;
-  text-align: left;
-  overflow: auto;
-}
-
-.rightTemplate {
-  grid-column: 2;
-  text-align: right;
-}
-
-#footer {
-  display: grid;
-}
-
-#logoutRestart {
-  grid-column: 1;
-  text-align: left;
-  text-align: center;
-}
-
-#refreshApp {
-  grid-column: 2;
-  text-align: right;
-  text-align: center;
-}
-
-#powerOff {
-  grid-column: 3;
-  text-align: right;
-  text-align: center;
-}
-
-#error {
-  white-space: pre-wrap;
-  display: block;
-}
-
-.secret {
-  /*fix / block password managers forcing fields to fill*/
-  -webkit-text-security: disc;
-}
-
-.secret:active {
-  /*fix / block password managers forcing fields to fill*/
-  -webkit-text-security: none;
-}
-
-#fileInput {
-  display: none;
-}
-
-.border {
-  border: solid;
-  border-width: 1px;
-}
-</style>
-
-  
-  
-  
-</head>
-
-<body>
+  </head>
+    
+  <body>
   <div id="header">
   <center>
-    <span id="menu_icon">
-      <button onclick="openMenu();">&#x2261;</button>
-    </span>
-    <span id="x_icon" hidden>
-      <button onclick="closeMenu()">X</button>
-    </span>
+    <button id="menu_icon">&#x2261;</button>
+    <button id="x_icon" hidden>X</button>
     <span id="headerTitle">AuthenticatorAnywhere</span>
-    <span id="add_icon">
-      <button onclick="openDialog('addEntryDialog');html5QrCode();">+</button>
-    </span>
+    <button id="add_icon">+</button>
   </center>
-  <div>
-    <span><input type="text" id="searchText" placeholder="Search" onkeyup="buildEntriesDOM()"></span><span><a onclick="document.getElementById('searchText').value='';buildEntriesDOM();" class="button">x</a></span>
+
+  <div id="searchWrapper">
+    <input type="text" id="searchText" placeholder="Search">
+    <button id="clearSearchIcon">x</button>
   </div>
 
   <div>
@@ -161,7 +32,7 @@ body {
   </div>
 </div>
 
-<div id="main_page_component">
+<div id="MainPageComponent">
   <center>
     <div id="entriesDiv">
       <center><b>Waiting to load encrypted Aegis database...</b></center>
@@ -169,18 +40,18 @@ body {
   </center>
 </div>
 
-<div id="menu_page_component" hidden>
+<div id="MenuPageComponent" hidden>
   <center>
     <div class="border">
       <div>Import / Export encrypted JSON database : using textbox</div>
       <div>
-        <button onclick="if(confirm('This will overwrite your current Aegis JSON encrypted database. Are you sure?')){localStorageFromTextbox();}">Import encrypted database</button>
+        <button id="importFromTextButton">Import from Text</button>
       </div>
       <div>
-        <button onclick="localStorageToTextbox()">Export encrypted database</button>
+        <button id="exportToTextButton">Export to Text</button>
       </div>
       <div>
-        <textarea id="JSONSave" rows="3" cols="50" placeholder="Encrypted JSON database text goes here. Save this text in a safe location. Use it as a backup or to import it on another device." title="You can import/export your current  encrypted JSON database. This is helful to move it to another computer or to create  it as a backup." class="u-full-width">
+        <textarea id="JSONSave" rows="3" cols="50" placeholder="Text : Encrypted JSON database text goes here. Save this text in a safe location. Use it as a backup or to import it on another device.">
 </textarea>
       </div>
     </div>
@@ -189,18 +60,18 @@ body {
       <div>Import / Export encrypted JSON database : using file</div>
       <div>
         <label for="fileInput" class="button">Import From File</label>
-        <input type="file" id="fileInput" name="fileInput" class="button" onchange="importFromFile()" />
+        <input type="file" id="fileInput" name="fileInput" class="button" />
       </div>
       <div>
-        <a download="DB.txt" id="fileOutput" class="button" onclick="exportToFile();">Export To File</a>
+        <a download="DB.txt" id="fileOutput" class="button">Export To File</a>
       </div>
     </div>
     <br>
     <div>
-      <button onclick="exportToClipboard()">Export encrypted database to Clipboard</button>
+      <button id="exportToClipboardButton">Export to Clipboard</button>
     </div>
     <div>
-      <a href="#" id="changePassword" class="button" onclick="openDialog('changePasswordDialog')">Change Password</a>
+      <button id="changePasswordButton">Change Password</button>
     </div>
     <div>
       <button id="installPWA">Install as PWA</button>
@@ -209,10 +80,10 @@ body {
       Links below will open in your default browser.
     </div>
     <div>
-      <a href="https://github.com/vpelss/AuthenticatorAnywhere/blob/main/README.md" class="button u-full-width" target="_blank">Help/Read Me</a>
+      <a href="https://github.com/vpelss/AuthenticatorAnywhere/blob/main/README.md" class="button" target="_blank">Help/Read Me</a>
     </div>
     <div>
-      <a href="https://github.com/vpelss/JsTOTPAuthenticator" target="_blank" class="button u-full-width">Github</a>
+      <a href="https://github.com/vpelss/JsTOTPAuthenticator" target="_blank" class="button">Github</a>
     </div>
     <div>
       <a href="https://github.com/vpelss/JsTOTPAuthenticator/blob/main/LICENSE" target="_blank" class="button">Licence</a>
@@ -221,54 +92,58 @@ body {
 </div>
 
 <div id="footer">
-  <div id="logoutRestart" onclick="window.location.reload()" title="Logout/Restart">
-    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000">
-      <path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h280v80H200Zm440-160-55-58 102-102H360v-80h327L585-622l55-58 200 200-200 200Z" />
-    </svg>
+  <div id="logoutRestartButton" title="Logout/Restart">
+    <button>
+      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000">
+        <path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h280v80H200Zm440-160-55-58 102-102H360v-80h327L585-622l55-58 200 200-200 200Z" />
+      </svg></button>
     <br>
     Logout
   </div>
-  <div id="refreshApp" onclick="main();" title="Restart"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000">
-      <path d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126.5T260-672l57 57q-38 34-57.5 79T240-440q0 88 56 155.5T440-202v80Zm80 0v-80q87-16 143.5-83T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 56-44 44h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z" />
-    </svg>
+  <div id="refreshAppButton" title="Restart">
+    <button>
+      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000">
+        <path d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126.5T260-672l57 57q-38 34-57.5 79T240-440q0 88 56 155.5T440-202v80Zm80 0v-80q87-16 143.5-83T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 56-44 44h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z" />
+      </svg>
+      </button>
     <br>
     Restart
   </div>
-  <div id="powerOff" onclick="window.close()" title="Close Tab/App. It may not work">
+  <div id="powerOffButton" title="Close Tab/App. It may not work">
+    <button>
     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000">
       <path d="M324-111.5Q251-143 197-197t-85.5-127Q80-397 80-480t31.5-156Q143-709 197-763t127-85.5Q397-880 480-880t156 31.5Q709-817 763-763t85.5 127Q880-563 880-480t-31.5 156Q817-251 763-197t-127 85.5Q563-80 480-80t-156-31.5ZM707-253q93-93 93-227t-93-227q-93-93-227-93t-227 93q-93 93-93 227t93 227q93 93 227 93t227-93Zm-57-57q70-70 70-170 0-51-19-94.5T650-650l-57 57q22 22 34.5 51t12.5 62q0 66-47 113t-113 47q-66 0-113-47t-47-113q0-33 12.5-62t34.5-51l-57-57q-32 32-51 75.5T240-480q0 100 70 170t170 70q100 0 170-70ZM440-480h80v-240h-80v240Zm40 0Z" />
     </svg>
+      </button>
     <br>
     Close
   </div>
 </div>
 
 <template id="theTemplate">
-  <div id="${entryId}" class="myTemplate">
-
+  <div id="${entryId}" class="entryTemplate">
     <div class="leftTemplate">
       <div id="entryIssuer${entryId}">Issuer</div>
       <div id="entryName${entryId}">Name</div>
-      <span id="entryCode${entryId}" class="codeClass" onclick="copyElementInnerHTMLToClipboard('entryCode${entryId}')">Code</span>
+      <span id="entryCode${entryId}" class="codeClass">Code</span>
       &nbsp;&nbsp;
-      <span id="entryCodeNext${entryId}" class="codeClassNext" onclick="copyElementInnerHTMLToClipboard('entryCodeNext${entryId}')">CodeNext</span>
+      <span id="entryCodeNext${entryId}" class="codeClassNext">CodeNext</span>
     </div>
-
     <div class="rightTemplate">
-      <button id="copyIcon${entryId}" onclick="copyElementInnerHTMLToClipboard('entryCode${entryId}')">
-        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="1rem" fill="#ffffff">
-          <path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z" />
+      <button id="entryCopyButton${entryId}" class="copyIcon">
+        <svg id="entryCopySVG${entryId}" class="copyIcon" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="1rem" fill="#ffffff">
+          <path id="entryCopyPath${entryId}" class="copyIcon" d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z" />
         </svg>
       </button>
       <br>
-      <button id="editIcon${entryId}" onclick="editEntryDialog('${entryId}');">&#x2261;</button>
+      <button id="editButton${entryId}" class="editButton">&#x2261;</button>
     </div>
   </div>
 </template>
 
 <dialog id="passwordDialog">
   <p>Enter the password for the database</p>
-  <form method="post" action="javascript:void(0);" onsubmit="tryPassword()">
+  <form id="passwordDialogForm" method="dialog" action="javascript:void(0);">
     <center>
       <div>
         <label for="password">
@@ -282,7 +157,7 @@ body {
         Or if you forgot your pw:
       </div>
       <div>
-        <input type="button" value="Erase Database" onclick="wipeDatabase()">
+        <button id="eraseDbButton">Erase Database</button>
       </div>
     </center>
   </form>
@@ -292,8 +167,7 @@ body {
   <center>
     <p>Change Password</p>
     <p>It is recommended you backup your database first, in case you forget your new password.</p>
-    <form method="post" action="javascript:void(0);" onsubmit="changePassword(this)">
-
+    <form id="changePasswordForm" method="dialog" action="javascript:void(0);">
       <div></div>
       <div>
         <input type="input" id="newPassword1" placeholder="New Password" autocomplete="off" class="secret">
@@ -306,7 +180,7 @@ body {
       </div>
       <p></p>
       <div>
-        <input type="button" value="Cancel" onclick="closeDialog('changePasswordDialog')">
+        <button id="cancelChangePasswordButton" type="button">Cancel</button>
       </div>
     </form>
   </center>
@@ -317,7 +191,7 @@ body {
     <p>Add An Entry</p>
     <div id="qrVideo"></div>
     <div>OR</div>
-    <form method="dialog" onsubmit="addEntry(this)">
+    <form id="addEntryForm" method="dialog">
       <div>
         <input type="text" id="addEntryURL" placeholder="url otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example" autocomplete="off">
       </div>
@@ -339,7 +213,7 @@ body {
       </div>
       <p></p>
       <div>
-        <input type="button" value="Cancel" onclick="closeDialog('addEntryDialog')">
+        <input id="cancelAddEntry" type="button" value="Cancel">
       </div>
     </form>
   </center>
@@ -351,7 +225,7 @@ body {
     <form method="dialog" onsubmit="editEntry('${entryId}')">
       <center>
         <div>
-          <input type="button" value="Toggle QR Code" onclick="toggleQrCode();" title="For scanning to another authenticator app">
+          <input id="toggleQrCodeButton" type="button" value="Toggle QR Code" title="For scanning to another authenticator app">
           <div id="qrCode"></div>
         </div>
         <div>
@@ -375,11 +249,11 @@ body {
         </div>
         <p></p>
         <div>
-          <input type="button" value="Cancel" onclick="closeDialog('tempDialog')">
+          <input id="closeEditEntryButton" type="button" value="Cancel">
         </div>
         <p></p>
         <div>
-          <input type="button" value="Delete Entry" onclick="deleteEntry('${entryId}')">
+          <input id="deleteEditEntryButton" type="button" value="Delete Entry">
         </div>
         <div>
           <label for="editEntryUrl">URL</label>
@@ -406,1412 +280,10 @@ body {
 <p></p>
 
 <div id="error"></div>
-  <script src='https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js'></script>
 <script src='https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@gh-pages/qrcode.min.js'></script>
-<script src='https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'></script>
-    <script id="rendered-js" >
-// TO DO:
-//pw not global?
-//closures?
-// the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
+<script src='https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'></script><script  src="./script.js"></script>
 
-//biometrics? CTAP2
-//https://github.com/dvas0004/web-auth/blob/master/src/webauthn.js
-//https://blog.davidvassallo.me/2019/01/25/exploring-the-webauthn-api-a-bare-bones-js-app/
-//https://mprimi.github.io/portable-secret/
-//js trigger password manaagers : https://hidde.blog/making-password-managers-play-ball-with-your-login-form/
-//https://stackoverflow.blog/2022/11/16/biometric-authentication-for-web-devs/
-//https://webauthn.guide/
-
-/*
-// EXTERNAL USED CODE
-//svg images from https://fonts.google.com/
-
-// scrypt from https://www.jsdelivr.com/package/npm/scrypt-js
-// https://github.com/ricmoo/scrypt-js/
-
-// qr code creator
-// USING : https://davidshimjs.github.io/qrcodejs : 34 kb requires div
-// https://cdnjs.com/libraries/qrcode/1.4.4 : 340 kb requires canvas
-
-// scan qr code from camera
-// USING : https://github.com/mebjas/html5-qrcode
-// https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js
-// 366 kb
-// https://github.com/nimiq/qr-scanner
-// https://nimiq.github.io/qr-scanner/qr-scanner.umd.min.js
-// 60 kb
-// https://developer.mozilla.org/en-US/docs/Web/API/Barcode_Detection_API
-// ?? poor browser support
-
-concatenate Uint8arrays : https://evanhahn.com/the-best-way-to-concatenate-uint8arrays/
-
-template() :  // https://stackoverflow.com/questions/377961/efficient-javascript-string-replacement
-
-beep() : // https://stackoverflow.com/a/29641185
-*/
-
-"use strict";
-
-let password = ""; //it can be "", but harangue to set a password
-let myInterval; //update every second
-let localStorageName = "AuthenticatorAnywhere";
-if (localStorage.getItem("JsTOTPAuthenticator") !== null) {
-  // was JsTOTPAuthenticator, so allow backwards compatability
-  localStorageName = "JsTOTPAuthenticator";
-}
-let localStorageObject = {}; // salt, tagx, nonce, db encrypted
-let dbGlobal = {}; //entries, groups, ect
-let errorArray = [];
-let oldStepInt = 0;
-let entriesDiv = document.getElementById("entriesDiv");
-let startTime;
-let timeout = 1000 * 60 * 10; //logout if hidden and 10 minutes
-const TE = new TextEncoder();
-const TD = new TextDecoder();
-document
-  .getElementById("passwordDialog")
-  .addEventListener("close", function () {
-    main();
-  }); //required as escape key closes modal box with no action.
-const dbEmptyMessage = `<center>
-      <b>No entries or database found. Import an encrypted JSON database with the &#x2261; icon or start adding entries with the + icon
-      <p></p>
-      <a href="https://github.com/vpelss/AuthenticatorAnywhere/blob/main/README.md" target="_blank" class="button">Help Me</a>
-      </b></center><p>&nbsp;</p>`;
-
-// START MAIN LOOP //
-
-if (!testBrowser()) {
-  console.log("Some browser funtions not supported");
-  //throw "Some browser funtions not supported";
-}
-if (Math.floor(Math.random() * 20) <= 1) {
-  //remind to back up approximately every 20 runs
-  alert(
-    "\n\nReminder\n\n Consider backing up your encrypted database to a safe location."
-  );
-}
-wrapPWA(); //Progressive Web App code
-main(); // decrypt database and start setIntreval function
-
-async function main() {
-  try {
-    //fresh start
-    clearInterval(myInterval);
-    dbGlobal = {};
-    dbGlobal.entries = [];
-    startTime = Date.now();
-    openDialog("waitDialog");
-    closeMenu();
-    errorArray = [];
-    document.getElementById("error").innerHTML = "";
-    document.getElementById("JSONSave").value = "";
-    entriesDiv.innerHTML =
-      "<center><b>Loading database and decrypting...</b></center>"; //this may be an imp0rt (dont fix this) situation
-
-    localStorageObject = getLocalStorage(); //load database if any
-    //test to see if json is valid format.
-    if (!isValidlocalStorageObject()) {
-      entriesDiv.innerHTML = dbEmptyMessage;
-      closeDialog("waitDialog");
-      return;
-    }
-
-    //try current pw even if "" and try to decrypt
-    let dbJSON = await decryptDb(password);
-    closeDialog("waitDialog");
-    if (!dbJSON) {
-      //pw failed so open passwordDialog
-      openDialog("passwordDialog");
-      return; // quit and await dialog input
-    }
-    dbGlobal = JSON.parse(dbJSON);
-    dbJSON = ""; //data no longer needed
-    //dbGlobal.entries = dbGlobal.entries;
-
-    //sortdbGlobal.entries array based on issuer + name
-    dbGlobal.entries.sort(function (a, b) {
-      let aa = "" + a.issuer + a.name;
-      let bb = "" + b.issuer + b.name;
-      if (aa < bb) {
-        return -1;
-      } else {
-        return 1;
-      }
-    });
-
-    buildEntriesDOM();
-    closeDialog("waitDialog");
-
-    //harangue those with a blank password
-    if (password == "") {
-      if (
-        confirm(
-          "You currently have a blank password. This means anyone can access your Authentication codes. This is unwise. Do you wish to set a password"
-        )
-      ) {
-        openDialog("changePasswordDialog");
-      }
-    } else {
-      tempMessage(
-        "This program will logout after 10 min of being out of scope (not visible).",
-        3000
-      );
-    }
-    myInterval = setInterval(eachSecond, 1000); //start counter
-  } catch (err) {
-    postError(err);
-  }
-}
-
-async function eachSecond() {
-  try {
-    if (document.hidden) {
-      //if hidden then see if we have reached the timeout
-      if (startTime + timeout < Date.now()) {
-        password = "";
-        main();
-      }
-    } else {
-      startTime = Date.now();
-    }
-    if (dbGlobal.entries.length == 0) {
-      //db is empty
-      entriesDiv.innerHTML = dbEmptyMessage;
-      return;
-    }
-    let unixTime = Date.now() / 1000; // unixTime is in seconds
-    let stepNow = unixTime / 30; //what TOTP step are we on?
-    let stepInt = Math.floor(stepNow); //this changes when == to stepNow. so bar should be at 100%
-    let step = stepInt.toString(16); //step MUST be in string HEX for the hmac function
-    step = step.padStart(16, "0"); // step needs to be 16 characters for hmac function
-    //calc next one too
-    let stepInt2 = stepInt + 1;
-    let step2 = stepInt2.toString(16); //step MUST be in string HEX for the hmac function
-    step2 = step2.padStart(16, "0"); // step needs to be 16 characters for hmac function
-
-    //show countdown on the bar
-    let percentDone = Math.floor(100 * (stepNow - stepInt));
-    let barWidth = 100 - percentDone;
-    if (stepInt != oldStepInt) {
-      //percentDone time will never coincide with our setInterval time as it started at a random offset time. so make the bar 100 on step change
-      barWidth = 100;
-      oldStepInt = stepInt;
-    }
-    let bar = document.getElementById("theBar");
-    bar.style.width = "" + barWidth + "%";
-
-    // calculate and output code for each entry and place on the entry in entriesDiv
-    let entriesCount = -1;
-    for (let entry of dbGlobal.entries) {
-      entriesCount += 1; //always do this
-      if (document.getElementById("entryName" + entriesCount) == null) {
-        continue;
-      } //search filter may be filtering some divs... so see if div exists first
-      let name = entry.name;
-      let issuer = entry.issuer;
-      let algo = entry.info.algo;
-      let digits = entry.info.digits;
-      let period = entry.info.period;
-      let seedBase32 = entry.info.secret;
-      let seed = decodeBase32toHex(seedBase32.toUpperCase()); //base32Str to HexStr
-
-      let totp = await hmac(seed, step, digits, algo);
-      let totp2 = await hmac(seed, step2, digits, algo);
-
-      document.getElementById("entryName" + entriesCount).innerHTML = name;
-      document.getElementById("entryIssuer" + entriesCount).innerHTML = issuer;
-      document.getElementById("entryCode" + entriesCount).innerHTML = totp;
-      document.getElementById("entryCodeNext" + entriesCount).innerHTML = totp2;
-    }
-  } catch (err) {
-    postError(err);
-  }
-}
-
-// BUTTON FUNCTIONS //
-
-function copyElementInnerHTMLToClipboard(id) {
-  try {
-    let code = document.getElementById(id).innerHTML;
-    copyToClipboard(code);
-    tempMessage("Code Copied to Clipboard", 1500);
-  } catch (err) {
-    postError(err);
-  }
-}
-
-function tempMessage(message, ms) {
-  let template = document.getElementById("tempDialog");
-  template.innerHTML = message;
-  openDialog("tempDialog");
-  setTimeout(function () {
-    closeDialog("tempDialog");
-  }, ms);
-}
-
-function toggleQrCode() {
-  let x = document.querySelector("#qrCode");
-  if (x.style.display === "none") {
-    x.style.display = "block";
-  } else {
-    x.style.display = "none";
-  }
-}
-
-function editEntryDialog(id) {
-  try {
-    //get data to fill it in
-    let issuer = dbGlobal.entries[id].issuer || "";
-    let name = dbGlobal.entries[id].name || "";
-    let algorithm = dbGlobal.entries[id].info.algo || "SHA1";
-    let digits = dbGlobal.entries[id].info.digits || "6";
-    let period = dbGlobal.entries[id].info.period || "30";
-    let secret = dbGlobal.entries[id].info.secret || "";
-    let note = dbGlobal.entries[id].info.note || "";
-
-    let url = `otpauth://totp/${issuer}:${name}?issuer=${issuer}&name=${name}&secret=${secret}&algorithm=${algorithm}&digits=${digits}&period=${period}&note=${note}`;
-
-    //do we have enough data to continue>
-    if (secret == "" || issuer == "") {
-      alert("Not enough data entered");
-      return;
-    }
-
-    //build html modifiedTemplate with data using #editEntryTemplate
-    let modifiedTemplate = template("editEntryTemplate", {
-      entryId: "" + id,
-      entryIssuer: issuer,
-      entryName: name,
-      entryNote: note,
-      entryInfoSecret: secret,
-      editEntryUrl: url
-    });
-    document.getElementById("tempDialog").innerHTML = modifiedTemplate;
-    openDialog("tempDialog");
-
-    //create qr code and hide it. #qrCode is on #tempDialog
-    new QRCode(document.getElementById("qrCode"), url); //#qrCode is a div
-    document.getElementById("qrCode").style.display = "none"; //hide it right away
-  } catch (err) {
-    postError(err);
-  }
-}
-
-async function editEntry(id) {
-  try {
-    // #tempDialog will contain the form
-    let el = document.getElementById("tempDialog").querySelector("form");
-    let entryName = el.editEntryName.value;
-    let entryIssuer = el.editEntryIssuer.value;
-    let entryNote = el.editEntryNote.value;
-    let entrySecret = el.editEntryInfoSecret.value;
-
-    //update the entry in dbGlobal
-    dbGlobal.entries[id].name = entryName;
-    dbGlobal.entries[id].issuer = entryIssuer;
-    dbGlobal.entries[id].note = entryNote;
-    dbGlobal.entries[id].info.secret = entrySecret;
-
-    //encrypt dbGlobal and save localStorageObject to localstorage
-    let result = await encryptDb(password);
-    if (!result) {
-      throw "encryptDb faiiled";
-    }
-    setLocalStorage(localStorageObject);
-    main();
-  } catch (err) {
-    postError(err);
-  }
-}
-
-async function deleteEntry(id) {
-  try {
-    if (confirm("This will delete this Entry. Are you sure?")) {
-      //are you sure?
-      dbGlobal.entries.splice(id, 1);
-      let result = await encryptDb(password);
-      if (!result) {
-        throw "encryptDb faiiled";
-      }
-      setLocalStorage(localStorageObject);
-      closeDialog("tempDialog");
-      main();
-    }
-  } catch (err) {
-    postError(err);
-  }
-}
-
-function html5QrCode() {
-  // https://github.com/mebjas/html5-qrcode
-  // https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js
-  let html5QrcodeScanner;
-  let config = {
-    fps: 10,
-    //qrbox: { width: 100, height: 100 },
-    rememberLastUsedCamera: true,
-    // Only support camera scan type
-    supportedScanTypes: [
-      Html5QrcodeScanType.SCAN_TYPE_CAMERA,
-      Html5QrcodeScanType.SCAN_TYPE_FILE
-    ]
-  };
-  document
-    .getElementById("qrVideo")
-    .addEventListener("beforeunload", function () {
-      html5QrCodeStop();
-    }); // we will want to stop scanning if the #reader element is goingin out of scope. it is cpu intensive
-
-  // note: reader needs to be a div id
-  html5QrcodeScanner = new Html5QrcodeScanner(
-    "qrVideo",
-    config,
-    /* verbose= */ true
-  );
-  html5QrcodeScanner.render(function (result) {
-    document.querySelector("#addEntryURL").value = result;
-    beep();
-  });
-}
-
-function html5QrCodeStop() {
-  try {
-    //there are no good methods to stop camera, so we need to virtually click the stop button.
-    document.getElementById("html5-qrcode-button-camera-stop").click();
-  } catch (err) {
-    postError(err);
-  }
-}
-
-async function addEntry(el) {
-  try {
-    //el is the form from #addEntryDialog
-    let url = el.addEntryURL.value;
-    //build an entry object with default values
-    let uuid = self.crypto.randomUUID();
-    let entryTemplate = {
-      type: "totp",
-      uuid: uuid,
-      name: "",
-      issuer: "",
-      note: "",
-      favorite: false,
-      icon: null,
-      info: {
-        secret: "",
-        algo: "SHA1",
-        digits: 6,
-        period: 30
-      },
-      groups: []
-    };
-
-    //URL or manual
-    if (isValidHttpUrl(url)) {
-      // otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example&algorithm=SHA1 &digits=6&period=30
-      let urlArray = new URL(url);
-      let searchParams = new URLSearchParams(urlArray.search); //array of key=value pairs
-      for (let [key, value] of searchParams) {
-        if (key == "algorithm") {
-          key = "algo";
-          //let preVariable = entryTemplate;
-          if (["secret", "algo", "digits", "period"].includes(key)) {
-            entryTemplate.info[key] = value;
-          } else {
-            entryTemplate[key] = value;
-          }
-        }
-      }
-    } else {
-      entryTemplate.issuer = el.addEntryIssuer.value;
-      entryTemplate.name = el.addEntryName.value;
-      entryTemplate.note = el.addEntryNote.value;
-      entryTemplate.info.secret = el.addEntrySecret.value;
-    }
-
-    //create object if it does not exist
-    if (!isValidlocalStorageObject()) {
-      uuid = self.crypto.randomUUID();
-      localStorageObject = {
-        version: 1,
-        header: {
-          slots: [
-            {
-              type: 1,
-              uuid: uuid,
-              key: "",
-              key_params: {
-                nonce: "0",
-                tag: ""
-              },
-              n: 32768,
-              r: 8,
-              p: 1,
-              salt: "",
-              repaired: true,
-              is_backup: false
-            }
-          ],
-          params: {
-            nonce: "",
-            tag: ""
-          }
-        },
-        db: ""
-      };
-    }
-
-    if (JSON.stringify(dbGlobal) == "{}") {
-      //create dbGlobal if it does not exist
-      dbGlobal = {
-        version: 3,
-        entries: [],
-        groups: [],
-        icons_optimized: true
-      };
-    }
-
-    dbGlobal.entries.push(entryTemplate); //add entry to dbGlobal
-    let result = await encryptDb(password);
-    if (!result) {
-      throw "encryptDb faiiled";
-    }
-    setLocalStorage(localStorageObject);
-    main();
-  } catch (err) {
-    postError(err);
-  }
-}
-
-async function changePassword(el) {
-  try {
-    let pw1 = el[0].value;
-    let pw2 = el[1].value;
-    if (!isValidlocalStorageObject()) {
-      alert("There is no database yet.");
-      return;
-    }
-    if (pw1 == pw2) {
-      if (pw1 == "") {
-        if (
-          !confirm(
-            "You have chosen a blank password. This means anyone can access your Authentication codes. This is UNWISE. Do you wish to continue?"
-          )
-        ) {
-          return;
-        }
-      }
-      password = pw1;
-      closeDialog("changePasswordDialog");
-      let result = await encryptDb(password);
-      if (!result) {
-        throw "encryptDb faiiled";
-      }
-      setLocalStorage(localStorageObject);
-      el[0].value = "";
-      el[1].value = "";
-      main();
-    } else {
-      window.alert("Passwords do not match");
-    }
-  } catch (err) {
-    postError(err);
-  }
-}
-
-function wipeDatabase() {
-  if (
-    confirm(
-      "This will ERASE your current database. Please make sure you have a BACKUP to restore. Are you sure?"
-    )
-  ) {
-    closeDialog("passwordDialog");
-    setLocalStorage({});
-    main();
-  }
-}
-
-function tryPassword() {
-  let el = document.getElementById("password");
-  password = el.value;
-  el.value = "";
-  closeDialog("passwordDialog");
-  main();
-}
-
-function openDialog(id) {
-  let el = document.getElementById(id);
-  el.showModal();
-}
-
-function closeDialog(id) {
-  let el = document.getElementById(id);
-  el.close();
-}
-
-function openMenu() {
-  try {
-    document.getElementById("main_page_component").style.display = "none";
-    document.getElementById("menu_page_component").style.display = "block";
-    document.getElementById("menu_icon").style.display = "none";
-    document.getElementById("x_icon").style.display = "inline";
-  } catch (err) {
-    postError(err);
-  }
-}
-
-function closeMenu() {
-  try {
-    document.getElementById("main_page_component").style.display = "block";
-    document.getElementById("menu_page_component").style.display = "none";
-    document.getElementById("menu_icon").style.display = "inline";
-    document.getElementById("x_icon").style.display = "none";
-  } catch (err) {
-    postError(err);
-  }
-}
-
-function localStorageToTextbox() {
-  try {
-    let jsonObject = getLocalStorage();
-    let jsonString = JSON.stringify(jsonObject, null, "\t");
-    document.getElementById("JSONSave").value = jsonString;
-  } catch (err) {
-    postError(err);
-  }
-}
-
-function localStorageFromTextbox() {
-  try {
-    let elJSONSave = document.getElementById("JSONSave");
-    let jsonString = elJSONSave.value;
-    localStorageObject = JSON.parse(jsonString); //also set obj
-    dbGlobal = {}; //wipe old data
-    setLocalStorage(localStorageObject);
-    elJSONSave.value = "";
-    main(); //clear and rebuild
-  } catch (err) {
-    postError(err);
-  }
-}
-
-async function importFromFile() {
-  try {
-    let fileInput = document.getElementById("fileInput");
-    let file = fileInput.files[0];
-    let tempDialog = document.getElementById("tempDialog");
-    tempDialog.innerHTML = "Importing Databse " + file.name;
-    openDialog("tempDialog");
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      // Read the file
-      try {
-        let jsonString = reader.result;
-        localStorageObject = JSON.parse(jsonString); //also set obj
-        dbGlobal = {}; //wipe old data
-        setLocalStorage(localStorageObject);
-        tempDialog.innerHTML = "Imported Database " + file.name + " Saved";
-        setTimeout(function () {
-          closeDialog("tempDialog");
-        }, 1500);
-        main(); //clear and rebuild
-      } catch (err) {
-        postError(err);
-        closeDialog("tempDialog");
-      }
-    };
-    reader.onerror = () => {
-      postMessage("Error reading the file. Please try again.", "error");
-    };
-    reader.readAsText(file);
-  } catch (err) {
-    postError(err);
-    closeDialog("tempDialog");
-  }
-}
-
-async function exportToFile() {
-  //https://codepen.io/vpelss/pen/ZYpLOQj
-  //using <a> download attribute
-  try {
-    let tempDialog = document.getElementById("tempDialog");
-    tempDialog.innerHTML = "Saving Databse";
-    //openDialog("tempDialog");
-    let jsonObject = getLocalStorage();
-    let jsonString = JSON.stringify(jsonObject, null, "\t");
-    let el = document.getElementById("fileOutput"); //it needs download="myDbName.txt"
-    el.href = "data:text/plain;base64," + btoa(jsonString);
-    //el.href="data:text/plain;charset=US-ASCII," + jsonString;
-    tempDialog.innerHTML = "Database Saved";
-    setTimeout(function () {
-      closeDialog("tempDialog");
-    }, 1500);
-  } catch (err) {
-    postError(err);
-    closeDialog("tempDialog");
-  }
-}
-
-function exportToClipboard() {
-  try {
-    localStorageObject = getLocalStorage();
-    copyToClipboard(JSON.stringify(localStorageObject, null, "\t"));
-    alert("Your current encrypted database is on the clipboard!");
-  } catch (err) {
-    postError(err);
-  }
-}
-
-// SUPPORT FUNCTIONS //
-
-function isValidHttpUrl(string) {
-  let url;
-  try {
-    url = new URL(string);
-  } catch (err) {
-    return false;
-  }
-  return true;
-  //return url.protocol === "http:" || url.protocol === "https:";
-}
-
-function beep() {
-  //beep without using a wave file
-  // Source - https://stackoverflow.com/a/29641185
-  // Posted by Houshalter, modified by community. See post 'Timeline' for change history
-  // Retrieved 2026-02-27, License - CC BY-SA 4.0
-  try {
-    var snd = new Audio(
-      "data:audio/wav;base64,//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Cc+CDv/7xA4Tvh9Rz/y8QADBwMWgQAZG/ILNAARQ4GLTcDeIIIhxGOBAuD7hOfBB3/94gcJ3w+o5/5eIAIAAAVwWgQAVQ2ORaIQwEMAJiDg95G4nQL7mQVWI6GwRcfsZAcsKkJvxgxEjzFUgfHoSQ9Qq7KNwqHwuB13MA4a1q/DmBrHgPcmjiGoh//EwC5nGPEmS4RcfkVKOhJf+WOgoxJclFz3kgn//dBA+ya1GhurNn8zb//9NNutNuhz31f////9vt///z+IdAEAAAK4LQIAKobHItEIYCGAExBwe8jcToF9zIKrEdDYIuP2MgOWFSE34wYiR5iqQPj0JIeoVdlG4VD4XA67mAcNa1fhzA1jwHuTRxDUQ//iYBczjHiTJcIuPyKlHQkv/LHQUYkuSi57yQT//uggfZNajQ3Vmz+Zt//+mm3Wm3Q576v////+32///5/EOgAAADVghQAAAAA//uQZAUAB1WI0PZugAAAAAoQwAAAEk3nRd2qAAAAACiDgAAAAAAABCqEEQRLCgwpBGMlJkIz8jKhGvj4k6jzRnqasNKIeoh5gI7BJaC1A1AoNBjJgbyApVS4IDlZgDU5WUAxEKDNmmALHzZp0Fkz1FMTmGFl1FMEyodIavcCAUHDWrKAIA4aa2oCgILEBupZgHvAhEBcZ6joQBxS76AgccrFlczBvKLC0QI2cBoCFvfTDAo7eoOQInqDPBtvrDEZBNYN5xwNwxQRfw8ZQ5wQVLvO8OYU+mHvFLlDh05Mdg7BT6YrRPpCBznMB2r//xKJjyyOh+cImr2/4doscwD6neZjuZR4AgAABYAAAABy1xcdQtxYBYYZdifkUDgzzXaXn98Z0oi9ILU5mBjFANmRwlVJ3/6jYDAmxaiDG3/6xjQQCCKkRb/6kg/wW+kSJ5//rLobkLSiKmqP/0ikJuDaSaSf/6JiLYLEYnW/+kXg1WRVJL/9EmQ1YZIsv/6Qzwy5qk7/+tEU0nkls3/zIUMPKNX/6yZLf+kFgAfgGyLFAUwY//uQZAUABcd5UiNPVXAAAApAAAAAE0VZQKw9ISAAACgAAAAAVQIygIElVrFkBS+Jhi+EAuu+lKAkYUEIsmEAEoMeDmCETMvfSHTGkF5RWH7kz/ESHWPAq/kcCRhqBtMdokPdM7vil7RG98A2sc7zO6ZvTdM7pmOUAZTnJW+NXxqmd41dqJ6mLTXxrPpnV8avaIf5SvL7pndPvPpndJR9Kuu8fePvuiuhorgWjp7Mf/PRjxcFCPDkW31srioCExivv9lcwKEaHsf/7ow2Fl1T/9RkXgEhYElAoCLFtMArxwivDJJ+bR1HTKJdlEoTELCIqgEwVGSQ+hIm0NbK8WXcTEI0UPoa2NbG4y2K00JEWbZavJXkYaqo9CRHS55FcZTjKEk3NKoCYUnSQ0rWxrZbFKbKIhOKPZe1cJKzZSaQrIyULHDZmV5K4xySsDRKWOruanGtjLJXFEmwaIbDLX0hIPBUQPVFVkQkDoUNfSoDgQGKPekoxeGzA4DUvnn4bxzcZrtJyipKfPNy5w+9lnXwgqsiyHNeSVpemw4bWb9psYeq//uQZBoABQt4yMVxYAIAAAkQoAAAHvYpL5m6AAgAACXDAAAAD59jblTirQe9upFsmZbpMudy7Lz1X1DYsxOOSWpfPqNX2WqktK0DMvuGwlbNj44TleLPQ+Gsfb+GOWOKJoIrWb3cIMeeON6lz2umTqMXV8Mj30yWPpjoSa9ujK8SyeJP5y5mOW1D6hvLepeveEAEDo0mgCRClOEgANv3B9a6fikgUSu/DmAMATrGx7nng5p5iimPNZsfQLYB2sDLIkzRKZOHGAaUyDcpFBSLG9MCQALgAIgQs2YunOszLSAyQYPVC2YdGGeHD2dTdJk1pAHGAWDjnkcLKFymS3RQZTInzySoBwMG0QueC3gMsCEYxUqlrcxK6k1LQQcsmyYeQPdC2YfuGPASCBkcVMQQqpVJshui1tkXQJQV0OXGAZMXSOEEBRirXbVRQW7ugq7IM7rPWSZyDlM3IuNEkxzCOJ0ny2ThNkyRai1b6ev//3dzNGzNb//4uAvHT5sURcZCFcuKLhOFs8mLAAEAt4UWAAIABAAAAAB4qbHo0tIjVkUU//uQZAwABfSFz3ZqQAAAAAngwAAAE1HjMp2qAAAAACZDgAAAD5UkTE1UgZEUExqYynN1qZvqIOREEFmBcJQkwdxiFtw0qEOkGYfRDifBui9MQg4QAHAqWtAWHoCxu1Yf4VfWLPIM2mHDFsbQEVGwyqQoQcwnfHeIkNt9YnkiaS1oizycqJrx4KOQjahZxWbcZgztj2c49nKmkId44S71j0c8eV9yDK6uPRzx5X18eDvjvQ6yKo9ZSS6l//8elePK/Lf//IInrOF/FvDoADYAGBMGb7FtErm5MXMlmPAJQVgWta7Zx2go+8xJ0UiCb8LHHdftWyLJE0QIAIsI+UbXu67dZMjmgDGCGl1H+vpF4NSDckSIkk7Vd+sxEhBQMRU8j/12UIRhzSaUdQ+rQU5kGeFxm+hb1oh6pWWmv3uvmReDl0UnvtapVaIzo1jZbf/pD6ElLqSX+rUmOQNpJFa/r+sa4e/pBlAABoAAAAA3CUgShLdGIxsY7AUABPRrgCABdDuQ5GC7DqPQCgbbJUAoRSUj+NIEig0YfyWUho1VBBBA//uQZB4ABZx5zfMakeAAAAmwAAAAF5F3P0w9GtAAACfAAAAAwLhMDmAYWMgVEG1U0FIGCBgXBXAtfMH10000EEEEEECUBYln03TTTdNBDZopopYvrTTdNa325mImNg3TTPV9q3pmY0xoO6bv3r00y+IDGid/9aaaZTGMuj9mpu9Mpio1dXrr5HERTZSmqU36A3CumzN/9Robv/Xx4v9ijkSRSNLQhAWumap82WRSBUqXStV/YcS+XVLnSS+WLDroqArFkMEsAS+eWmrUzrO0oEmE40RlMZ5+ODIkAyKAGUwZ3mVKmcamcJnMW26MRPgUw6j+LkhyHGVGYjSUUKNpuJUQoOIAyDvEyG8S5yfK6dhZc0Tx1KI/gviKL6qvvFs1+bWtaz58uUNnryq6kt5RzOCkPWlVqVX2a/EEBUdU1KrXLf40GoiiFXK///qpoiDXrOgqDR38JB0bw7SoL+ZB9o1RCkQjQ2CBYZKd/+VJxZRRZlqSkKiws0WFxUyCwsKiMy7hUVFhIaCrNQsKkTIsLivwKKigsj8XYlwt/WKi2N4d//uQRCSAAjURNIHpMZBGYiaQPSYyAAABLAAAAAAAACWAAAAApUF/Mg+0aohSIRobBAsMlO//Kk4soosy1JSFRYWaLC4qZBYWFRGZdwqKiwkNBVmoWFSJkWFxX4FFRQWR+LsS4W/rFRb/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////VEFHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAU291bmRib3kuZGUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMjAwNGh0dHA6Ly93d3cuc291bmRib3kuZGUAAAAAAAAAACU="
-    );
-    snd.currentTime = 0;
-    snd.play();
-    /*
-    var context = new AudioContext();
-    var oscillator = context.createOscillator();
-    oscillator.type = "sine";
-    oscillator.frequency.value = 800;
-    oscillator.connect(context.destination);
-    oscillator.start();
-    // Beep for 100 milliseconds
-    setTimeout(function () {
-      oscillator.stop();
-    }, 100);
-    */
-  } catch (err) {
-    postError(err);
-  }
-}
-
-function isValidlocalStorageObject() {
-  try {
-    //check most localStorageObject fields for existance
-    if (typeof localStorageObject.header == "undefined") {
-      return false;
-    }
-    if (typeof localStorageObject.header.slots == "undefined") {
-      return false;
-    }
-    if (typeof localStorageObject.header.slots[0].key == "undefined") {
-      return false;
-    }
-    if (typeof localStorageObject.header.slots[0].key_params == "undefined") {
-      return false;
-    }
-    if (typeof localStorageObject.header.slots[0].salt == "undefined") {
-      return false;
-    }
-    if (typeof localStorageObject.header.params == "undefined") {
-      return false;
-    }
-    if (typeof localStorageObject.header.params.nonce == "undefined") {
-      return false;
-    }
-    if (typeof localStorageObject.header.params.tag == "undefined") {
-      return false;
-    }
-    if (typeof localStorageObject.db == "undefined") {
-      return false;
-    }
-    // we ran the gauntlet
-    return true;
-  } catch (err) {
-    postError(err);
-  }
-}
-
-function buildEntriesDOM() {
-  try {
-    let entriesCount = 0;
-    let entriesDiv = document.getElementById("entriesDiv");
-    let outputString = "";
-    let searchText = document
-      .getElementById("searchText")
-      .value.trim()
-      .toLowerCase();
-
-    dbGlobal.entries.forEach(function (entry) {
-      //start search filter
-      let issuerPlusName =
-        "" + entry.issuer.toLowerCase() + entry.name.toLowerCase();
-      //only show search terms if there are any
-      if (searchText == "" || issuerPlusName.indexOf(searchText) >= 0) {
-        //replace ${} values in template
-        let modifiedTemplate = template("theTemplate", {
-          entryId: "" + entriesCount
-        });
-        outputString = outputString + modifiedTemplate;
-      }
-      entriesCount += 1; //always do this to enumerate entries correctly
-    });
-    entriesDiv.innerHTML = outputString;
-  } catch (err) {
-    postError(err);
-  }
-}
-
-function setLocalStorage(localStorageObject) {
-  //saves object as json string
-  try {
-    let jsonString = JSON.stringify(localStorageObject, null, "\t");
-    localStorage[localStorageName] = jsonString;
-  } catch (err) {
-    //postError(err);
-    postError({ name: "setLocalStorage", message: "Malformed JSON Data" });
-  }
-}
-
-function getLocalStorage() {
-  //returns an object created from the localStorage json string
-  //return empty object {} if undefined
-  let jsonObject;
-  try {
-    if (typeof localStorage[localStorageName] == "undefined") {
-      //this is not an error case, just a fresh start
-      jsonObject = {};
-    } else {
-      let jsonString = localStorage[localStorageName];
-      jsonObject = JSON.parse(jsonString);
-    }
-  } catch (err) {
-    //postError(err);
-    postError({ name: "getLocalStorage", message: "Malformed JSON Data" });
-    jsonObject = {};
-  } finally {
-    return jsonObject;
-  }
-}
-
-async function copyToClipboard(text) {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch (error) {
-    postError(err);
-  }
-}
-
-function decodeBase32toHex(data) {
-  // modified https://medium.com/@at.kishor.k/demystifying-base32-an-in-depth-guide-to-this-encoding-standard-697b9426fc25
-  try {
-    const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-    const HEX_ALPHABET = "0123456789ABCDEF";
-    data = data.replace(/=/g, ""); //remove padding
-    let binaryString = "";
-    for (let i = 0; i < data.length; i++) {
-      binaryString += BASE32_ALPHABET.indexOf(data[i])
-        .toString(2)
-        .padStart(5, "0");
-    }
-    let padding = binaryString.length % 8; //needs to be 8 as we want padding to account for bytes
-    if (padding !== 0) {
-      binaryString = binaryString.slice(0, -padding);
-    }
-    let decoded = "";
-    for (let i = 0; i < binaryString.length; i += 4) {
-      let decimalEquivilant = parseInt(binaryString.slice(i, i + 4), 2);
-      decoded += HEX_ALPHABET[decimalEquivilant];
-      //decoded += parseInt(binaryString.slice(i, i + 4), 2).toString(16).toUpperCase();
-    }
-    return decoded;
-  } catch (err) {
-    postError(err);
-  }
-}
-
-function concatenateUint8arrays(uint8arrays) {
-  // https://evanhahn.com/the-best-way-to-concatenate-uint8arrays/
-  try {
-    // Determine the length of the result.
-    const totalLength = uint8arrays.reduce(
-      (total, uint8array) => total + uint8array.byteLength,
-      0
-    );
-    // Allocate the result.
-    const result = new Uint8Array(totalLength);
-    // Copy each Uint8Array into the result.
-    let offset = 0;
-    uint8arrays.forEach((uint8array) => {
-      result.set(uint8array, offset);
-      offset += uint8array.byteLength;
-    });
-    return result;
-  } catch (err) {
-    postError(err);
-  }
-}
-
-function template(templateid, data) {
-  // https://stackoverflow.com/questions/377961/efficient-javascript-string-replacement
-  try {
-    return document.getElementById(templateid).innerHTML.replace(
-      ///%(\w*)%/g, // or /{(\w*)}/g for "{this} instead of %this%"
-      /\${(\w*)}/g, // or  for "{this} instead of %this%"
-      function (m, key) {
-        return data.hasOwnProperty(key) ? data[key] : "";
-      }
-    );
-  } catch (err) {
-    postError(err);
-  }
-}
-
-function postError(err) {
-  console.error(err);
-  errorArray.push({ Name: err.name, Message: err.message, Stack: err.stack });
-  let errorString = JSON.stringify(errorArray, null, "\t");
-  document.getElementById("error").innerHTML = "Errors:<br>" + errorString;
-}
-
-function wrapPWA() {
-  //button to install PWA : https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/How_to/Trigger_install_prompt
-  const installButton = document.getElementById("installPWA");
-  let installPrompt = null;
-
-  window.addEventListener("beforeinstallprompt", (event) => {
-    event.preventDefault();
-    installPrompt = event;
-    installButton.removeAttribute("hidden");
-  });
-
-  installButton.addEventListener("click", async () => {
-    if (!installPrompt) {
-      return;
-    }
-    const result = await installPrompt.prompt();
-    console.log(`Install prompt was: ${result.outcome}`);
-    disableInAppInstallPrompt();
-  });
-
-  function disableInAppInstallPrompt() {
-    installPrompt = null;
-    installButton.setAttribute("hidden", "");
-  }
-
-  window.addEventListener("appinstalled", () => {
-    disableInAppInstallPrompt();
-  });
-
-  window.addEventListener("beforeinstallprompt", async (event) => {
-    const relatedApps = await navigator.getInstalledRelatedApps();
-
-    // Search for a specific installed platform-specific app
-    const psApp = relatedApps.find(
-      (app) => app.id === "/AuthenticatorAnywhere/"
-    );
-    if (psApp) {
-      event.preventDefault();
-      // Update UI as appropriate
-    }
-  });
-}
-
-function testBrowser() {
-  try {
-    //test for various functionality and alert. Note that we don't halt. It still may work without all functionailty.
-    if (!("localStorage" in window && window.localStorage !== null)) {
-      throw {
-        name: "Error",
-        message: "HTML5 Storage is not supported in this browser"
-      };
-    }
-    if (typeof AudioContext == "undefined") {
-      throw {
-        name: "Error",
-        message: "AudioContext is not supported in this browser"
-      };
-    }
-    if (typeof window.crypto.subtle == "undefined") {
-      throw {
-        name: "Error",
-        message: "window.crypto.subtle is not supported in this browser"
-      };
-    }
-    let myDialog = document.createElement("dialog");
-    if (typeof myDialog.showModal == "undefined") {
-      throw {
-        name: "Error",
-        message: "showModal() is not supported in this browser"
-      };
-    }
-    //html5
-    if (typeof navigator.geolocation == "undefined") {
-      throw {
-        name: "Error",
-        message: "HTML5 is not supported in this browser"
-      };
-    }
-    if (typeof navigator.clipboard.writeText == "undefined") {
-      throw {
-        name: "Error",
-        message:
-          "navigator.clipboard.writeText is not supported in this browser"
-      };
-    }
-    if (typeof FileReader == "undefined") {
-      throw {
-        name: "Error",
-        message: "FileReader is not supported in this browser"
-      };
-    }
-    //pwa
-    if (typeof navigator.getInstalledRelatedApps == "undefined") {
-      throw {
-        name: "Error",
-        message:
-          "navigator.getInstalledRelatedApps is not supported in this browser"
-      };
-    }
-    if (typeof URL == "undefined") {
-      throw {
-        name: "Error",
-        message: "URL is not supported in this browser"
-      };
-    }
-  } catch (err) {
-    postError(err);
-    alert(
-      "Incompatible browser. If you are seeing this error, please consider using the newest Chrome, Edge, Safari. You may encounter limited or no functionality if you continue. \n\n" +
-        err
-    );
-    return false;
-  }
-  return true;
-}
-
-// ENCRYPTION DECRYPTION HMAC FUNCTIONS //
-
-async function hmac(
-  keyHexString,
-  stepHexString16Bytes,
-  returnDigits,
-  hashFunctionString
-) {
-  // for references see: https://github.com/vpelss/JsTOTPAuthenticator
-  try {
-    let totp;
-    let blockSize = 64;
-    let k, msg, tempUint8Array, hashed;
-
-    //all our input key strings should only have hex characters [0 .. F]
-    msg = Uint8Array.fromHex(stepHexString16Bytes);
-    k = Uint8Array.fromHex(keyHexString); //only accepts hex string lengths of even values and convertys to bytes. byte = 2 x hex
-
-    /*
-    //HMAC: instructive : now replaced with crypto.subtle.sign
-    //hmac_sha https://en.wikipedia.org/wiki/HMAC
-
-    // create our Uint8Array key to the blockSize sized
-    if (k.length > blockSize) {
-      tempUint8Array = new Uint8Array(blockSize); //set to block size
-      hashed = await window.crypto.subtle.digest("SHA-1", k); // hash the message
-      tempUint8Array.set(new Uint8Array(hashed));
-      k = tempUint8Array;
-    } // Keys longer than blockSize are shortened by hashing them
-    // Keys shorter than blockSize are padded to blockSize by padding with zeros on the right
-    if (k.length < blockSize) {
-      tempUint8Array = new Uint8Array(blockSize); //set to block size
-      tempUint8Array.set(k);
-      k = tempUint8Array;
-    }
-    // k should now be blockSize
-
-    // create ipad and opad https://datatracker.ietf.org/doc/html/rfc2104#section-2
-    let okey = new Uint8Array(k);
-    okey.forEach(function (myByte, myIndex, myArray) {
-      myArray[myIndex] = myArray[myIndex] ^ 0x5c;
-    }); //key xor 0x5c
-    let ikey = new Uint8Array(k);
-    ikey.forEach(function (myByte, myIndex, myArray) {
-      myArray[myIndex] = myArray[myIndex] ^ 0x36;
-    }); //key xor 0x36
-
-    // now do hash(o_key_pad concatenate hash(i_key_pad concatenate msg))
-
-    tempUint8Array = concatenateUint8arrays([ikey, msg]); // i_key_pad + msg
-    hashed = await window.crypto.subtle.digest("SHA-1", tempUint8Array);
-    tempUint8Array = new Uint8Array(hashed); // hash(i_key_pad concatenate msg)
-
-    tempUint8Array = concatenateUint8arrays([okey, tempUint8Array]); //o_key_pad ∥ hash(i_key_pad + msg)
-    hashed = await window.crypto.subtle.digest("SHA-1", tempUint8Array);
-    hashed = new Uint8Array(hashed); // hash(o_key_pad concatenate hash(i_key_pad concatenate msg))
-   */
-
-    //HMAC: simpler, but not instructive
-    let cryptoKey = await window.crypto.subtle.importKey(
-      "raw",
-      k,
-      { name: "HMAC", hash: { name: "SHA-1" } },
-      1,
-      ["sign", "verify"]
-    );
-    hashed = await window.crypto.subtle.sign("HMAC", cryptoKey, msg);
-    hashed = new Uint8Array(hashed);
-
-    //https://datatracker.ietf.org/doc/html/rfc4226#section-5.3
-    let offset = hashed[hashed.length - 1] & 0xf; //last 4 bits of hashed
-
-    //take 4 bytes at offset (minus the first bit) and use bits to create a decimal #
-    let myBinary =
-      ((hashed[offset] & 0x7f) << 24) | // not signed
-      (hashed[offset + 1] << 16) |
-      (hashed[offset + 2] << 8) |
-      hashed[offset + 3];
-
-    //take deciamal part of myBinary and convert it to returnDigits value
-    // opt is the same as taking dp/myBinary taking the decimal and multiplying with dp
-    let dp = 10 ** returnDigits;
-    let otp = myBinary % dp;
-
-    totp = otp.toString();
-    totp = totp.padStart(returnDigits, "0"); // make sure it is returnDigits length. pad to the left
-    return totp;
-  } catch (err) {
-    postError(err);
-  }
-}
-
-async function decryptDb(password) {
-  try {
-    // based on https://github.com/Sammy-T/avdu/blob/master/vault/decrypt.go
-    // use password to decrypt masterKey from the vault
-    // use masterKey bytes to decrypt the database
-
-    let pw = password.normalize("NFKC");
-    pw = TE.encode(password); //convert to Uint8Array
-    // go salt, err := hex.DecodeString(slot.Salt)
-    let saltString = localStorageObject.header.slots[0].salt;
-    let salt = Uint8Array.fromHex(saltString);
-
-    // Create a key using the slot values and provided password
-    // go key, err = scrypt.Key([]byte(pwd), salt, slot.N, slot.R, slot.P, 32)
-    let n = localStorageObject.header.slots[0].n;
-    let r = localStorageObject.header.slots[0].r;
-    let p = localStorageObject.header.slots[0].p;
-    let dkLen = 32;
-
-    //scrypt is password based key derivation
-    //from https://cdnjs.cloudflare.com/ajax/libs/scrypt-js/3.0.1/scrypt.js
-    //https://github.com/ricmoo/scrypt-js?utm_source=cdnjs&utm_medium=cdnjs_link&utm_campaign=cdnjs_library#readme
-    let hashedPassword = await scrypt.scrypt(pw, salt, n, r, p, dkLen); //asyncronous
-
-    //go nonce, err := hex.DecodeString(slot.KeyParams.Nonce)
-    let nonceString = localStorageObject.header.slots[0].key_params.nonce;
-    nonceString = nonceString.normalize("NFKC");
-    let nonce = Uint8Array.fromHex(nonceString);
-
-    // go	tag, err := hex.DecodeString(slot.KeyParams.Tag)
-    let tagString = localStorageObject.header.slots[0].key_params.tag;
-    let tag = Uint8Array.fromHex(tagString);
-
-    // go slotKey, err := hex.DecodeString(slot.Key)
-    let slotKeyString = localStorageObject.header.slots[0].key;
-    let slotKey = Uint8Array.fromHex(slotKeyString);
-
-    // go var keyData []byte = append(slotKey, tag...)
-    let keyData = concatenateUint8arrays([slotKey, tag]);
-
-    // Attempt to decrypt the master key
-    // go	block, err := aes.NewCipher(key)
-    // go aesgcm, err := cipher.NewGCM(block)
-    //go masterKey, err = aesgcm.Open(nil, nonce, keyData, nil)
-    let masterKey = await decrypt(nonce, hashedPassword, keyData);
-    if (!masterKey) {
-      throw "decrypt failed";
-    }
-
-    //now use masterKey to decrypt dbData
-    //this is the second nonce
-    // go nonce, err := hex.DecodeString(params.Nonce)
-    nonceString = localStorageObject.header.params.nonce;
-    nonceString = nonceString.normalize("NFKC");
-    nonce = Uint8Array.fromHex(nonceString);
-
-    // go tag, err := hex.DecodeString(params.Tag)
-    tagString = localStorageObject.header.params.tag;
-    tag = Uint8Array.fromHex(tagString);
-
-    //go dbData, err := base64.StdEncoding.DecodeString(db)
-    let db = localStorageObject.db;
-    let dbData = Uint8Array.fromBase64(db);
-
-    //go var database []byte = append(dbData, tag...)
-    let database = concatenateUint8arrays([dbData, tag]);
-
-    // go block, err := aes.NewCipher(masterKey)
-    // go aesgcm, err := cipher.NewGCM(block)
-    // go content, err := aesgcm.Open(nil, nonce, database, nil)
-    let plaintext = await decrypt(nonce, masterKey, database);
-    if (!plaintext) {
-      throw "decrypt failed";
-    }
-
-    let unencrypted = TD.decode(plaintext);
-    return unencrypted;
-  } catch (err) {
-    //dont bother. it will fail on first try and we need it to return the failure so we can ask for a password
-    return false;
-    //postError(err);
-  }
-}
-
-async function decrypt(iv, key, ciphertext) {
-  try {
-    let decrypted;
-    let block = await window.crypto.subtle.importKey(
-      "raw",
-      key,
-      { name: "AES-GCM" },
-      1,
-      ["encrypt", "decrypt"]
-    );
-    decrypted = await window.crypto.subtle.decrypt(
-      { name: "AES-GCM", iv },
-      block,
-      ciphertext
-    );
-    return decrypted;
-  } catch (err) {
-    //let calling routine there has been an error
-    return false;
-    //postError(err);
-  }
-}
-
-async function encryptDb(password) {
-  try {
-    //stop working so hard
-    openDialog("waitDialog");
-    clearInterval(myInterval);
-
-    // code derived from workimg backwards from decryptDB : commened code if from decryptDB, so leave it
-
-    //make a masterKey and encrypt database with it
-    //create a 12 byte nonce
-    let nonce = new Uint8Array(12);
-    self.crypto.getRandomValues(nonce);
-    //nonce = Uint8Array.fromHex(nonceString);
-    let nonceString = nonce.toHex();
-    //nonceString = localStorageObject.header.params.nonce;
-    localStorageObject.header.params.nonce = nonceString;
-    //create a 32 bit masterKey
-    let masterKey = new Uint8Array(32);
-    self.crypto.getRandomValues(masterKey);
-    //convert dbGlobal to content Uint8Array
-    let tempdb = JSON.stringify(dbGlobal, null, "\t"); //we don't need the formatting
-    let plaintext = TE.encode(tempdb);
-    //encrypt dbGlobal using nonce and masterKey
-    let database = await encrypt(nonce, masterKey, plaintext);
-    if (!database) {
-      throw "encrypt() failed on database";
-    }
-    // database is an ArrayBuffer, not Uint8Array, so fix it
-    database = new Uint8Array(database);
-
-    //separate db and tag from encrypted database
-    //db is 16 bytes larger, the last 16 byte tag is removed and stored as the tag
-    //  let database = concatenateUint8arrays([dbData, tag]);
-    let length = database.length;
-    let dbData = database.slice(0, length - 16);
-    //let dbData = Uint8Array.fromBase64(db);
-    let db = dbData.toBase64();
-    //let db = localStorageObject.db;
-    localStorageObject.db = db;
-    //tag = Uint8Array.fromHex(tagString);
-    let tag = database.slice(length - 16, length);
-    let tagString = tag.toHex();
-    //tagString = localStorageObject.header.params.tag;
-    localStorageObject.header.params.tag = tagString;
-
-    //now encrypy masterKey with our password
-    let pw = password.normalize("NFKC");
-    pw = TE.encode(password);
-    //let saltString = localStorageObject.header.slots[0].salt;
-    //let salt = Uint8Array.fromHex(saltString);
-    let salt = new Uint8Array(32); //32 byte salt , 64 hex characters
-    self.crypto.getRandomValues(salt);
-    let saltString = salt.toHex();
-    localStorageObject.header.slots[0].salt = saltString;
-
-    let n = localStorageObject.header.slots[0].n;
-    let r = localStorageObject.header.slots[0].r;
-    let p = localStorageObject.header.slots[0].p;
-    let dkLen = 32;
-    let hashedPassword = await scrypt.scrypt(pw, salt, n, r, p, dkLen); //asyncronous
-
-    //let nonceString = localStorageObject.header.slots[0].key_params.nonce;
-    //nonceString = nonceString.normalize("NFKC");
-    //let nonce = Uint8Array.fromHex(nonceString);
-    self.crypto.getRandomValues(nonce); //new masterKey nonce
-    nonceString = nonce.toHex();
-    localStorageObject.header.slots[0].key_params.nonce = nonceString;
-    //let masterKey = await decrypt(nonce, keyScrypt, keyData);
-    let masterKeyEncrypted = await encrypt(nonce, hashedPassword, masterKey);
-    if (!masterKeyEncrypted) {
-      throw "encrypt() failed on masterKeyEncrypted";
-    }
-    //masterKeyEncrypted is 16 bytes bigger than masterKey so tag is that last 16 bytes and so masterKey the remaining first part
-    //let masterKeyEncrypted = concatenateUint8arrays([slotKey, tag]);
-    masterKeyEncrypted = new Uint8Array(masterKeyEncrypted);
-    length = masterKeyEncrypted.length;
-    let slotKey = masterKeyEncrypted.slice(0, length - 16);
-    //let slotKey = Uint8Array.fromHex(slotKeyString);
-    let slotKeyString = slotKey.toHex();
-    //let slotKeyString = localStorageObject.header.slots[0].key;
-    localStorageObject.header.slots[0].key = slotKeyString;
-    tag = masterKeyEncrypted.slice(length - 16, length);
-    //let tag = Uint8Array.fromHex(tagString);
-    tagString = tag.toHex();
-    //let tagString = localStorageObject.header.slots[0].key_params.tag;
-    localStorageObject.header.slots[0].key_params.tag = tagString;
-
-    //let encrypted = TD.decode(db);
-    let encrypted = db;
-    return true; //no encrypted needs to be returned. we have already updated localStorageObject in this function. Just pass on our success
-  } catch (err) {
-    //pass on our shame so calling function can respond appropriately
-    return false;
-    //postError(err);
-  }
-}
-
-async function encrypt(iv, key, ciphertext) {
-  try {
-    let encrypted;
-    let block = await window.crypto.subtle.importKey(
-      "raw",
-      key,
-      { name: "AES-GCM" },
-      1,
-      ["encrypt", "decrypt"]
-    );
-    encrypted = await window.crypto.subtle.encrypt(
-      { name: "AES-GCM", iv },
-      block,
-      ciphertext
-    );
-    return encrypted;
-  } catch (err) {
-    //let calling function know there was an error
-    return false;
-  }
-} // ENCRYPTION DECRYPTION HMAC FUNCTIONS //
-
-/*
-//qr native version
-const video = document.querySelector("#videoViewer");
-
-function turnOnVideo(video) {
-  const constraints = {
-  video: { user: "environment" }
-};
-  navigator.mediaDevices
-    .getUserMedia(constraints)
-    .then((mediaStream) => {
-      //const video = document.querySelector("video");
-      video.srcObject = mediaStream;
-      video.onloadedmetadata = () => {
-        video.play();
-      };
-    })
-    .catch((err) => {
-      postError(err);
-    });
-}
-
-function stopStreamedVideo(videoElem) {
-  const stream = videoElem.srcObject;
-  const tracks = stream.getTracks();
-  tracks.forEach((track) => {
-    track.stop();
-  });
-  videoElem.srcObject = null;
-}
-
-let barcodeDetector;
-function enableQrSearch() {
-  // check compatibility
-  if (!("BarcodeDetector" in globalThis)) {
-    console.log("Barcode Detector is not supported by this browser.");
-  } else {
-    // create new detector
-    document.querySelector("#addEntryURL").value = "";
-    turnOnVideo(video);
-    console.log("Barcode Detector supported!");
-    barcodeDetector = new BarcodeDetector({
-      formats: ["qr_code"]
-    });
-    setInterval(getQrCode, 1000);
-  }
-}
-
-function getQrCode() {
-  if ("BarcodeDetector" in globalThis) {
-    ////video needs to be video element
-    barcodeDetector
-      .detect(video)
-      .then((barcodes) => {
-        barcodes.forEach((barcode) => {
-          document.querySelector("#addEntryURL").value = barcode.rawValue;
-          beep();
-        });
-      })
-      .catch((err) => {
-        postError(err);
-      });
-  }
-}
-
-*/
-
-/*
-// https://github.com/nimiq/qr-scanner
-let qrScanner;
-function nimiq() {
-  import("https://nimiq.github.io/qr-scanner/qr-scanner.min.js").then(
-    (module) => {
-      const QrScanner = module.default;
-      //video needs to be video element
-      qrScanner = new QrScanner(
-        video,
-        function (result) {
-          document.querySelector("#addEntryURL").value = result.data;
-          beep();
-        },
-        {
-          // your options or returnDetailedScanResult: true if you're not specifying any other options 
-        }
-      );
-      qrScanner.start();
-    }
-  );
-}
-*/
-  </script>
-
+  </body>
   
-</body>
-
 </html>

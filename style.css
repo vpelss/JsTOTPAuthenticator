@@ -1,0 +1,121 @@
+body {
+    margin: 2px;
+  min-width: 350px;
+}
+
+/* turns off idiotic swipe down to refresh , pull-to-refresh */
+html,
+body {
+  overscroll-behavior: none !important;
+}
+
+#header {
+  position: sticky;
+  top: 0;
+  background-color: white;
+  width: 100%;
+}
+
+.codeClass {
+  font-size: 2rem;
+}
+
+.codeClassNext {
+  font-size: 1rem;
+  color: lightgray;
+}
+
+#theBarContainer {
+  background-color: lightgray;
+}
+
+#theBar {
+  height: 5px;
+  background-color: red;
+  width: 100%;
+  transition: width 1s linear;
+}
+
+#headerTitle {
+  ffffont-size: 0.8rem;
+}
+
+#searchWrapper {
+  display: grid;
+  grid-template-columns: auto 30px;
+  grid-gap: 3px;
+}
+
+#searchText {
+  grid-column: 1;
+}
+
+#clearSearchIcon {
+  grid-column: 2;
+}
+
+.entryTemplate {
+  display: grid;
+  width: 100%;
+  border: solid;
+  border-width: 1px;
+  margin: 5px;
+  padding: 5px;
+}
+
+.leftTemplate {
+  grid-column: 1;
+  text-align: left;
+  overflow: auto;
+}
+
+.rightTemplate {
+  grid-column: 2;
+  text-align: right;
+}
+
+#footer {
+  display: grid;
+}
+
+#logoutRestartButton {
+  grid-column: 1;
+  text-align: left;
+  text-align: center;
+}
+
+#refreshAppButton {
+  grid-column: 2;
+  text-align: right;
+  text-align: center;
+}
+
+#powerOffButton {
+  grid-column: 3;
+  text-align: right;
+  text-align: center;
+}
+
+#error {
+  white-space: pre-wrap;
+  display: block;
+}
+
+.secret {
+  /*fix / block password managers forcing fields to fill*/
+  -webkit-text-security: disc;
+}
+
+.secret:active {
+  /*fix / block password managers forcing fields to fill*/
+  -webkit-text-security: none;
+}
+
+#fileInput {
+  display: none;
+}
+
+.border {
+  border: solid;
+  border-width: 1px;
+}
