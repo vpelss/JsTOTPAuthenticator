@@ -101,7 +101,6 @@ let elementJsonSave = document.getElementById("JSONSave");
 let elementTempDialog = document.getElementById("tempDialog");
 let elementAddEntryURL=  document.getElementById("addEntryURL");
 
-
 //event listeners
 elementMenuIcon.addEventListener("click", openMenu);
 elementXicon.addEventListener("click", closeMenu);
@@ -173,7 +172,8 @@ elementAddEntryForm.addEventListener("submit", function () {
 
 if (!testBrowser()) {
   console.log("Some browser funtions not supported");
-  //throw "Some browser funtions not supported";
+  //tempMessage("Some browser funtions not supported", 5000);
+  alert("Some browser funtions not supported");
 }
 if (Math.floor(Math.random() * 20) <= 1) {
   //remind to back up approximately every 20 runs
@@ -257,9 +257,6 @@ async function main() {
 
 async function eachSecond() {
   try {
-    //copyElementInnerHTMLToClipboard('entryCode${entryId}');
-    let r = 9;
-
     if (document.hidden) {
       //if hidden then see if we have reached the timeout
       if (startTime + timeout < Date.now()) {
@@ -316,13 +313,13 @@ async function eachSecond() {
       document.getElementById("entryIssuer" + entriesCount).innerHTML = issuer;
       document.getElementById("entryCode" + entriesCount).innerHTML = totp;
       document.getElementById("entryCode" + entriesCount).value = totp; //for event handler
-      //copy icon is a big pain in the a**
+      //the copy icon is a big pain in the a** as it hass no innerHTML to copy. so we assign .values instead
       document.getElementById("entryCopyButton" + entriesCount).value = totp; //for event handler
       document.getElementById("entryCopySVG" + entriesCount).value = totp; //for event handler
       document.getElementById("entryCopyPath" + entriesCount).value = totp; //for event handler
       document.getElementById("entryCodeNext" + entriesCount).innerHTML = totp2;
       document.getElementById("entryCodeNext" + entriesCount).value = totp2; //for event handler
-      //as is edit icon
+      //assign a .value, so we know which entry in the array to edit later
       document.getElementById("editButton" + entriesCount).value = entriesCount; //for event handler
     }
   } catch (err) {
@@ -343,7 +340,6 @@ function copyElementInnerHTMLToClipboard(id) {
 }
 
 function tempMessage(message, ms) {
-  //let template = document.getElementById("tempDialog");
   elementTempDialog.innerHTML = message;
   openDialog("tempDialog");
   setTimeout(function () {
@@ -390,7 +386,7 @@ function editEntryDialog(id) {
     });
     elementTempDialog.innerHTML = modifiedTemplate;
     openDialog("tempDialog");
-    //it is a dynamic created copy so just put it here
+    //it is a dynamic created copy so just put element assignments here
     let elementToggleQrCode = document.getElementById("toggleQrCodeButton");
     elementToggleQrCode.addEventListener("click", toggleQrCode);
     let elementCloseEditEntry = document.getElementById("closeEditEntryButton");
@@ -654,7 +650,6 @@ function tryPassword() {
   let el = document.getElementById("password");
   password = el.value;
   el.value = "";
-  //closeDialog("passwordDialog"); //done by type="dialog"
   main();
 }
 
@@ -789,7 +784,6 @@ function isValidHttpUrl(string) {
     return false;
   }
   return true;
-  //return url.protocol === "http:" || url.protocol === "https:";
 }
 
 function beep() {
@@ -860,7 +854,6 @@ function isValidlocalStorageObject() {
 function buildEntriesDOM() {
   try {
     let entriesCount = 0;
-    //let elementEntriesDiv = document.getElementById("elementEntriesDiv");
     let outputString = "";
     let searchText = elementSearchText.value.trim().toLowerCase();
 
@@ -909,7 +902,6 @@ function getLocalStorage() {
       jsonObject = JSON.parse(jsonString);
     }
   } catch (err) {
-    //postError(err);
     postError({ name: "getLocalStorage", message: "Malformed JSON Data" });
     jsonObject = {};
   } finally {
@@ -920,7 +912,6 @@ function getLocalStorage() {
 async function copyToClipboard(text) {
   try {
     let textarea = document.createElement("TEXTAREA");
-    //let clipboardText = document.getElementById("clipboardText");
     document.body.appendChild(textarea);
     textarea.innerHTML = text;
     textarea.value = text;
@@ -1322,9 +1313,8 @@ async function decrypt(iv, key, ciphertext) {
 
 async function encryptDb(password) {
   try {
-    //stop working so hard
     openDialog("waitDialog");
-    clearInterval(myInterval);
+    clearInterval(myInterval); //stop working so hard
 
     // code derived from workimg backwards from decryptDB : commened code if from decryptDB, so leave it
 
