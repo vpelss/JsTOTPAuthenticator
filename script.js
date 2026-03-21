@@ -1,5 +1,4 @@
 // TO DO:
-//QR NO TITLE!!!!!!!!!!!!!
 //pw not global?
 //closures?
 // the key is decrypted when needed to verify an OTP value, and re-encrypted immediately to limit exposure in the RAM to a short period of time
@@ -408,6 +407,7 @@ function editEntryDialog(id) {
     //create qr code and hide it. #qrCode is on #tempDialog
     let elementQrCode = document.getElementById("qrCode");
     new QRCode(elementQrCode , url); //#qrCode is a div
+    elementQrCode.title = ""; //not a good idea to leave this visible
     elementQrCode.style.display = "none"; //hide it right away
   } catch (err) {
     postError(err);
